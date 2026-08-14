@@ -226,6 +226,16 @@
       "fix": "The check excludes the probe's own names explicitly, so it still fails on any other leak.",
       "whyItEvaded": "The probe was added after the check and nobody re-read the check.",
       "guard": "no-window-globals"
+    },
+    {
+      "id": "regex-matched-the-function-name",
+      "class": "vacuous-assertion",
+      "area": "test harness",
+      "symptom": "verify.js reported the turntable selecting view 0 at both extremes of the pointer sweep, while the transforms it was reading were demonstrably different.",
+      "rootCause": "It parsed the translate distance with /-?[\\d.]+/, whose first match in \"translate3d(-8390px, 0px, 0px)\" is the 3 in translate3d. Every view came out as round(3/932) = 0.",
+      "fix": "Anchor on the delimiter and the unit: /\\(\\s*(-?[\\d.]+)px/.",
+      "whyItEvaded": "It did not — the harness caught it on its first run. It is recorded because it is the third instance of the same class on this project (counting '<script' inside Chart.js string literals, and 'chartjs-src' inside app.js), committed in a file written specifically to look for that class. Unanchored substring and number matching over documents that embed arbitrary payloads is unsound, and knowing that is evidently not enough to stop doing it.",
+      "guard": "reel-turn-is-visible"
     }
   ]
 }

@@ -50,6 +50,7 @@ asserted unique by the backtest.
 | `backtest.js` | 332 headless assertions across all six pages. Needs `playwright-core`. |
 | `guards.js` | The failure-audit layer. Runs every guard in `failures.json` and proves each one can fail. |
 | `failures.json` | Every defect that reached a built artifact, its root cause, and why the tests missed it. |
+| `verify.js` | Piece-by-piece walk of the shipped build, starting at `index2.html`. 15 pieces, 78 measurements. |
 | `audit.js` | Core Web Vitals, CLS, idle GPU, leak probe, CSP. `node audit.js <slug>`. |
 
 Full rebuild:
@@ -292,6 +293,32 @@ nobody reintroduces one without re-measuring.
 - **Idle** — nothing. One shared `Ticker`; subscribers return whether they still
   want frames and the loop stops entirely when none do. Zero rAF, zero GPU,
   measured over a clean sample.
+
+## Verifying a copy you already have
+
+`node verify.js` starts at `index2.html` — the file that has been in local
+circulation — and walks outward through every layer it depends on, reporting a
+measured fact for each rather than a bare pass mark: what is inlined and how
+big, what the CSP actually allows, the resolution and edge luminance of the
+render, whether the turntable's extreme views genuinely differ, the contrast of
+hero copy against sampled backdrop pixels, frame pacing at 2× DPR, and how the
+page behaves with JavaScript off.
+
+It prints the SHA-256 of `index2.html` first. Compare it against your copy:
+
+```
+shasum -a 256 ~/Downloads/index2.html
+```
+
+A different hash means your saved file predates this build.
+
+Three harnesses, three jobs, and none of them substitutes for another:
+
+| | asks |
+|---|---|
+| `verify.js` | what *is* this artifact? — 15 pieces, 78 measurements |
+| `backtest.js` | did anything break? — 332 assertions |
+| `guards.js` | can these checks even fail? — 17 mutation-verified guards |
 
 ## The failure-audit layer
 

@@ -130,6 +130,10 @@ function jsonld(page) {
   const graph = [];
 
   if (page.slug === 'index') {
+    /* The home page's own node is a WebPage. Emitting Organization for both the
+       publisher and the page produced two Organization nodes in one graph —
+       valid, and a parser has no way to tell which one is the entity. */
+    page = Object.assign({}, page, { jsonld: 'WebPage' });
     graph.push(ORG, {
       '@type': 'WebSite', '@id': SITE.origin + '/#site',
       name: SITE.name, url: SITE.origin + '/', publisher: { '@id': SITE.origin + '/#org' },
