@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Listings Manager — High Properties</title>
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+:root{
+  --green:#1a3d2b; --green-2:#22503a; --gold:#c8992a; --gold-light:#f5e6b8;
+  --cream:#fdfbf5; --white:#fff; --line:rgba(245,230,184,.14);
+  --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font);background:var(--green);color:var(--gold-light);line-height:1.5}
+a{color:var(--gold-light)}
+header{
+  position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;
+  padding:12px 22px;background:var(--cream);border-bottom:1px solid rgba(0,0,0,.08);
+}
+header img{height:38px;width:auto}
+header .sp{flex:1}
+header #who{color:#4a5f52;font-size:.74rem}
+header .btn.ghost{border-color:rgba(26,61,43,.25);color:var(--green)}
+h1{font-size:.95rem;margin:0;color:var(--green);font-weight:600;letter-spacing:.01em}
+.wrap{max-width:1240px;margin:0 auto;padding:26px 22px 80px}
+.card{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:20px}
+.card h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);margin:0 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+label{display:block;font-size:.64rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(245,230,184,.55);margin-bottom:5px}
+input,select,textarea{
+  width:100%;padding:9px 11px;border-radius:8px;font:inherit;font-size:.83rem;
+  background:rgba(0,0,0,.22);border:1px solid var(--line);color:var(--white)
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(200,153,42,.65)}
+select option{background:var(--green);color:var(--white)}
+textarea{min-height:82px;resize:vertical}
+.btn{
+  border:0;border-radius:9px;padding:10px 18px;font:inherit;font-size:.78rem;font-weight:600;
+  cursor:pointer;background:linear-gradient(135deg,var(--gold),#e0b44a);color:#241a05
+}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--gold-light)}
+.btn.danger{background:transparent;border:1px solid rgba(255,120,120,.45);color:#ff9b9b}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(245,230,184,.5)}
+tbody tr:hover{background:rgba(255,255,255,.035)}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.62rem;background:rgba(200,153,42,.18);color:var(--gold-light)}
+.muted{color:rgba(245,230,184,.5);font-size:.76rem}
+.thumb{width:46px;height:34px;object-fit:cover;border-radius:6px;display:block}
+.thumb-empty{background:rgba(255,255,255,.07);border:1px dashed rgba(245,230,184,.22)}
+.tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:8px 15px;border-radius:8px;background:transparent;border:1px solid var(--line);color:var(--gold-light);font-size:.76rem;cursor:pointer}
+.tab.on{background:rgba(200,153,42,.2);border-color:rgba(200,153,42,.5)}
+.hide{display:none!important}
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(120%);
+  background:var(--green-2);border:1px solid var(--line);border-radius:10px;
+  padding:11px 20px;font-size:.8rem;transition:transform .28s;z-index:60;max-width:90vw
+}
+#toast.on{transform:translateX(-50%) translateY(0)}
+.login{max-width:380px;margin:11vh auto;text-align:left}
+@media(max-width:640px){ .wrap{padding:18px 14px 60px} table{font-size:.74rem} }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="assets/logo.png" alt="High Properties">
+  <h1>Listings Manager</h1>
+  <span class="sp"></span>
+  <span id="who" class="muted"></span>
+  <button class="btn ghost hide" id="outBtn" onclick="logout()">Sign out</button>
+</header>
+
+<!-- ── sign in ─────────────────────────────────────────────────────────── -->
+<div class="wrap login" id="loginView">
+  <div class="card">
+    <h2>Staff sign in</h2>
+    <div style="margin-bottom:12px"><label for="u">Username</label><input id="u" autocomplete="username"></div>
+    <div style="margin-bottom:16px"><label for="p">Password</label><input id="p" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></div>
+    <button class="btn" id="inBtn" onclick="login()">Sign in</button>
+    <p class="muted" style="margin-top:14px">Accounts are verified on the server. Seed the first one with <code>BOOTSTRAP_USER</code> / <code>BOOTSTRAP_HASH</code> in Vercel.</p>
+  </div>
+</div>
+
+<!-- ── app ─────────────────────────────────────────────────────────────── -->
+<div class="wrap hide" id="appView">
+  <div class="tabs">
+    <button class="tab on" data-tab="listings" onclick="tab('listings')">Listings</button>
+    <button class="tab" data-tab="editor" onclick="tab('editor')">Add / edit</button>
+    <button class="tab" data-tab="leads" onclick="tab('leads')">Leads</button>
+    <button class="tab" data-tab="tools" onclick="tab('tools')">Import / export</button>
+  </div>
+
+  <section id="tab-listings">
+    <div class="card">
+      <h2>Inventory <span id="lcount" class="pill"></span></h2>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th></th><th>Ref</th><th>Title</th><th>Type</th><th>Price</th><th>Location</th><th>Live</th><th></th></tr></thead>
+        <tbody id="lbody"><tr><td colspan="8" class="muted">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="tab-editor" class="hide">
+    <div class="card">
+      <h2 id="edTitle">Add a property</h2>
+      <input type="hidden" id="f_id">
+      <div class="grid">
+        <div><label for="f_title">Title *</label><input id="f_title" placeholder="3 BHK Premium Apartment"></div>
+        <div><label for="f_type">Type</label><input id="f_type" placeholder="Apartment / Office / Plot"></div>
+        <div><label for="f_category">Category</label><select id="f_category">
+          <option value="residential">Residential</option><option value="commercial">Commercial</option>
+          <option value="plot">Plot / Land</option><option value="industrial">Industrial</option></select></div>
+        <div><label for="f_price">Price (₹)</label><input id="f_price" type="number" inputmode="numeric" placeholder="14500000"></div>
+        <div><label for="f_sector">Sector</label><input id="f_sector" placeholder="Sector 99"></div>
+        <div><label for="f_locality">Locality</label><input id="f_locality" placeholder="Dwarka Expressway"></div>
+        <div><label for="f_city">City</label><input id="f_city" value="Gurugram"></div>
+        <div><label for="f_beds">Bedrooms</label><input id="f_beds" type="number" inputmode="numeric"></div>
+        <div><label for="f_area">Area</label><input id="f_area" type="number" inputmode="decimal" placeholder="1650"></div>
+        <div><label for="f_areaUnit">Area unit</label><select id="f_areaUnit"><option>sq.ft</option><option>sq.yd</option><option>acre</option></select></div>
+        <div><label for="f_status">Status</label><input id="f_status" placeholder="Ready to Move"></div>
+        <div><label for="f_badge">Badge</label><input id="f_badge" placeholder="Hot Deal"></div>
+        <div><label for="f_rera">RERA no.</label><input id="f_rera"></div>
+        <div><label for="f_purpose">Purpose</label><input id="f_purpose" placeholder="buy, sell, rent"></div>
+        <div><label for="f_image">Photo URL</label><input id="f_image" placeholder="assets/properties/hp-1001.jpg" inputmode="url"></div>
+      </div>
+      <div style="margin-top:12px"><label for="f_amenities">Amenities (comma separated)</label><input id="f_amenities" placeholder="Covered parking, Power backup, Lift"></div>
+      <div style="margin-top:12px"><label for="f_description">Description</label><textarea id="f_description"></textarea></div>
+      <div class="row" style="margin-top:14px">
+        <label style="margin:0"><input type="checkbox" id="f_featured" style="width:auto"> Featured</label>
+        <label style="margin:0"><input type="checkbox" id="f_active" style="width:auto" checked> Live on site</label>
+        <span class="sp" style="flex:1"></span>
+        <button class="btn ghost" onclick="resetForm()">Clear</button>
+        <button class="btn" id="saveBtn" onclick="save()">Save property</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-leads" class="hide">
+    <div class="card">
+      <h2>Enquiries <span id="ncount" class="pill"></span></h2>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>When</th><th>Name</th><th>Phone</th><th>Looking for</th><th>Budget</th><th>Message</th></tr></thead>
+        <tbody id="nbody"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="tab-tools" class="hide">
+    <div class="card">
+      <h2>Bulk import</h2>
+      <p class="muted" style="margin-top:0">CSV header: <code>title,type,category,purpose,price,sector,locality,city,beds,area,status,featured</code><br>
+         Use <code>|</code> to separate multiple values inside <code>purpose</code>, <code>specs</code> or <code>amenities</code>.</p>
+      <div class="row">
+        <input type="file" id="csv" accept=".csv,text/csv" style="max-width:340px">
+        <button class="btn" onclick="importCSV()">Upload</button>
+      </div>
+      <p id="impOut" class="muted"></p>
+    </div>
+    <div class="card">
+      <h2>Export</h2>
+      <a class="btn ghost" href="/api/admin?action=export">Download leads CSV</a>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API='/api/admin', AUTH='/api/auth';
+let LISTINGS=[];
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let tid; function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tid); tid=setTimeout(()=>t.classList.remove('on'),3200); }
+
+async function api(url,opt){
+  const r=await fetch(url,Object.assign({credentials:'same-origin'},opt||{}));
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.ok) throw new Error(j.error||('HTTP '+r.status));
+  return j;
+}
+
+function inr(n){
+  if(n==null||isNaN(n)||n<=0) return '—';
+  if(n>=1e7) return '₹'+(n/1e7).toFixed(2).replace(/\.?0+$/,'')+' Cr';
+  if(n>=1e5) return '₹'+(n/1e5).toFixed(2).replace(/\.?0+$/,'')+' L';
+  return '₹'+Number(n).toLocaleString('en-IN');
+}
+
+/* ── session ─────────────────────────────────────────────────────────── */
+async function boot(){
+  try{
+    const j=await api(AUTH+'?action=me');
+    if(j.user){ show(j.user); return; }
+  }catch(e){}
+  $('loginView').classList.remove('hide'); $('appView').classList.add('hide');
+}
+function show(user){
+  $('who').textContent=user.username+' · '+user.role;
+  $('outBtn').classList.remove('hide');
+  $('loginView').classList.add('hide'); $('appView').classList.remove('hide');
+  loadListings(); loadLeads();
+}
+async function login(){
+  const b=$('inBtn'); b.disabled=true;
+  try{
+    const j=await api(AUTH+'?action=login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:$('u').value.trim(),password:$('p').value})});
+    $('p').value=''; show(j.user); toast('Signed in.');
+  }catch(e){ toast('⚠️ '+e.message); }
+  finally{ b.disabled=false; }
+}
+async function logout(){
+  try{ await fetch(AUTH+'?action=logout',{credentials:'same-origin'}); }catch(e){}
+  location.reload();
+}
+
+/* ── tabs ────────────────────────────────────────────────────────────── */
+function tab(name){
+  ['listings','editor','leads','tools'].forEach(t=>{
+    $('tab-'+t).classList.toggle('hide',t!==name);
+    document.querySelector('.tab[data-tab="'+t+'"]').classList.toggle('on',t===name);
+  });
+}
+
+/* ── listings ────────────────────────────────────────────────────────── */
+async function loadListings(){
+  try{
+    const j=await api(API+'?action=listings');
+    LISTINGS=j.listings||[];
+    $('lcount').textContent=LISTINGS.length;
+    $('lbody').innerHTML = LISTINGS.length ? LISTINGS.map(l=>`<tr>
+      <td>${l.image ? `<img src="${esc(l.image)}" alt="" class="thumb">` : '<span class="thumb thumb-empty"></span>'}</td>
+      <td><code>${esc(l.id)}</code></td>
+      <td>${esc(l.title)}</td>
+      <td>${esc(l.type||l.category)}</td>
+      <td>${esc(l.priceLabel||inr(l.price))}</td>
+      <td>${esc(l.location||[l.sector,l.city].filter(Boolean).join(', '))}</td>
+      <td>${l.active===false?'<span class="muted">hidden</span>':'<span class="pill">live</span>'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn ghost" onclick="edit('${esc(l.id)}')">Edit</button>
+        <button class="btn danger" onclick="del('${esc(l.id)}')">Delete</button>
+      </td></tr>`).join('')
+      : '<tr><td colspan="8" class="muted">No properties yet — add your first one.</td></tr>';
+  }catch(e){ $('lbody').innerHTML='<tr><td colspan="8" class="muted">'+esc(e.message)+'</td></tr>'; }
+}
+
+function edit(id){
+  const l=LISTINGS.find(x=>x.id===id); if(!l) return;
+  $('edTitle').textContent='Edit '+l.id;
+  $('f_id').value=l.id;
+  const set=(k,v)=>{ const el=$('f_'+k); if(el) el.value=v==null?'':v; };
+  set('title',l.title); set('type',l.type); set('category',l.category||'residential');
+  set('price',l.price); set('sector',l.sector); set('locality',l.locality); set('city',l.city);
+  set('beds',l.beds); set('area',l.area); set('areaUnit',l.areaUnit||'sq.ft');
+  set('status',l.status); set('badge',l.badge); set('rera',l.rera); set('image',l.image);
+  set('purpose',(l.purpose||[]).join(', ')); set('amenities',(l.amenities||[]).join(', '));
+  set('description',l.description);
+  $('f_featured').checked=!!l.featured;
+  $('f_active').checked=l.active!==false;
+  tab('editor'); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function resetForm(){
+  $('edTitle').textContent='Add a property';
+  ['id','title','type','price','sector','locality','beds','area','status','badge','rera','purpose','amenities','description','image']
+    .forEach(k=>{ const el=$('f_'+k); if(el) el.value=''; });
+  $('f_city').value='Gurugram'; $('f_category').value='residential'; $('f_areaUnit').value='sq.ft';
+  $('f_featured').checked=false; $('f_active').checked=true;
+}
+
+async function save(){
+  const title=$('f_title').value.trim();
+  if(!title){ toast('⚠️ Title is required.'); tab('editor'); return; }
+  const list=s=>s.split(',').map(x=>x.trim()).filter(Boolean);
+  const body={
+    id:$('f_id').value||undefined, title,
+    type:$('f_type').value.trim(), category:$('f_category').value,
+    price:$('f_price').value, sector:$('f_sector').value.trim(),
+    locality:$('f_locality').value.trim(), city:$('f_city').value.trim(),
+    location:[$('f_sector').value.trim(),$('f_locality').value.trim(),$('f_city').value.trim()].filter(Boolean).join(', '),
+    beds:$('f_beds').value, area:$('f_area').value, areaUnit:$('f_areaUnit').value,
+    status:$('f_status').value.trim(), badge:$('f_badge').value.trim(), rera:$('f_rera').value.trim(),
+    image:$('f_image').value.trim(),
+    purpose:list($('f_purpose').value),
+    amenities:list($('f_amenities').value),
+    description:$('f_description').value.trim(),
+    featured:$('f_featured').checked, active:$('f_active').checked
+  };
+  const b=$('saveBtn'); b.disabled=true;
+  try{
+    await api(API+'?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    toast('✅ Saved.'); resetForm(); await loadListings(); tab('listings');
+  }catch(e){ toast('⚠️ '+e.message); }
+  finally{ b.disabled=false; }
+}
+
+async function del(id){
+  if(!confirm('Delete '+id+'? This cannot be undone.')) return;
+  try{
+    await api(API+'?action=delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+    toast('Deleted.'); loadListings();
+  }catch(e){ toast('⚠️ '+e.message); }
+}
+
+/* ── leads ───────────────────────────────────────────────────────────── */
+async function loadLeads(){
+  try{
+    const j=await api(API+'?action=leads');
+    const rows=j.leads||[];
+    $('ncount').textContent=rows.length;
+    $('nbody').innerHTML = rows.length ? rows.map(l=>`<tr>
+      <td>${esc(String(l.created_at||'').replace('T',' ').slice(0,16))}</td>
+      <td>${esc(l.name)}</td>
+      <td><a href="tel:+${esc(l.phone)}">+${esc(l.phone)}</a> ·
+          <a href="https://wa.me/${esc(l.phone)}" target="_blank" rel="noopener">WA</a></td>
+      <td>${esc(l.property_type||l.propertyType||'')}</td>
+      <td>${esc(l.budget||'')}</td>
+      <td>${esc(l.message||'')}</td></tr>`).join('')
+      : '<tr><td colspan="6" class="muted">No enquiries yet.</td></tr>';
+  }catch(e){ $('nbody').innerHTML='<tr><td colspan="6" class="muted">'+esc(e.message)+'</td></tr>'; }
+}
+
+/* ── import ──────────────────────────────────────────────────────────── */
+async function importCSV(){
+  const f=$('csv').files[0];
+  if(!f){ toast('⚠️ Choose a CSV file first.'); return; }
+  const fd=new FormData(); fd.append('file',f);
+  try{
+    const j=await api(API+'?action=import',{method:'POST',body:fd});
+    $('impOut').textContent='Imported '+j.imported+' propert'+(j.imported===1?'y':'ies')+
+      (j.errors&&j.errors.length?' · '+j.errors.length+' skipped':'');
+    toast('✅ Imported '+j.imported+'.'); loadListings();
+  }catch(e){ toast('⚠️ '+e.message); }
+}
+
+boot();
+</script>
+</body>
+</html>
