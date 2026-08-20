@@ -1,0 +1,16 @@
+{
+  "name": "highproperties",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "High Properties — Gurugram & Delhi NCR real estate. Static front-end with Vercel serverless API and Supabase storage.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "hash": "node scripts/hash-password.js",
+    "dev": "node scripts/dev-server.js",
+    "test": "node scripts/test-api.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}
