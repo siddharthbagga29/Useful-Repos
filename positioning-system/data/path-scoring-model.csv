@@ -1,0 +1,14 @@
+Dimension,Weight,Type,Notes
+Fit with demonstrated background,15,Person-dependent,Scored from résumé + Drive documents. See 01-diagnosis.md §A.
+Probability of entry within 12 months of authorisation,15,Person-dependent,Scored from documents + market structure.
+Immigration compatibility once authorised,10,Market fact,Post-EAD/GC there is no sponsorship constraint - this is uniformly high and is an ASSET vs other international candidates.
+Geographic feasibility from Cincinnati (no relocation),10,Market fact,Hard constraint: spouse + pending AOS.
+Time required to become credible,10,Market fact,Inverse - shorter is better.
+Network quality gained,8,Market fact,
+Capital exposure (proximity to allocation decisions),8,Market fact,
+Long-term upside / path to ownership,8,Market fact,
+Compensation potential,6,Market fact,
+Competition,5,Market fact,Inverse - less competition scores higher.
+Reputational value of the seat,3,Market fact,Deliberately low weight - prestige is not the objective.
+Skill-requirement match,2,Market fact,Inverse difficulty.
+TOTAL,100,,

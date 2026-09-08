@@ -5,6 +5,29 @@ make this file work.
 
 ---
 
+## HOUR ZERO — the gate (90 minutes, before anything else)
+
+Your résumé, transcript, diploma and capstone are now all read, and four claims
+on the résumé are not supported by your own documents:
+
+1. **"M.S., Financial Mathematics"** — your degree is M.S. Finance (Business
+   Administration, Finance Program), Lindner College of Business
+2. **"valuation within 10% of analyst consensus"** — your capstone concluded
+   SELL at 23.4% implied downside, and it was a team of four
+3. **"CFA Level I — 2025 Scholarship Awardee"** listed under *Certifications* —
+   a scholarship is an exam-fee award, not a credential
+4. **"Authorized to work in the U.S."** — you have told me you are not, yet
+
+Fix 1–3 and remove 4 pending counsel. The full reasoning and the exact
+replacement wording are in `01-diagnosis.md` §B.
+
+**Do not begin outreach (hour 5) until this is done.** Cincinnati private capital
+is a few hundred people who overlap across ACG, the CFA society, the Goering
+Centre and UC. A caught overstatement does not cost you one contact; it costs you
+the cluster. Ninety minutes now protects the next six months.
+
+---
+
 ## PART XX — YOUR FIRST 5 HOURS
 
 The objective is not to consume information. At the end of hour 5 you have: a live
@@ -75,10 +98,13 @@ conversation.
 
 ### HOUR 5 — Say who you are, out loud, to three people (4:00–5:00)
 
+⚠️ **Gated on Hour Zero.** If the résumé is not corrected, stop at hour 4 and
+fix it. The outreach will keep.
+
 | Min | Action | Output |
 |---|---|---|
-| 0–20 | Write your 10s / 30s / 60s introductions using `02-positioning-and-paths.md` §Story. Say each out loud twice. Record the 30s on your phone and listen once. | Three scripts, rehearsed |
-| 20–35 | Rewrite your LinkedIn headline and About section using the template. Publish. | Live profile |
+| 0–20 | Rehearse the 10s / 30s / 60s introductions in `02-positioning-and-paths.md` §3 — they are already written from your actual experience. Say each aloud twice; record the 30s and listen once. | Three scripts, rehearsed |
+| 20–35 | Paste the LinkedIn headline and About from `02` §3, filling the `[sector]` slot. Publish. | Live profile |
 | 35–55 | Send **three** outreach messages from your hour-3 list, using the *Curiosity* script in `09-networking-system.md`. Not a job ask. A specific question about their market that you could only ask having done hour 4. | 3 sent, logged in Sheet 2 |
 | 55–60 | Menu → *Generate Tomorrow's Tasks*. Review the proposals. Approve 3. Close the laptop. | Tomorrow is pre-decided |
 
