@@ -221,6 +221,14 @@ project is not a portfolio piece; it is a draft.
 research from government data; composite/hypothetical cases clearly labelled as
 such; your own criteria and frameworks.
 
+**Do not publish PitchBook-derived data.** Your UC access is licensed for
+non-commercial academic use with export limits [R]. Build the public version of
+every project from Census, BLS and EDGAR only; keep PitchBook-derived deal
+knowledge in a private companion section and use it in conversation as your own
+research. `20-pitchbook-playbook.md` §4 explains why this constraint makes the
+published thesis *better*, not worse — the investors you are targeting already
+have PitchBook; what they lack is someone who counted the companies themselves.
+
 **Do not publish, share 1:1 only:** any valuation of a *named private company*.
 **[I]** Publishing "XYZ Manufacturing is worth $14M" carries three distinct risks —
 the owner may see it and be justifiably angry; it can be read as investment advice

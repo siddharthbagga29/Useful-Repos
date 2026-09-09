@@ -83,6 +83,12 @@ Institute staff → Goering Center leadership.
 
 **Do not** send anything yet. Hour 3 is collection only.
 
+> **You have PitchBook via UC.** Use it to discover people at firms with thin
+> websites, then confirm each title on the firm's own page. Read
+> `20-pitchbook-playbook.md` first — the account has hard export limits, is
+> licensed for non-commercial academic use, and **will end when your alumni
+> status catches up with it**, so the durable work is front-loaded.
+
 ### HOUR 4 — Start the portfolio project that differentiates you (3:00–4:00)
 
 Open `07-investment-portfolio.md`. Project 1 is the **Cincinnati LMM acquisition

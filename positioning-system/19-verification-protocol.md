@@ -7,6 +7,12 @@
 | **1 — Primary** | SEC EDGAR · USCIS/DHS/Federal Register · BLS · Census · Ohio SOS · SEC IAPD (Form ADV) · FINRA BrokerCheck · a firm's own website · a university's own site · peer-reviewed journals | Assert freely |
 | **2 — Institutional** | Federal Reserve and district banks · major consultancy and accounting research · established financial press with named authors · Stanford GSB and comparable institutional studies | Assert with attribution |
 | **3 — Trade** | Trade associations · industry databases (PitchBook, Axial, PrivSource) · local business journals | Attribute and, if it matters, corroborate |
+
+**PitchBook specifically** (you have UC access — see `20-pitchbook-playbook.md`):
+Tier 3. Excellent for discovery and deal facts, **not** a primary source. Two
+rules: carry PitchBook's own estimated-vs-reported flag into your `Revenue Basis`
+column rather than upgrading it, and confirm any person's title on the firm's own
+team page before you write to them — database people-records go stale.
 | **4 — Social** | LinkedIn · Reddit · forums · marketing blogs · aggregator "company profile" sites · SEO listicles | **Discovery only. Never a cited fact.** |
 
 **[I]** A large share of what a search engine returns for "top PE firms in

@@ -77,6 +77,12 @@ re-confirmed on the firm's own site before use. Seed CSV: `data/firms-cincinnati
 This is a Tier 1 source under `19-verification-protocol.md`: the firm published
 it about itself.
 
+> **With PitchBook (`20-pitchbook-playbook.md`):** use PitchBook to *discover*
+> people at firms whose websites are thin — many LMM firms keep them deliberately
+> sparse — then still open the firm's own team page to confirm the title. Two
+> sources, two minutes. Do not skip the confirmation: PitchBook people-records go
+> stale, and a wrong title is the most damaging error in cold outreach.
+
 **Step 2 — Capture exactly what is printed (3 min).** Full name as written. Title
 *verbatim* — "Principal" is not "Partner", "Vice President" is not "Director",
 and getting it wrong is the most common and most damaging cold-outreach error.

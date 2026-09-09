@@ -72,6 +72,7 @@ decade; it should be built from firm team pages and Form ADV, not from my recall
 | `17-evidence-base.md` | §23, §37, §38 | Claim / evidence / source / date / confidence |
 | `18-immigration-counsel-questions.md` | §1 | Questions for your attorney. Not legal advice. |
 | `19-verification-protocol.md` | §12, §38, §39 | Source hierarchy and verification states |
+| `20-pitchbook-playbook.md` | — | How to use your UC PitchBook access, and its three hard constraints |
 | `apps-script/` | §10, §11 | Code that builds the entire workbook and runs the daily engine |
 | `data/` | — | Seed CSVs you can paste straight into the workbook |
 
