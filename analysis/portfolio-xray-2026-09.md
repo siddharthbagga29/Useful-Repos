@@ -278,3 +278,95 @@ moves $1M from 33 years away to 21.
 
 **The portfolio isn't the problem. The portfolio is fine and cheap. The constraints are the $875
 base and the $5,200/year — and only time and contributions fix those.**
+
+---
+
+# Addendum — The $150 Recurring Order, Decoded
+
+**Labelling issue:** the recurring order screen shown totals **$150.00 exactly**
+(37.50+22.50+15+15+12+12+10.50+10.50+7.50+7.50), not $50. Its holdings (AVUV, SCHD, O, GLD, SMH,
+QQQ) match the Fidelity/"Individual · 4258" account, not the Robinhood one. So this is the **$150
+sleeve**. Confirm before editing — if both a $150 and a $50 order are running, total is $200/biweekly
+as planned; if this is the *only* one, you're at $150.
+
+## Current allocation
+
+| Ticker | $ | % |
+|---|---|---|
+| VTI | 37.50 | 25.0% |
+| QQQ | 22.50 | 15.0% |
+| AVUV | 15.00 | 10.0% |
+| VXUS | 15.00 | 10.0% |
+| NVDA | 12.00 | 8.0% |
+| SMH | 12.00 | 8.0% |
+| GLD | 10.50 | 7.0% |
+| MSFT | 10.50 | 7.0% |
+| O | 7.50 | 5.0% |
+| SCHD | 7.50 | 5.0% |
+
+**This is a genuinely well-built portfolio** — far better than the 33-ticker sprawl. VTI core,
+AVUV factor tilt, VXUS international, GLD hedge. Someone thought about this. Two structural problems.
+
+## Problem 1: what $150 actually buys
+
+| Exposure | $ of every $150 | % |
+|---|---|---|
+| **NVIDIA alone** | **$19.00** | **12.7%** |
+| Microsoft alone | $13.92 | 9.3% |
+| Semiconductors | $31.27 | 20.8% |
+| **Technology (all)** | **$63.67** | **42.4%** |
+
+**42.4% technology.** Your existing portfolio is ~32.7% tech, so this automation is *raising*
+concentration with every contribution.
+
+## Problem 2: NVIDIA arrives through four doors
+
+| Door | Amount | NVDA weight | NVDA bought |
+|---|---|---|---|
+| VTI | $37.50 | 6.5% | $2.44 |
+| QQQ | $22.50 | 8.5% | $1.91 |
+| SMH | $12.00 | **22.1%** | $2.65 |
+| NVDA direct | $12.00 | 100% | $12.00 |
+| **Total** | | | **$19.00 = 12.7%** |
+
+You budgeted 8% to NVIDIA. You're buying 12.7%. SMH is **22.1% NVDA** by itself — buying SMH *and*
+NVDA directly is doubling the same bet. MSFT is the same pattern at 9.3% against a 7% budget.
+
+**QQQ is the redundancy:** every holding is already inside VTI, and it contributes ~$13 of the
+$63.67 tech exposure. Cutting it reduces concentration without touching a single deliberate bet.
+
+## Recommended edit — exact values
+
+| Ticker | From | **To** | Change |
+|---|---|---|---|
+| VTI | $37.50 | **$60.00** | ↑ core |
+| AVUV | $15.00 | **$30.00** | ↑ the factor tilt |
+| VXUS | $15.00 | **$30.00** | ↑ diversification |
+| SMH | $12.00 | **$18.00** | ↑ — now the *sole* semis expression |
+| SCHD | $7.50 | **$6.00** | ↓ slightly |
+| GLD | $10.50 | **$6.00** | ↓ 7%→4%; hedge, not growth |
+| QQQ | $22.50 | **$0** | ✂ redundant with VTI |
+| NVDA | $12.00 | **$0** | ✂ already 22.1% of SMH |
+| MSFT | $10.50 | **$0** | ✂ already in VTI |
+| O | $7.50 | **$0** | ✂ single REIT, no thesis |
+| | **$150** | **$150** | 10 positions → 6 |
+
+## Result
+
+| | Before | After |
+|---|---|---|
+| Technology | 42.4% | **29.6%** |
+| Semiconductors | 20.8% | **17.1%** |
+| NVIDIA | 12.7% | **5.3%** |
+| AVUV (factor tilt) | 10% | **20%** |
+| Positions | 10 | **6** |
+
+Semis stay at a deliberate 17% — your conviction is intact, just expressed once instead of four
+times. NVIDIA drops to 5.3% because that's what a 12% SMH sleeve plus market weight actually is.
+
+**Keep VTI rather than switching to FSKAX** — the 0.03% ER difference is ~$1.50/year on $5,000, and
+ETFs handle fractional recurring orders more reliably than mutual funds. Not worth the churn.
+
+If a separate $50 Robinhood order is also running (AAPL/NVDA/V/BND/MSM/MSFT/AVGO/TSM/ASML/AMD/
+VTI/VEA/VWO), **that one still needs the cuts in §6** — otherwise NVDA and MSFT re-enter through it
+and the concentration returns.
