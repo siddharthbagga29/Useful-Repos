@@ -370,3 +370,57 @@ ETFs handle fractional recurring orders more reliably than mutual funds. Not wor
 If a separate $50 Robinhood order is also running (AAPL/NVDA/V/BND/MSM/MSFT/AVGO/TSM/ASML/AMD/
 VTI/VEA/VWO), **that one still needs the cuts in §6** — otherwise NVDA and MSFT re-enter through it
 and the concentration returns.
+
+---
+
+# Addendum 2 — The Combined $200 (confirmed: $150 Fidelity + $50 Robinhood)
+
+User confirmed the recurring order shown is the **$150** sleeve. The separate **$50** Robinhood
+order is the semis basket (AMD, ASML, NVDA, TSM, AVGO). The number that matters is the two together,
+because the $50 sleeve is 100% semiconductors stacking on a $150 sleeve that is already 42.4% tech.
+
+## What you run today
+
+| | Combined $200 |
+|---|---|
+| **Technology** | **56.8%** |
+| **Semiconductors** | **40.6%** |
+| NVIDIA alone | 14.5% |
+| Positions | 14 |
+
+**Over 40% of every contribution goes to semiconductors, and 57% to technology.** This is not a
+diversified portfolio with a tech tilt — it is a semiconductor bet with an index fund attached. It
+is also the same factor that produced the AI losses that started this whole review.
+
+## Three ways to fix it
+
+| | $150 sleeve | $50 sleeve | Tech | Semis | NVDA |
+|---|---|---|---|---|---|
+| **Today** | 10 positions | 5 semis | 56.8% | **40.6%** | 14.5% |
+| **A** — fix $150 only | VTI 60 / AVUV 30 / VXUS 30 / SMH 18 / SCHD 6 / GLD 6 | SMH 50 | 47.2% | 37.8% | 9.5% |
+| **B** — recommended | VTI 66 / AVUV 30 / VXUS 30 / SCHD 12 / GLD 12 | SMH 50 | 39.5% | **29.1%** | 7.7% |
+| **C** — most prudent | VTI 68 / AVUV 34 / VXUS 34 / SCHD 17 / GLD 17 *($170)* | SMH 30 | 30.5% | **19.4%** | 5.5% |
+
+**Option A fails.** Fixing the $150 sleeve alone leaves semis at 37.8%, because the $50 pure-semis
+order undoes most of the work. The two orders have to be designed together.
+
+**Option B is the recommendation.** All semiconductor exposure lives in exactly one instrument
+(SMH in Robinhood), the $150 sleeve holds no SMH so nothing double-counts, and semis land at 29% —
+aggressive, but *deliberate* and capped. Six positions total.
+
+**Option C** shifts the split to $170/$30 and brings semis to 19.4%, inside the 10–20% band. Choose
+this if the AI drawdown is still fresh; choose B if you want to keep the conviction weight.
+
+## Why SMH replaces the five singles
+
+SMH holds NVDA 22.1%, TSM 9.75%, AVGO 5.84%, AMD 5.79% — **four of your five names, professionally
+weighted, rebalanced automatically, for 0.35%.** ASML is captured through the broader semis complex.
+Buying the five individually at $10 each gives you equal weights nobody would choose deliberately
+(AMD at $4.98 held equal to NVDA), plus five positions to manage. There is no edge in the singles
+that SMH doesn't already give you.
+
+## Note on the other Robinhood holdings
+
+AAPL, V, BND, MSM, MSFT, VTI, VEA, VWO sit in Robinhood as *existing positions*, not in the $50
+recurring order. Leave them — at $1.40–$33 each, selling isn't worth the effort. Just don't add.
+The §6 cuts (MAIN, JEPQ, XYLD, JEPI, BND, MSM) still apply to the held balances.
