@@ -149,6 +149,23 @@ Each offer gets a score out of 10 in four areas. Weights are in parentheses:
 
 ---
 
+## In-person service near Cincinnati, OH 45219 (Clifton / UC area)
+
+| Bank | Nearest branch | Distance from 45219 | Phone | Bonus available to Ohio residents? |
+|---|---|---|---|---|
+| **Chase** | U Square at UC, 219 Calhoun St, 45219. Also 495 Vine St, downtown, 45202 | In the ZIP | (513) 826-3430 | Yes, nationwide |
+| **U.S. Bank** | University branch, 530 E University Ave, 45219. Also Clifton, 425 Ludlow Ave, 45220 | In the ZIP | 513-475-6061 (Ludlow) | Yes |
+| **PNC** (honorable mention) | University–Cincinnati, 31 W. Howard Taft Rd, 45219. Also Clifton, 415 Ludlow Ave, 45220 | In the ZIP | (513) 281-1662 | Yes (the $400 offer ends Sep 30) |
+| **Huntington** | Cincinnati Main, 525 Vine St (1st floor), 45202 | ~2–3 mi (downtown); no branch on the UC campus | 513-762-1860 | Yes, Ohio is in Huntington's footprint |
+| **SoFi** | Online only; no branches. Phone and chat support | — | — | Yes |
+| **BMO** | No Ohio branches | — | — | **No.** Ohio isn't one of the 14 eligible states |
+
+**For a 45219 resident**, the top five changes: Chase, U.S. Bank, and PNC all have branches inside the ZIP. Huntington is downtown. BMO drops out because Ohio isn't eligible. Put **PNC ($400, ends Sep 30)** or **Citi ($325, online)** in BMO's place.
+
+Hours at the Chase U Square branch are Mon–Fri 9–5 and Sat 10–2. The U.S. Bank Ludlow branch is open Mon–Fri 9–5 and Sat 9–1. Confirm current hours with each bank's branch locator.
+
+---
+
 ## Getting the most money: a stacking plan
 
 Most employers let you **split direct deposit** across several accounts. Direct deposits can also be moved every 1 to 2 months. A realistic sequence for someone paid about $2,500 every two weeks:
@@ -174,6 +191,7 @@ After the bonuses post, keep your **long-term direct deposit at SoFi** (4.00%, t
 ---
 
 ## Sources
+- Branches: [Chase U Square](https://www.chase.com/locator/banking/us/oh/cincinnati/219-calhoun-st) · [Chase Downtown](https://www.chase.com/locator/banking/us/oh/cincinnati/495-vine-st) · [U.S. Bank 530 E University Ave](https://www.usbank.com/locations/ohio/cincinnati/530-e-university-ave-bank-atm/) · [U.S. Bank 425 Ludlow Ave](https://www.usbank.com/locations/ohio/cincinnati/425-ludlow-ave-bank/) · [PNC University–Cincinnati](https://apps.pnc.com/locator/location-details/ohio/cincinnati/45219/00202070/university-cincinnati) · [Huntington Cincinnati Main](https://www.huntington.com/Community/branch-info?locationId=111)
 - [U.S. News: Best Bank Account Bonuses, September 2026](https://www.usnews.com/banking/bank-account-bonuses)
 - [CNBC Select: Best checking account bonuses of September 2026](https://www.cnbc.com/select/best-checking-account-bonuses/)
 - [Bankrate: Best Bank Bonuses and Promotions, September 2026](https://www.bankrate.com/banking/best-bank-account-bonuses-and-promotions/)
