@@ -372,7 +372,7 @@ investor bio — are in `02-positioning-and-paths.md` §Story.
 
 ---
 
-## §H. Your baseline scores — enter these in Dashboard B22:B25
+## §H. Your baseline scores — enter these in Dashboard B36:B39 (already filled by the script — do not retype)
 
 Scored from your documents, on a 0–100 scale, as of 2026-09-08.
 

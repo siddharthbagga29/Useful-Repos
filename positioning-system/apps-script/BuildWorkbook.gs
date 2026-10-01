@@ -389,7 +389,7 @@ function buildDashboard_(ss) {
   [5, 12, 21, 28, 35, 41].forEach(function (r) {
     sh.getRange(r, 1, 1, 3).setFontWeight('bold').setBackground('#1f3a5f').setFontColor('#ffffff');
   });
-  sh.getRange('B22:B25').setBackground('#fff8e1'); // baseline scores are hand-entered
+  sh.getRange('B36:B39').setBackground('#fff8e1'); // baseline scores are hand-entered (rows 36-39, NOT 22-25)
   sh.setColumnWidth(1, 300);
   sh.setColumnWidth(2, 130);
   sh.setColumnWidth(3, 260);

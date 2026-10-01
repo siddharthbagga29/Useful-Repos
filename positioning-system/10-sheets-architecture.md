@@ -12,7 +12,7 @@ layer, the daily trigger and the email brief only exist because it is Sheets.
 
 ## Sheet 1 — Dashboard
 
-Read-only except the four amber baseline cells (B22:B25, from
+Read-only except the four amber baseline cells (B36:B39 (already filled by the script — do not retype), from
 `01-diagnosis.md` §H). Organised so the **red block is at the top** — the design
 principle is that the only thing you must read every morning is what is broken.
 

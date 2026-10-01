@@ -44,7 +44,7 @@ Do these in order. Do not skip ahead. Set a timer per hour.
 | 0–15 | Create Google Sheet `Positioning OS`. Paste `BuildWorkbook.gs`, run `buildWorkbook`, authorise. | 15 sheets exist with headers, dropdowns, formatting |
 | 15–25 | Paste `DailyEngine.gs`. Reload. Menu → *Set up daily trigger*. | Automation live |
 | 25–35 | Import `data/organizations.csv` and `data/firms-cincinnati.csv`. | ~30 seeded rows |
-| 35–55 | Open `01-diagnosis.md`. Complete Instruments A–D. Enter the four scores into Dashboard cells B22:B25. | Your baseline, numerically |
+| 35–55 | Open `01-diagnosis.md`. Complete Instruments A–D. Enter the four scores into Dashboard rows 36-39 (already filled by the script). | Your baseline, numerically |
 | 55–60 | Open `16-financial-and-credit.md`. Enter your 5 known financial data points into Sheet 13. | Financial baseline |
 
 **Do not** spend hour 1 reading. Build.

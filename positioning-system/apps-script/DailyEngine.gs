@@ -252,7 +252,13 @@ function removeTriggers() {
 function dailyRun_() {
   try { generateDailyTasksSilent_(); } catch (e) { Logger.log('task gen failed: ' + e); }
   try { flagStaleVerificationSilent_(); } catch (e) { Logger.log('verification sweep failed: ' + e); }
-  try { emailMorningBrief(); } catch (e) { Logger.log('brief failed: ' + e); }
+  // The reminder email is OFF by design. The daily agent (see agent/RUNBOOK.md)
+  // runs ~90 min later, does the actual work, and sends one report instead.
+  // Set EMAIL_BRIEF to true if you ever want the plain reminder back.
+  var EMAIL_BRIEF = false;
+  if (EMAIL_BRIEF) {
+    try { emailMorningBrief(); } catch (e) { Logger.log('brief failed: ' + e); }
+  }
 }
 
 function generateDailyTasksSilent_() {
