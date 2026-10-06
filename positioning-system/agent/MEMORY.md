@@ -37,9 +37,24 @@ into the Standing Lessons section and delete the detail.
 
 | Date | Mistake | Rule added |
 |---|---|---|
-| 2026-10-01 | Dashboard baseline scores were documented as B22:B25; the real block is rows 36–39, so four live formulas were overwritten. | Verify a cell reference against the built sheet before instructing a paste. |
+| 2026-10-01 | Dashboard baseline scores were documented as B22:B25; the real block is rows 36–39, so four live formulas were overwritten. | Verify a cell reference against the built sheet before instructing a paste. Now moot: `repairDashboard_()` restores any clobbered Dashboard formula on every daily run. |
+
+## Per-specialist lessons
+
+What each agent has learned about doing its own job well for this person.
+
+| Specialist | Lesson | Added |
+|---|---|---|
+| research-analyst | | |
+| people-sourcer | | |
+| company-radar | | |
+| portfolio-builder | | |
+| outreach-writer | | |
+| verification-auditor | | |
+| opportunity-scout | | |
+| quality-overseer | | |
 
 ## Run log
 
-| Date | Drafts left | Findings committed | Calendar blocks | Flags raised |
-|---|---|---|---|---|
+| Date | Score | Loops | Outputs | Defects named | Flags |
+|---|---|---|---|---|---|

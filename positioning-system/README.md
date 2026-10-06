@@ -74,7 +74,8 @@ decade; it should be built from firm team pages and Form ADV, not from my recall
 | `19-verification-protocol.md` | §12, §38, §39 | Source hierarchy and verification states |
 | `20-pitchbook-playbook.md` | — | How to use your UC PitchBook access, and its three hard constraints |
 | `21-daily-agent.md` | — | The daily agent that replaced the reminder email: what it does, what it will not do |
-| `agent/` | — | `CONTEXT.md` (what it knows) · `RUNBOOK.md` (what it does) · `MEMORY.md` (what it learned) |
+| `agent/` | — | `CONTEXT.md` (what it knows) · `RUNBOOK.md` (orchestration) · `MEMORY.md` (what it learned) · `QUALITY-RUBRIC.md` (the 9.5 gate) |
+| `.claude/agents/` | — | Eight specialist agents: research, people sourcing, radar, portfolio, outreach, opportunity, verification, quality |
 | `apps-script/` | §10, §11 | Code that builds the entire workbook and runs the daily engine |
 | `data/` | — | Seed CSVs you can paste straight into the workbook |
 

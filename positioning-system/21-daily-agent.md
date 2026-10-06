@@ -32,32 +32,83 @@ there, and every future run inherits the correction.
 
 ---
 
-## §2. What it does each morning
+## §2. The team
 
-| Step | Action | Priority logic |
+One orchestrator dispatches eight specialists, each defined in `.claude/agents/`
+with its own instructions, tools and standards. Nothing reaches you ungated.
+
+| Agent | Does | Model |
 |---|---|---|
-| 0 | Load context, memory, runbook, live workbook | — |
-| 1 | Check Gmail for replies from CRM contacts | A reply outranks everything |
-| 2 | **Follow-ups due** — up to 3 Gmail drafts | Maintenance beats prospecting, always |
-| 3 | One new contact, sourced from a firm team page | Only if the follow-up queue is under three |
-| 4 | Advance the live portfolio project with one bounded research pull | Wednesdays: five companies to the radar |
-| 5 | Event pre-brief if one is within 48h; calendar blocks | — |
-| 6 | Guardrails — counsel flags, unverified rows, stale verifications | Surfaced at the top of the report |
-| 7 | Rewrite memory, commit, send you one report | — |
+| **research-analyst** | Census CBP, BLS QCEW, SEC EDGAR, Form D, Ohio SOS. Every figure carries a reproducible query URL | sonnet |
+| **people-sourcer** | Named contacts from firms' own team pages, titles verbatim, second-sourced | sonnet |
+| **company-radar** | Target companies by NAICS and county. Never a private-company financial | sonnet |
+| **portfolio-builder** | Advances the live project. Assumption register, sensitivities, returns attribution, downside-first | sonnet |
+| **outreach-writer** | Messages in your voice. Refuses to draft without a real reason to write | opus |
+| **opportunity-scout** | Fund closes, events, openings — each eligibility-screened before it is surfaced | sonnet |
+| **verification-auditor** | Adversarial. Fetches every cited URL and checks it says what was claimed | sonnet |
+| **quality-overseer** | Scores the day 0–10. Gate at 9.5. Its job is to fail work | opus |
 
-Monthly it runs a fund-close screen against **SEC Form D filings** by Ohio,
-Kentucky and Indiana managers — the public proxy for the PitchBook screen in
-`20-pitchbook-playbook.md` §2, since the agent has no PitchBook access and
-could not lawfully use yours.
+**Dispatch is conditional, not habitual.** The orchestrator reads live state and
+sends only what today needs: follow-ups due → outreach-writer; no uncontacted
+people left → people-sourcer; Wednesday → company-radar; first of the month →
+opportunity-scout's SEC Form D fund-close screen.
+
+**Priority when time is short:** replies → follow-ups → research → everything else.
 
 ---
 
-## §3. The line it will not cross
+## §2b. The quality gate
 
-**It drafts. You send.** It will never send an email to a third party. Drafts
-land in Gmail; the only message it sends is the report to you.
+Every run is scored out of 10 across six dimensions before anything reaches you:
+legitimacy 2.0 · credibility 2.0 · research depth 2.0 · analysis quality 2.0 ·
+deep thinking 1.5 · usefulness 0.5. Full rubric: `agent/QUALITY-RUBRIC.md`.
 
-This is deliberate, and it is not timidity:
+**Below 9.5 → remediate and resubmit, maximum two loops**, then ship with the
+score and every unresolved defect stated at the top of the report.
+
+Three things make the score mean something rather than being self-flattery:
+
+1. **It is arithmetic, not impressionistic.** The overseer counts sourced claims,
+   dead links, tier violations and eligibility checks. The number follows from the
+   counts.
+2. **No score above 9.0 without a named defect.** If it cannot point at something
+   specific, the review did not happen and the score is void.
+3. **Eight hard-fail conditions cap the run at 4.0** regardless of volume — an
+   unsourced claim, a fabricated figure, a draft implying you can work now, a role
+   surfaced without an eligibility check. One integrity failure cannot be averaged
+   away by producing a lot of other things.
+
+**Read it as self-assessment, because it is.** It reliably catches sloppiness and
+fabrication. It cannot certify that a judgment call was wise — that is what your
+verification pass over "DATA ADDED" is for.
+
+Expect early runs to score in the 8s. A system that hits 9.5 on day one is
+grading itself generously.
+
+---
+
+## §3. Autonomy — what runs without you
+
+Everything except one thing:
+
+- All research, data pulls and analysis
+- Sourcing named people; building the company radar
+- Advancing the portfolio project
+- Event and opportunity discovery, including eligibility screening
+- Verification sweeps; writing the queue, memory and reports; committing and pushing
+- Scoring the work and remediating it
+
+**The one exception: messages to third parties stop at Gmail Drafts.** Everything
+up to the send is automated — the research, the choice of who to contact, the
+personalised message. You click send.
+
+That is about reversibility, not caution. Every other action is undoable: a bad
+row gets deleted, a bad memo rewritten. A message sent to a partner at a
+four-person Cincinnati firm while your authorisation is pending is not undoable,
+and the market is small enough that one of them costs the cluster rather than the
+contact. **Say the word and I will lift it** — it is one line in the context file.
+
+Beyond that:
 
 1. **You are mid-adjustment-of-status.** A message that implies you can work now
    is a problem no apology fixes.
@@ -73,6 +124,22 @@ value, submit an application, form an entity, invent a person or a figure, or
 mention a role without checking the posting requirements against your record.
 
 ---
+
+## §3b. The report you get
+
+Format is fixed, and it leads with work done, never with a task list:
+
+```
+WHAT I DID TODAY        every output, one line, with where it is
+DATA ADDED — VERIFY THIS  every row written, each with its source URL
+QUALITY SCORE: X.X / 10   dimension scores + named defects
+FLAGS                   counsel review, eligibility closed, blocked items
+WHAT I LEARNED          the one lesson written to memory
+WAITING ON YOU          usually "nothing"
+```
+
+**"DATA ADDED — VERIFY THIS" is the section you asked for.** One click per row to
+check it against its source. That is your whole job in this system now.
 
 ## §4. If it has no connectors
 
@@ -99,7 +166,9 @@ Gmail, Google Drive and Google Calendar. Then it runs at full capability.
 | Change what it does | Edit `agent/RUNBOOK.md` and push. The next run reads the new version |
 | Change what it knows | Edit `agent/CONTEXT.md` |
 | Correct a lesson | Edit `agent/MEMORY.md` — corrections there are permanent |
-| Let it send email | Tell me explicitly. I will not make that change on my own |
+| Let it send outreach email | Tell me explicitly. I will not make that change on my own |
+| Change the quality bar | Edit `agent/QUALITY-RUBRIC.md`. 9.5 is demanding by design |
+| Add or retire a specialist | Add or remove a file in `.claude/agents/` and update the dispatch table in `agent/RUNBOOK.md` |
 
 ---
 

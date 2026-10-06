@@ -14,6 +14,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Compute this week\'s score', 'computeWeeklyScore')
     .addItem('Flag stale verifications', 'flagStaleVerification')
+    .addItem('Repair Dashboard formulas', 'repairDashboard')
     .addSeparator()
     .addItem('Set up daily trigger', 'setupDailyTrigger')
     .addItem('Remove all triggers', 'removeTriggers')
@@ -238,6 +239,65 @@ function flagStaleVerification() {
   SpreadsheetApp.getUi().alert(n + ' row(s) moved to OUTDATED. Re-verify from primary sources or delete them.');
 }
 
+
+/**
+ * Self-healing Dashboard. Column B of the Dashboard is all formulas except the
+ * four hand-entered baseline scores in rows 36-39. If anything overwrites a
+ * formula cell with a literal, this restores it. Runs daily, silently.
+ *
+ * This exists because the baseline scores were once documented as B22:B25 —
+ * which is the Evidence & Reputation block — and typing them there destroyed
+ * four live formulas. The sheet now repairs itself rather than relying on
+ * anyone remembering.
+ */
+function repairDashboard() { var n = repairDashboard_(); 
+  SpreadsheetApp.getUi().alert(n === 0 ? 'Dashboard formulas are intact.' : 'Restored ' + n + ' Dashboard formula(s).'); }
+
+function repairDashboard_() {
+  var ss = ssz_(), sh = ss.getSheetByName(SHEETS.DASH);
+  if (!sh) return 0;
+  var P = "'" + SHEETS.PEOPLE + "'", E = "'" + SHEETS.EVENTS + "'",
+      R = "'" + SHEETS.RESEARCH + "'", J = "'" + SHEETS.PROJ + "'",
+      A = "'" + SHEETS.APPS + "'", O = "'" + SHEETS.OPPS + "'",
+      C = "'" + SHEETS.COS + "'", S = "'" + SHEETS.SOURCES + "'";
+
+  var F = {
+    6:  '=COUNTIFS(' + P + '!P2:P,"<="&TODAY(),' + P + '!P2:P,"<>")',
+    7:  '=COUNTIF(' + P + '!AB2:AB,"UNVERIFIED")',
+    8:  '=COUNTIF(' + P + '!AB2:AB,"OUTDATED")+COUNTIF(' + C + '!R2:R,"OUTDATED")',
+    9:  '=COUNTIF(' + O + '!L2:L,"Yes")',
+    10: '=COUNTIFS(' + J + '!L2:L,"<"&TODAY(),' + J + '!J2:J,"<>COMPLETE",' + J + '!L2:L,"<>")',
+    13: '=COUNTA(' + P + '!B2:B)',
+    14: '=COUNTIFS(' + P + '!N2:N,">="&TODAY()-7)',
+    15: '=COUNTIFS(' + P + '!O2:O,">="&TODAY()-7)',
+    16: '=COUNTIF(' + P + '!H2:H,"A")',
+    17: '=COUNTIF(' + P + '!H2:H,"B")',
+    18: '=SUMPRODUCT(--(' + P + '!W2:W<>""))',
+    19: '=IFERROR(ROUND(AVERAGE(' + P + '!Z2:Z),2),0)',
+    22: '=IFERROR(SUM(' + J + '!H2:H),0)',
+    23: '=COUNTIF(' + J + '!J2:J,"COMPLETE")',
+    24: '=COUNTA(' + R + '!A2:A)',
+    25: '=IFERROR(SUMIFS(' + R + '!N2:N,' + R + '!B2:B,">="&TODAY()-7),0)',
+    26: '=COUNTA(' + C + '!B2:B)',
+    29: '=COUNTIF(' + E + '!H2:H,"REGISTERED")',
+    30: '=IFERROR(TEXT(MINIFS(' + E + '!D2:D,' + E + '!D2:D,">="&TODAY()),"ddd d mmm"),"none scheduled")',
+    31: '=COUNTIF(' + E + '!M2:M,"Yes")',
+    32: '=COUNTA(' + A + '!A2:A)',
+    33: '=COUNTIFS(' + O + '!F2:F,"<>Dead",' + O + '!F2:F,"<>")',
+    42: '=COUNTA(' + S + '!A2:A)',
+    43: '=IFERROR(TEXT(COUNTIF(' + S + '!E2:E,"Tier 1*")/COUNTA(' + S + '!A2:A),"0%"),"-")',
+    44: '=COUNTIFS(' + S + '!K2:K,"<="&TODAY(),' + S + '!K2:K,"<>")'
+  };
+
+  var fixed = 0;
+  Object.keys(F).forEach(function (row) {
+    var cell = sh.getRange(Number(row), 2);
+    if (cell.getFormula() === '') { cell.setFormula(F[row]); fixed++; }
+  });
+  // Rows 36-39 are the hand-entered baseline scores. Never touched.
+  return fixed;
+}
+
 function setupDailyTrigger() {
   removeTriggers();
   ScriptApp.newTrigger('dailyRun_').timeBased().atHour(6).everyDays(1).create();
@@ -250,6 +310,8 @@ function removeTriggers() {
 
 /** Trigger entry point. UI alerts are unavailable here, so failures are logged. */
 function dailyRun_() {
+  try { var n = repairDashboard_(); if (n) Logger.log('repaired ' + n + ' dashboard formulas'); }
+  catch (e) { Logger.log('dashboard repair failed: ' + e); }
   try { generateDailyTasksSilent_(); } catch (e) { Logger.log('task gen failed: ' + e); }
   try { flagStaleVerificationSilent_(); } catch (e) { Logger.log('verification sweep failed: ' + e); }
   // The reminder email is OFF by design. The daily agent (see agent/RUNBOOK.md)
