@@ -264,5 +264,23 @@
       }
     ],
     "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-06T13:50:24.853Z",
+    "iteration": 1,
+    "score": 10,
+    "passed": true,
+    "points": {
+      "code": 40,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": true,
+      "honesty": true
+    },
+    "issues": [],
+    "critic": "deterministic"
   }
 ]
