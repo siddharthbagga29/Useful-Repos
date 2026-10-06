@@ -15,6 +15,7 @@ function onOpen() {
     .addItem('Compute this week\'s score', 'computeWeeklyScore')
     .addItem('Flag stale verifications', 'flagStaleVerification')
     .addItem('Repair Dashboard formulas', 'repairDashboard')
+    .addItem("Ingest agent's latest run", 'ingestAgentQueue')
     .addSeparator()
     .addItem('Set up daily trigger', 'setupDailyTrigger')
     .addItem('Remove all triggers', 'removeTriggers')
@@ -298,6 +299,77 @@ function repairDashboard_() {
   return fixed;
 }
 
+/**
+ * Reads the newest RUN file the daily analyst wrote to the Drive folder
+ * "Positioning OS — Agent State" and appends its QUEUE TSV rows into the
+ * matching sheets. Runs on the daily trigger, after the analyst has finished.
+ *
+ * Append-only by design: the agent can create Drive files but cannot rewrite
+ * them, and this never edits a RUN file — it records the last ingested id in
+ * script properties so a file is never ingested twice.
+ */
+var AGENT_FOLDER_ID = '1W-x0p1z5DLRpxhiptRPUO2ansrb_Rs5W';
+
+function ingestAgentQueue() { var n = ingestAgentQueue_();
+  SpreadsheetApp.getUi().alert(n < 0 ? 'No new RUN file found.' : 'Ingested ' + n + ' row(s).'); }
+
+function ingestAgentQueue_() {
+  var props = PropertiesService.getScriptProperties();
+  var folder;
+  try { folder = DriveApp.getFolderById(AGENT_FOLDER_ID); }
+  catch (e) { Logger.log('agent folder unreachable: ' + e); return -1; }
+
+  // newest RUN-* file by created date
+  var it = folder.getFiles(), newest = null;
+  while (it.hasNext()) {
+    var f = it.next();
+    if (f.getName().indexOf('RUN-') !== 0) continue;
+    if (!newest || f.getDateCreated() > newest.getDateCreated()) newest = f;
+  }
+  if (!newest) return -1;
+  if (props.getProperty('lastIngestedId') === newest.getId()) return -1; // already done
+
+  var text = newest.getBlob().getDataAsString();
+  var marker = text.indexOf('=== QUEUE TSV ===');
+  if (marker < 0) { props.setProperty('lastIngestedId', newest.getId()); return 0; }
+
+  var ss = ssz_(), lines = text.substring(marker).split(/\r?\n/), target = null, count = 0;
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i];
+    if (!line || !line.trim()) continue;
+    if (line.indexOf('===') === 0) break;                 // next section
+    if (line.indexOf('SHEET\t') === 0) { target = line.split('\t')[1].trim(); continue; }
+    if (!target) continue;
+
+    var cells = line.split('\t');
+    var name = target, startCol = 1;
+    if (target === 'People CRM A-Q') { name = SHEETS.PEOPLE; startCol = 1; }
+    else if (target === 'People CRM T-AF') { name = SHEETS.PEOPLE; startCol = 20; }
+
+    var sh = ss.getSheetByName(name);
+    if (!sh) { Logger.log('unknown target sheet: ' + target); continue; }
+
+    if (startCol === 20) {
+      // T-AF block: fill the T.. columns of the last rows written by the A-Q block
+      var row = Number(props.getProperty('pendingRow') || (sh.getLastRow() + 1));
+      sh.getRange(row, startCol, 1, cells.length).setValues([cells]);
+      props.setProperty('pendingRow', String(row + 1));
+    } else {
+      var r = sh.getLastRow() + 1;
+      sh.getRange(r, 1, 1, cells.length).setValues([cells]);
+      if (name === SHEETS.PEOPLE && !props.getProperty('pendingRowSet')) {
+        props.setProperty('pendingRow', String(r));
+        props.setProperty('pendingRowSet', '1');
+      }
+    }
+    count++;
+  }
+  props.deleteProperty('pendingRowSet');
+  props.setProperty('lastIngestedId', newest.getId());
+  Logger.log('ingested ' + count + ' rows from ' + newest.getName());
+  return count;
+}
+
 function setupDailyTrigger() {
   removeTriggers();
   ScriptApp.newTrigger('dailyRun_').timeBased().atHour(6).everyDays(1).create();
@@ -312,6 +384,8 @@ function removeTriggers() {
 function dailyRun_() {
   try { var n = repairDashboard_(); if (n) Logger.log('repaired ' + n + ' dashboard formulas'); }
   catch (e) { Logger.log('dashboard repair failed: ' + e); }
+  try { var ing = ingestAgentQueue_(); if (ing > 0) Logger.log('ingested ' + ing + ' agent rows'); }
+  catch (e) { Logger.log('agent ingest failed: ' + e); }
   try { generateDailyTasksSilent_(); } catch (e) { Logger.log('task gen failed: ' + e); }
   try { flagStaleVerificationSilent_(); } catch (e) { Logger.log('verification sweep failed: ' + e); }
   // The reminder email is OFF by design. The daily agent (see agent/RUNBOOK.md)
