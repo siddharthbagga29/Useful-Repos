@@ -2,3 +2,5 @@
 # (contains contact details) and CI config out of the static deployment.
 jarvis/
 .github/
+# Siddharth's portfolio is a separate Vite app, deployed to GitHub Pages.
+portfolio/

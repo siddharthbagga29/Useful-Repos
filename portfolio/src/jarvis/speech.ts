@@ -1,0 +1,261 @@
+// Voice in and out with the browser's built-in Web Speech API. Free, no keys, no server of ours.
+// Push-to-talk: one utterance. Wake mode: listens continuously and acts on "Hey Jarvis …".
+
+type Recognition = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: ((e: { resultIndex: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
+  onerror: ((e: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  onstart: (() => void) | null;
+};
+
+const RecognitionCtor = (): (new () => Recognition) | null => {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as Record<string, unknown>;
+  return (w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null) as (new () => Recognition) | null;
+};
+
+export const canListen = () => RecognitionCtor() !== null;
+export const canSpeak = () => typeof window !== "undefined" && "speechSynthesis" in window;
+
+const WAKE = /\b(?:hey|hi|ok|okay|yo)?[\s,]*(?:jarvis|jervis|javis)\b[\s,.:!?]*/i;
+
+export interface ListenHandlers {
+  onInterim(text: string): void;
+  onFinal(text: string): void;
+  onState(state: "idle" | "listening" | "armed"): void;
+  onError(message: string): void;
+}
+
+export class Listener {
+  private rec: Recognition | null = null;
+  private mode: "off" | "ptt" | "wake" = "off";
+  private armedUntil = 0;
+
+  constructor(private h: ListenHandlers) {}
+
+  get active() {
+    return this.mode;
+  }
+
+  pushToTalk() {
+    this.stop();
+    this.mode = "ptt";
+    this.begin(false);
+  }
+
+  wake(on: boolean) {
+    this.stop();
+    if (!on) return;
+    this.mode = "wake";
+    this.begin(true);
+  }
+
+  stop() {
+    const r = this.rec;
+    this.mode = "off";
+    this.rec = null;
+    if (r) {
+      r.onend = null;
+      try {
+        r.abort();
+      } catch {
+        /* already stopped */
+      }
+    }
+    this.h.onState("idle");
+  }
+
+  /** Pause while Jarvis speaks so it doesn't hear itself; resume afterwards in wake mode. */
+  pause() {
+    if (this.rec) {
+      this.rec.onend = null;
+      try {
+        this.rec.abort();
+      } catch {
+        /* noop */
+      }
+      this.rec = null;
+    }
+  }
+
+  resume() {
+    if (this.mode === "wake" && !this.rec) this.begin(true);
+  }
+
+  private begin(continuous: boolean) {
+    const Ctor = RecognitionCtor();
+    if (!Ctor) {
+      this.h.onError("Voice input isn't supported in this browser. Chrome, Edge and Safari support it.");
+      this.mode = "off";
+      return;
+    }
+    const rec = new Ctor();
+    rec.lang = navigator.language?.startsWith("en") ? navigator.language : "en-US";
+    rec.continuous = continuous;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    rec.onstart = () => this.h.onState(this.mode === "wake" ? "armed" : "listening");
+    rec.onresult = (e) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const res = e.results[i]!;
+        const text = res[0]?.transcript ?? "";
+        if (res.isFinal) this.final(text);
+        else interim += text;
+      }
+      if (interim) this.interim(interim);
+    };
+    rec.onerror = (e) => {
+      if (e.error === "no-speech" || e.error === "aborted") return;
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        this.h.onError("Microphone access was blocked. Allow it in the address bar to talk to Jarvis.");
+        this.mode = "off";
+      } else if (e.error === "network") {
+        this.h.onError("Voice recognition needs a network connection in this browser. Typing still works.");
+        this.mode = "off";
+      } else {
+        this.h.onError(`Voice error: ${e.error}.`);
+      }
+    };
+    rec.onend = () => {
+      this.rec = null;
+      if (this.mode === "wake") {
+        setTimeout(() => this.mode === "wake" && !this.rec && this.begin(true), 250);
+      } else {
+        this.mode = "off";
+        this.h.onState("idle");
+      }
+    };
+    this.rec = rec;
+    try {
+      rec.start();
+    } catch {
+      this.h.onError("Couldn't start the microphone.");
+    }
+  }
+
+  private interim(text: string) {
+    if (this.mode === "ptt") return this.h.onInterim(text);
+    const armed = Date.now() < this.armedUntil;
+    if (armed || WAKE.test(text)) {
+      this.h.onState("listening");
+      this.h.onInterim(text.replace(WAKE, "").trim());
+    }
+  }
+
+  private final(text: string) {
+    const t = text.trim();
+    if (!t) return;
+    if (this.mode === "ptt") {
+      this.h.onFinal(t);
+      return;
+    }
+    const m = t.match(WAKE);
+    if (m) {
+      const rest = t.slice((m.index ?? 0) + m[0].length).trim();
+      if (rest.length > 1) {
+        this.armedUntil = 0;
+        this.h.onFinal(rest);
+      } else {
+        this.armedUntil = Date.now() + 8000; // "Hey Jarvis" … pause … question
+        this.h.onState("listening");
+      }
+    } else if (Date.now() < this.armedUntil) {
+      this.armedUntil = 0;
+      this.h.onFinal(t);
+    } else {
+      this.h.onState("armed");
+    }
+  }
+}
+
+// ---------------- speech out ----------------
+
+const PREFERRED = [/daniel/i, /google uk english male/i, /arthur/i, /oliver/i, /ryan/i, /george/i, /en-gb/i, /^en/i];
+
+export function pickVoice(): SpeechSynthesisVoice | null {
+  if (!canSpeak()) return null;
+  const voices = speechSynthesis.getVoices();
+  for (const re of PREFERRED) {
+    const v = voices.find((x) => re.test(x.name) || re.test(x.lang));
+    if (v) return v;
+  }
+  return voices[0] ?? null;
+}
+
+const MONTHS: Record<string, string> = {
+  Jan: "January", Feb: "February", Mar: "March", Apr: "April", Jun: "June", Jul: "July",
+  Aug: "August", Sep: "September", Oct: "October", Nov: "November", Dec: "December",
+};
+
+/** Make numbers and finance shorthand sound right when read aloud. */
+export function speakable(text: string): string {
+  return text
+    .replace(/\$(\d+(?:\.\d+)?)M\+/g, "over $1 million dollars")
+    .replace(/\$(\d+(?:\.\d+)?)M\b/g, "$1 million dollars")
+    .replace(/\$(\d+(?:\.\d+)?)B\b/g, "$1 billion dollars")
+    .replace(/(\d)\s*%/g, "$1 percent")
+    .replace(/\bIRR\/MOIC\b/g, "IRR and MOIC")
+    .replace(/\bS&P\b/g, "S and P")
+    .replace(/\bSPGI\b/g, "S and P Global")
+    .replace(/\bDCF\b/g, "D C F")
+    .replace(/\bM\.S\./g, "Master of Science")
+    .replace(/\bB\.Com\b/g, "Bachelor of Commerce")
+    .replace(/\bReg D\b/g, "Reg D")
+    .replace(/\b(Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/g, (m) => MONTHS[m] ?? m)
+    .replace(/(\w)–(\w)/g, "$1 to $2")
+    .replace(/[—–]/g, ", ")
+    .replace(/[•▸→]/g, "")
+    .replace(/\[\d+\]/g, "")
+    .replace(/siddharthbagga29@gmail\.com/g, "siddharth bagga 29 at gmail dot com")
+    .replace(/linkedin\.com\/in\/[\w-]+/g, "LinkedIn");
+}
+
+export class Speaker {
+  private queue = 0;
+  constructor(private onState: (speaking: boolean) => void) {
+    if (canSpeak()) speechSynthesis.getVoices(); // warm the voice list (async on Chrome)
+  }
+
+  cancel() {
+    if (!canSpeak()) return;
+    this.queue++;
+    speechSynthesis.cancel();
+    this.onState(false);
+  }
+
+  /** Speak sentence by sentence (Chrome cuts long utterances). Resolves when finished or cancelled. */
+  speak(text: string, onSentence?: (i: number) => void): Promise<void> {
+    if (!canSpeak()) return Promise.resolve();
+    this.cancel();
+    const ticket = ++this.queue;
+    const parts = speakable(text).match(/[^.!?\n]+[.!?]*/g)?.map((s) => s.trim()).filter(Boolean) ?? [];
+    const voice = pickVoice();
+    this.onState(true);
+    return new Promise((resolve) => {
+      const next = (i: number) => {
+        if (ticket !== this.queue || i >= parts.length) {
+          if (ticket === this.queue) this.onState(false);
+          resolve();
+          return;
+        }
+        const u = new SpeechSynthesisUtterance(parts[i]);
+        if (voice) u.voice = voice;
+        u.rate = 1.04;
+        u.pitch = 0.92;
+        u.onstart = () => onSentence?.(i);
+        u.onend = () => next(i + 1);
+        u.onerror = () => next(i + 1);
+        speechSynthesis.speak(u);
+      };
+      next(0);
+    });
+  }
+}

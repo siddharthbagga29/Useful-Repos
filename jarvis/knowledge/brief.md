@@ -66,6 +66,11 @@ Siddharth must be traceable to a line in this file. Edit facts here, nowhere els
 - Advanced Excel (VBA, PivotTables, XLOOKUP, dynamic models), Bloomberg Terminal, S&P Capital IQ,
   Thomson Reuters, Python (pandas, NumPy, statsmodels), SQL, R, Power BI, Tableau.
 
+## Outside work
+- Likes travelling, learning new things and picking up new skills.
+- Keeps up fitness and takes care of his health.
+- Enjoys meeting new people.
+
 ## Honest gaps (state them plainly when asked)
 - Has not run expert-network or customer-interview programmes.
 - Has not supervised junior colleagues.
