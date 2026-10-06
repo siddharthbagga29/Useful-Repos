@@ -148,7 +148,7 @@ function BrainTower({ gen, selected, onSelect, reduce }: { gen: number | null; s
   const [ox, oy] = iso(cx, cy, h + 3.5);
   const key = (e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect());
   return (
-    <g className={`bld brain${selected ? " sel" : ""}`} role="button" tabIndex={0} aria-label={`THE BRAIN ${gen === null ? "loading…" : `generation ${gen.toLocaleString("en-US")}`}: self-evolving research loop`} aria-pressed={selected} onClick={onSelect} onKeyDown={key} data-testid="bld-brain">
+    <g className={`bld brain${selected ? " sel" : ""}`} role="button" tabIndex={0} aria-pressed={selected} onClick={onSelect} onKeyDown={key} data-testid="bld-brain">
       <polygon className="plot" points={pts([i * P + 2, j * P + 2, 0], [i * P + P - 2, j * P + 2, 0], [i * P + P - 2, j * P + P - 2, 0], [i * P + 2, j * P + P - 2, 0])} />
       <Box x={cx - 4.5} y={cy - 4.5} z={0} w={9} d={9} h={3} color="#1f2937" />
       <Box x={cx - 2.2} y={cy - 2.2} z={3} w={4.4} d={4.4} h={h - 3} color="#0e7490" />
@@ -178,7 +178,7 @@ function Foundry({ selected, onSelect }: { selected: boolean; onSelect: () => vo
   const [lx, ly] = iso(x + 1, y + 9, 12); // sign offset to the left so the Brain doesn't hide it
   const key = (e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect());
   return (
-    <g className={`bld${selected ? " sel" : ""}`} role="button" tabIndex={0} aria-label="Data Foundry 561 weeks · vault: datasets and the research vault" aria-pressed={selected} onClick={onSelect} onKeyDown={key} data-testid="bld-foundry">
+    <g className={`bld${selected ? " sel" : ""}`} role="button" tabIndex={0} aria-pressed={selected} onClick={onSelect} onKeyDown={key} data-testid="bld-foundry">
       <polygon className="plot" points={pts([i * P + 2, j * P + 2, 0], [i * P + P - 2, j * P + 2, 0], [i * P + P - 2, j * P + P - 2, 0], [i * P + 2, j * P + P - 2, 0])} />
       <Box x={x} y={y + 3} z={0} w={9} d={5} h={3.5} color="#64748b" />
       {[0, 1, 2].map((k) => (

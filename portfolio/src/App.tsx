@@ -15,6 +15,7 @@ import { bus } from "./jarvis/bus.ts";
 import { useJarvis } from "./jarvis/JarvisProvider.tsx";
 import { JarvisOverlay } from "./jarvis/JarvisOverlay.tsx";
 import { Greeting } from "./jarvis/Greeting.tsx";
+import { Backdrop } from "./scene/Backdrop.tsx";
 import { Analyst } from "./ui/Analyst.tsx";
 import { CommandPalette } from "./ui/CommandPalette.tsx";
 import { Hero } from "./stations/Hero.tsx";
@@ -179,6 +180,7 @@ export default function App() {
       <a className="skip" href="#jarvis" onClick={(e) => (e.preventDefault(), j.setOpen(true))}>
         Skip to Jarvis
       </a>
+      <Backdrop />
       <Tape />
       <Nav active={station.id} />
       <main>

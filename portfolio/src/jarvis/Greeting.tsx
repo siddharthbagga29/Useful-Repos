@@ -6,7 +6,11 @@ import { canSpeak } from "./speech.ts";
 // Jarvis greets every new visitor. Browsers only allow speech after the visitor's first tap or key
 // press, so the greeting appears as text at once and is spoken on that first gesture: once per visit,
 // never when muted (the mute is remembered on this device).
-export const GREETING = "Hello, you're in Siddharth's den. I'm Jarvis, his assistant. Ask me about his deals, his models, or his research.";
+// Persuasion, honestly: a curiosity hook, a specific claim the visitor can check on this page, value
+// offered before anything is asked, and the smallest possible first step. No invented scarcity,
+// urgency or social proof.
+export const GREETING =
+  "Hello, you're in Siddharth's den. I'm Jarvis, his assistant. Most analysts tell you what the model says; Siddharth shows you where it breaks. Ask me one question, about a deal, a model or his research, and judge for yourself.";
 
 const get = (s: Storage | undefined, k: string) => {
   try {
@@ -36,7 +40,7 @@ export function Greeting() {
   useEffect(() => {
     if (spoken.current || /^#(jarvis|connect)$/.test(location.hash)) return;
     const t = setTimeout(() => setShow(true), 1200);
-    const hide = setTimeout(() => setShow(false), 16000);
+    const hide = setTimeout(() => setShow(false), 22000);
     const onGesture = (e: Event) => {
       if (spoken.current) return;
       if ((e.target as HTMLElement | null)?.closest?.(".greet-mute, .greet-x")) return;
@@ -79,7 +83,10 @@ export function Greeting() {
           <p>{GREETING}</p>
           <div className="greet-row">
             <button type="button" className="greet-go" onClick={() => (setShow(false), j.setOpen(true))}>
-              Ask Jarvis
+              Ask one question
+            </button>
+            <button type="button" className="greet-brief" onClick={() => (setShow(false), j.setOpen(true), j.runDigest())} data-testid="greet-brief">
+              60-second brief
             </button>
             {canSpeak() && (
               <button type="button" className="greet-mute" onClick={toggleMute} aria-pressed={muted} data-testid="greet-mute">

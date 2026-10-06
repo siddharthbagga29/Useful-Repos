@@ -113,8 +113,12 @@ def desktop(p) -> None:
 
     # tap → analyst stamps
     page.mouse.click(700, 160)
-    page.wait_for_timeout(450)
-    check("tap makes the analyst stamp", "approved" in page.locator(".desk-act").inner_text().lower())
+    try:  # the stamp shows for 700 ms; poll instead of sampling once
+        page.wait_for_function("document.querySelector('.desk-act').innerText.toLowerCase().includes('approved')", timeout=700, polling=50)
+        stamped = True
+    except Exception:
+        stamped = False
+    check("tap makes the analyst stamp", stamped, page.locator(".desk-act").inner_text())
     check("tap shows a finance burst", page.locator(".burst").count() >= 1)
 
     # Jarvis overlay: skill drives the DCF
@@ -124,7 +128,10 @@ def desktop(p) -> None:
     box = page.get_by_label("Message Jarvis").last
     box.fill("set WACC to 10%")
     box.press("Enter")
-    page.wait_for_timeout(900)
+    try:  # answers type out progressively; wait for the figure rather than sampling once
+        page.wait_for_function("[...document.querySelectorAll('.overlay .jx-msg.a')].pop()?.innerText.includes('$85.1B')", timeout=4000)
+    except Exception:
+        pass
     check("Jarvis answers set_dcf with the model's number", "$85.1B" in jarvis_last(page), jarvis_last(page))
     page.screenshot(path=f"{SHOTS}/desktop-jarvis.png")
     page.keyboard.press("Escape")
@@ -181,14 +188,19 @@ def desktop(p) -> None:
     page.wait_for_timeout(800)
     check("memory persists across reloads", "Welcome back, Priya" in page.locator(".overlay").inner_text())
     page.keyboard.press("Escape")
+    expect(page.locator(".overlay")).to_have_count(0)  # let the overlay finish closing before the next shortcut
 
     # command palette
     page.keyboard.press("Control+k")
     expect(page.locator(".pal")).to_be_visible()
     page.keyboard.type("exhibits")
     page.keyboard.press("Enter")
-    page.wait_for_function("document.querySelector('.dots button[aria-current=true]')?.getAttribute('aria-label') === 'Exhibits'", timeout=6000)
-    check("⌘K palette navigates", page.locator(".dots button[aria-current=true]").get_attribute("aria-label") == "Exhibits")
+    try:
+        page.wait_for_function("document.querySelector('.dots button[aria-current=true]')?.getAttribute('aria-label') === 'Exhibits'", timeout=6000)
+    except Exception:
+        pass
+    diag = page.evaluate("({active: document.querySelector('.dots button[aria-current=true]')?.getAttribute('aria-label'), y: scrollY|0, pal: !!document.querySelector('.pal'), focus: document.activeElement?.tagName + '.' + document.activeElement?.className, overlay: !!document.querySelector('.overlay'), hash: location.hash})")
+    check("⌘K palette navigates", page.locator(".dots button[aria-current=true]").get_attribute("aria-label") == "Exhibits", str(diag))
     check("exhibits link to Drive", page.locator("a.work[href*='drive.google.com']").count() == 6)
 
     real = [e for e in errors if "fonts.g" not in e and "Failed to load resource" not in e]
@@ -309,6 +321,26 @@ def connect_and_links(p) -> None:
     box.press("Enter")
     page.wait_for_timeout(900)
     check("Jarvis opens the composer on interest", page.locator(".cx").is_visible())
+    browser.close()
+
+
+def den_scene(p) -> None:
+    # The living background (three.js). Off under automation unless ?scene=1; software WebGL here.
+    browser = p.chromium.launch(executable_path=CHROME, args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
+    page = browser.new_page(viewport={"width": 1440, "height": 900})
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(BASE + "?scene=1")
+    page.wait_for_function("document.documentElement.classList.contains('den-live')", timeout=60000)
+    check("den: particle scene starts", True)
+    r = float(page.evaluate("parseFloat(document.documentElement.style.getPropertyValue('--den-r'))"))
+    x = float(page.evaluate("parseFloat(document.documentElement.style.getPropertyValue('--den-x'))"))
+    check("den: brain framed right of the hero copy", r > 100 and x > 900, f"r={r} x={x}")
+    check("den: content still sits above the scene", page.evaluate("getComputedStyle(document.querySelector('main')).zIndex") == "1")
+    check("den: no script errors", not errors, "; ".join(errors)[:300])
+    page.goto(BASE)
+    page.wait_for_timeout(2500)
+    check("den: skipped under automation without ?scene", not page.evaluate("document.documentElement.classList.contains('den-live')"))
     browser.close()
 
 
@@ -457,6 +489,7 @@ if __name__ == "__main__":
         desktop(p)
         connect_and_links(p)
         research_and_lab(p)
+        den_scene(p)
         mobile(p)
     print(f"\n{len(failures)} failing" if failures else "\nall passing")
     sys.exit(1 if failures else 0)

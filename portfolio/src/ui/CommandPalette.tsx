@@ -31,11 +31,12 @@ export function CommandPalette() {
     return () => removeEventListener("keydown", onKey);
   }, []);
 
+  // Reset on close, and focus synchronously on mount (autoFocus): a focus deferred to the next frame
+  // dropped the first keys of anyone who types straight after ⌘K.
   useEffect(() => {
-    if (open) {
+    if (!open) {
       setQ("");
       setSel(0);
-      requestAnimationFrame(() => input.current?.focus());
     }
   }, [open]);
 
@@ -98,6 +99,7 @@ export function CommandPalette() {
           >
             <input
               ref={input}
+              autoFocus
               value={q}
               onChange={(e) => {
                 setQ(e.target.value);

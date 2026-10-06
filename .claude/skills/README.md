@@ -20,6 +20,9 @@ consistent guidance when building immersive ("Unseen-style") front-end work.
 **Authoring pipelines**
 `blender-web-pipeline` · `spline-interactive` · `rive-interactive` · `substance-3d-texturing`
 
+**Signature looks (Siddharth's own specs)**
+`particle-brain-hero` — the Tunnel particle wormhole + Jarvis's particle brain, framed by the Atelier scrim
+
 **Meta**
 `web3d-integration-patterns` · `modern-web-design`
 
