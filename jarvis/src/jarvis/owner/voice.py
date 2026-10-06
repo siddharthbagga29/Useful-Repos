@@ -24,32 +24,94 @@ def speak(text: str, voice: str) -> None:
         print(f"jarvis> {text}")
 
 
-class VoiceIO:
-    """openWakeWord for "Hey Jarvis" (free, no key), faster-whisper for transcription."""
+class _OpenWakeWord:
+    """Free, offline, no account: openWakeWord's pretrained "hey jarvis" model."""
 
-    SAMPLE_RATE = 16_000
-    FRAME = 1_280  # 80 ms, the chunk size openWakeWord is trained on
-    WAKE_MODEL = "hey_jarvis"
+    sample_rate = 16_000
+    frame_length = 1_280  # 80 ms, the chunk size the model is trained on
+    MODEL = "hey_jarvis"
+
+    def __init__(self, threshold: float) -> None:
+        try:
+            from openwakeword.model import Model
+            from openwakeword.utils import download_models
+        except ImportError as exc:
+            raise VoiceUnavailable(
+                f"openWakeWord is not installed ({exc.name}). Run: pip install -e '.[voice]'"
+            ) from exc
+        try:
+            download_models(model_names=[self.MODEL])  # no-op once cached
+            self._model: Any = Model(wakeword_models=[self.MODEL], inference_framework="onnx")
+        except Exception as exc:  # network on first run, or a corrupt cache
+            raise VoiceUnavailable(f"Couldn't load the wake-word model: {exc}") from exc
+        self._threshold = threshold
+
+    def heard(self, frame: Any) -> bool:
+        scores: dict[str, float] = self._model.predict(frame)
+        if max(scores.values(), default=0.0) >= self._threshold:
+            self._model.reset()  # one phrase fires once
+            return True
+        return False
+
+    def close(self) -> None:
+        pass
+
+
+class _Porcupine:
+    """Picovoice Porcupine's built-in "jarvis" keyword. Needs a free Picovoice access key."""
+
+    def __init__(self, access_key: str) -> None:
+        if not access_key:
+            raise VoiceUnavailable(
+                "Set JARVIS_PICOVOICE_ACCESS_KEY (free at console.picovoice.ai), "
+                "or use JARVIS_WAKE_ENGINE=openwakeword."
+            )
+        try:
+            import pvporcupine
+        except ImportError as exc:
+            raise VoiceUnavailable(
+                "Porcupine is not installed. Run: pip install -e '.[voice,porcupine]'"
+            ) from exc
+        self._p: Any = pvporcupine.create(access_key=access_key, keywords=["jarvis"])
+        self.sample_rate = int(self._p.sample_rate)
+        self.frame_length = int(self._p.frame_length)
+
+    def heard(self, frame: Any) -> bool:
+        return bool(self._p.process(frame) >= 0)
+
+    def close(self) -> None:
+        self._p.delete()
+
+
+class VoiceIO:
+    """Wake word (openWakeWord or Porcupine), then faster-whisper for transcription."""
+
     SILENCE_RMS = 500  # int16 RMS below this counts as silence; raise it in a noisy room
 
-    def __init__(self, whisper_model: str, wake_threshold: float = 0.5) -> None:
+    def __init__(
+        self,
+        whisper_model: str,
+        wake_threshold: float = 0.5,
+        *,
+        engine: str = "openwakeword",
+        picovoice_access_key: str = "",
+    ) -> None:
         try:
             import numpy as np
             import pyaudio
             from faster_whisper import WhisperModel
-            from openwakeword.model import Model
-            from openwakeword.utils import download_models
         except ImportError as exc:
             raise VoiceUnavailable(
                 f"Voice extras are not installed ({exc.name}). Run: pip install -e '.[voice]'"
             ) from exc
         self._np: Any = np
-        self._threshold = wake_threshold
-        try:
-            download_models(model_names=[self.WAKE_MODEL])  # no-op once cached
-            self._wake: Any = Model(wakeword_models=[self.WAKE_MODEL], inference_framework="onnx")
-        except Exception as exc:  # network on first run, or a corrupt cache
-            raise VoiceUnavailable(f"Couldn't load the wake-word model: {exc}") from exc
+        self._wake: _OpenWakeWord | _Porcupine = (
+            _Porcupine(picovoice_access_key)
+            if engine == "porcupine"
+            else _OpenWakeWord(wake_threshold)
+        )
+        self.SAMPLE_RATE = self._wake.sample_rate
+        self.FRAME = self._wake.frame_length
         self._audio: Any = pyaudio.PyAudio()
         self._stream: Any = self._audio.open(
             rate=self.SAMPLE_RATE,
@@ -65,11 +127,8 @@ class VoiceIO:
         return self._np.frombuffer(data, dtype=self._np.int16)
 
     def wait_for_wake_word(self) -> None:
-        while True:
-            scores: dict[str, float] = self._wake.predict(self._frame())
-            if max(scores.values(), default=0.0) >= self._threshold:
-                self._wake.reset()  # clear the buffer so one phrase fires once
-                return
+        while not self._wake.heard(self._frame()):
+            pass
 
     def record_utterance(self, max_seconds: float = 15.0, trailing_silence: float = 1.2) -> Any:
         frame_seconds = self.FRAME / self.SAMPLE_RATE
@@ -105,6 +164,7 @@ class VoiceIO:
     def close(self) -> None:
         self._stream.close()
         self._audio.terminate()
+        self._wake.close()
 
 
 class VoiceConfirmer:

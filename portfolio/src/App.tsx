@@ -25,6 +25,8 @@ import { Exhibits } from "./stations/Exhibits.tsx";
 import { JarvisStation } from "./stations/JarvisStation.tsx";
 import { Contact } from "./stations/Contact.tsx";
 import { Experience } from "./stations/Experience.tsx";
+import { Research } from "./stations/Research.tsx";
+import { loadAnalytics, track } from "./lib/track.ts";
 import { Nav } from "./ui/Nav.tsx";
 import { Connect } from "./ui/Connect.tsx";
 
@@ -133,7 +135,7 @@ export default function App() {
       const t = e.target as HTMLElement;
       if (t.closest("input, textarea, select, [contenteditable], .cx-back") || e.metaKey || e.ctrlKey || e.altKey || j.open) return;
       const k = e.key;
-      if (/^[1-9]$/.test(k)) go(STATIONS[+k - 1]!.id);
+      if (/^[0-9]$/.test(k)) go(STATIONS[k === "0" ? 9 : +k - 1]!.id);
       else if (k === "j" || k === "J") j.setOpen(true);
       else if (horizontal && (k === "ArrowRight" || k === "ArrowLeft")) {
         e.preventDefault();
@@ -145,6 +147,14 @@ export default function App() {
   }, [go, j, active, horizontal]);
 
   const station = STATIONS[active] ?? STATIONS[0];
+
+  useEffect(() => {
+    loadAnalytics();
+    track("page_view", { page: "home" }, true);
+  }, []);
+  useEffect(() => {
+    if (scrolled) track("section_view", { section: station.id }, true);
+  }, [station.id, scrolled]);
   const act: Act = j.status === "listening" || j.status === "armed" ? "listen" : j.status === "speaking" || j.status === "thinking" ? "talk" : station.act;
   const doing = j.status === "listening" ? "listening to you" : j.status === "speaking" ? "briefing you" : j.status === "thinking" ? "pulling the file" : station.doing;
 
@@ -157,6 +167,7 @@ export default function App() {
       <Model />
       <DealRoom />
       <Exhibits />
+      <Research />
       <JarvisStation />
       <Contact />
     </>

@@ -4,6 +4,18 @@
 export const SITE_URL = "https://siddharthbagga29.github.io/";
 /** "/" on the live site; "./" in relative preview builds. Undefined under Node (scripts/eval.ts). */
 const BASE: string = import.meta.env?.BASE_URL ?? "/";
+const ENV = (import.meta.env ?? {}) as Record<string, string | undefined>;
+
+/** Public integration settings. All optional: each feature hides itself until its value is set
+ *  in portfolio/.env.production (see README → Integrations). None of these values are secret. */
+export const INTEGRATIONS = {
+  /** e.g. https://calendly.com/siddharthbagga29/20min */
+  calendly: (ENV.VITE_CALENDLY_URL ?? "").trim(),
+  /** Google Apps Script web-app URL (…/exec) that writes to the Positioning OS sheet */
+  sheetsWebhook: (ENV.VITE_SHEETS_WEBHOOK ?? "").trim(),
+  /** Cloudflare Web Analytics beacon token */
+  cfBeacon: (ENV.VITE_CF_BEACON_TOKEN ?? "").trim(),
+};
 
 export const CONTACT = {
   email: "siddharthbagga29@gmail.com",
@@ -15,7 +27,7 @@ export const CONTACT = {
   /** Keyless form relay: posts land in his inbox. The first message triggers a one-time
    *  activation email from FormSubmit to this address. */
   relay: "https://formsubmit.co/ajax/siddharthbagga29@gmail.com",
-  availability: "Open to commercial due diligence, valuation & strategy roles · New York · available now",
+  availability: "Seeking a seat with a family office, private wealth or LMM private equity team · New York",
 };
 
 export interface Draft {
@@ -68,6 +80,7 @@ export const STATIONS = [
   { id: "model", label: "The model", act: "model", doing: "solving the DCF" },
   { id: "dealroom", label: "Deal room", act: "docs", doing: "reading the dossier" },
   { id: "exhibits", label: "Exhibits", act: "docs", doing: "filing the exhibits" },
+  { id: "research", label: "Research", act: "model", doing: "publishing research" },
   { id: "jarvis", label: "Jarvis", act: "talk", doing: "briefing Jarvis" },
   { id: "contact", label: "Contact", act: "coffee", doing: "earned it" },
 ] as const;

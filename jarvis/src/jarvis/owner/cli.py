@@ -38,7 +38,12 @@ def main(argv: list[str] | None = None) -> int:
         from jarvis.owner.voice import VoiceConfirmer, VoiceIO, VoiceUnavailable
 
         try:
-            voice = VoiceIO(settings.whisper_model, settings.wake_threshold)
+            voice = VoiceIO(
+                settings.whisper_model,
+                settings.wake_threshold,
+                engine=settings.wake_engine,
+                picovoice_access_key=settings.picovoice_access_key,
+            )
         except VoiceUnavailable as exc:
             print(f"Voice mode unavailable: {exc}", file=sys.stderr)
             return 2

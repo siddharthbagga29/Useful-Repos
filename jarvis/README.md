@@ -114,6 +114,8 @@ jarvis-owner --dry-run                     # every action is shown and declined
 
 Voice mode adds the wake word and local speech recognition. Everything is free and offline:
 openWakeWord's "hey jarvis" model (downloaded once, no key), faster-whisper, and macOS `say`.
+Prefer Picovoice? `pip install -e '.[voice,porcupine]'`, then `JARVIS_WAKE_ENGINE=porcupine` and
+`JARVIS_PICOVOICE_ACCESS_KEY=…` (free key at console.picovoice.ai).
 
 ```bash
 brew install portaudio
@@ -162,3 +164,35 @@ a message naming the variable.
 Edit `knowledge/brief.md` only. Both assistants read it; `/healthz` reports the brief's content
 hash so you can confirm which version is live, and the public service logs that hash with every
 answer.
+
+
+## Zero-cost public stack: Ollama + Cloudflare Tunnel
+
+```bash
+ollama pull llama3.1:8b
+JARVIS_LLM_BACKEND=ollama \
+JARVIS_ALLOWED_ORIGINS=https://siddharthbagga29.github.io \
+JARVIS_TRUST_PROXY_HEADERS=true \
+JARVIS_SHEETS_WEBHOOK=https://script.google.com/macros/s/…/exec \
+JARVIS_PROMPT_DB=~/.jarvis/bench.sqlite3 \
+jarvis-public &
+deploy/tunnel.sh          # prints a free https://….trycloudflare.com URL
+```
+
+The API streams answers as server-sent events, which pass through Cloudflare Tunnel unchanged.
+Contacts left through `/api/contact` are stored locally and forwarded to the Positioning OS sheet
+(see `../positioning-os/`).
+
+## Background benchmark: `jarvis-bench`
+
+```bash
+JARVIS_LLM_BACKEND=ollama jarvis-bench --evolve --interval-minutes 60   # runs until stopped
+jarvis-bench --history                                                   # recent scores
+```
+
+Every cycle asks the whole question bank in `knowledge/eval_cases.toml` (recruiter questions plus
+family-office principal questions such as downside risk in a high-rate environment, concentrated
+positions and Strategy Lab "returns") and records each answer, grade and latency in SQLite.
+With `--evolve` it drafts behavioural refinements from the failures and promotes one only if it
+passes more cases, breaks none, and passes every safety case. Refinements can't contain figures, so
+facts stay in `knowledge/brief.md`. Restart `jarvis-public` to serve a newly promoted refinement.

@@ -11,10 +11,10 @@ from jarvis.public.prompts import REFUSAL_MESSAGE, build_system_prompt
 
 
 class PublicResponder:
-    def __init__(self, brief: Brief, backend: AnswerBackend) -> None:
+    def __init__(self, brief: Brief, backend: AnswerBackend, addendum: str = "") -> None:
         self.brief = brief
         self.backend = backend
-        self.system_prompt = build_system_prompt(brief)
+        self.system_prompt = build_system_prompt(brief, addendum)
 
     def stream(self, turns: list[Turn]) -> Iterator[StreamEvent]:
         return self.backend.stream_answer(self.system_prompt, turns)

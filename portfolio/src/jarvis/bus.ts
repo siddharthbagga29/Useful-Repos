@@ -7,6 +7,7 @@ export type BusEvent =
   | { type: "open_jarvis"; agent?: "chat" | "digest" | "research" }
   | { type: "close_jarvis" }
   | { type: "open_connect"; intent?: "hiring" | "network" | "deal" | "other" }
+  | { type: "open_schedule" }
   | { type: "tap" };
 
 type Fn = (e: BusEvent) => void;

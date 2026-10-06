@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
-# Build and publish dist/ to GitHub Pages (https://siddharthbagga29.github.io/).
-# Needs push access to github.com/siddharthbagga29/siddharthbagga29.github.io.
+# Build, verify and publish the site to GitHub Pages (https://siddharthbagga29.github.io/).
+# The Pages repo also carries the Cloudflare Pages workflow, which mirrors each push to
+# https://siddharthbagga.pages.dev once its secrets are set.
+#   PAGES_DIR=/path/to/siddharthbagga29.github.io scripts/deploy.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
-npm run eval
-npm run build
-out=$(mktemp -d)
-cp -r dist/. "$out"
-cd "$out"
-git init -q -b main
-git add -A
-git commit -qm "Deploy portfolio $(date -u +%Y-%m-%dT%H:%MZ)"
-git push -f "${PAGES_REMOTE:-https://github.com/siddharthbagga29/siddharthbagga29.github.io.git}" main
-echo "Deployed. Live at https://siddharthbagga29.github.io/ within a minute."
+PAGES_DIR=${PAGES_DIR:-../../siddharthbagga29.github.io}
+npm run -s eval
+node --experimental-strip-types --no-warnings scripts/lab-check.ts >/dev/null
+npm run -s build
+test -d "$PAGES_DIR/.git" || { echo "Clone github.com/siddharthbagga29/siddharthbagga29.github.io to $PAGES_DIR first"; exit 1; }
+git -C "$PAGES_DIR" pull -q --ff-only
+find "$PAGES_DIR" -mindepth 1 -maxdepth 1 ! -name .git ! -name .github -exec rm -rf {} +
+cp -r dist/. "$PAGES_DIR"/
+mkdir -p "$PAGES_DIR/.github/workflows"
+cp deploy/cloudflare-pages.yml "$PAGES_DIR/.github/workflows/cloudflare-pages.yml"
+git -C "$PAGES_DIR" add -A
+git -C "$PAGES_DIR" commit -qm "Deploy portfolio $(git rev-parse --short HEAD)" || { echo "Nothing changed."; exit 0; }
+git -C "$PAGES_DIR" push -q origin main
+echo "Pushed. Live at https://siddharthbagga29.github.io/ in about a minute."

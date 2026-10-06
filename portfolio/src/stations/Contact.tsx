@@ -3,11 +3,12 @@ import { Panel, Kicker, rise } from "../ui/Panel.tsx";
 import { CONTACT } from "../data/site.ts";
 import { bus } from "../jarvis/bus.ts";
 import { CopyEmail } from "../ui/Connect.tsx";
+import { Schedule } from "../ui/Schedule.tsx";
 
 const PATHS = [
-  { intent: "hiring" as const, title: "Hiring?", text: "Interview request, pre-written. Add your name and send.", cta: "Request an interview" },
-  { intent: "network" as const, title: "Networking?", text: "Coffee chat or a call to trade notes on deals.", cta: "Start a conversation" },
-  { intent: "deal" as const, title: "Project?", text: "Diligence, valuation or modelling support.", cta: "Describe the project" },
+  { intent: "hiring" as const, title: "Building a team?", text: "Family office, private wealth or LMM PE seat. Interview request, pre-written.", cta: "Request an interview" },
+  { intent: "network" as const, title: "Connecting?", text: "A coffee or a call — principals, advisors, operators, alumni.", cta: "Start a conversation" },
+  { intent: "deal" as const, title: "Compare notes?", text: "A deal, a thesis or a model you want pressure-tested in conversation.", cta: "Talk shop" },
 ];
 
 export function Contact() {
@@ -15,10 +16,10 @@ export function Contact() {
     <Panel id="contact" label="Contact">
       <Kicker>Where this goes</Kicker>
       <motion.h2 className="mega mega-sm" variants={rise}>
-        Wall Street <em>Next</em>
+        Patient capital <em>next</em>
       </motion.h2>
       <motion.p className="sub" variants={rise}>
-        Commercial due diligence, valuation, strategy. Relocating to New York for the right desk. Every message gets a reply.
+        Family offices, private wealth, lower-middle-market private equity. Relocating to New York for the right seat. Every message gets a reply.
       </motion.p>
       <motion.div className="paths" variants={rise}>
         {PATHS.map((p) => (
@@ -29,6 +30,7 @@ export function Contact() {
           </motion.button>
         ))}
       </motion.div>
+      <Schedule />
       <motion.div className="direct" variants={rise}>
         <div>
           <span className="lbl">Email</span>

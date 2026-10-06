@@ -28,6 +28,7 @@ from jarvis.public.guard import HistoryTurn, InputError, build_turns, clean_text
 from jarvis.public.prompts import ERROR_MESSAGE, REFUSAL_MESSAGE
 from jarvis.public.ratelimit import RateLimiter
 from jarvis.public.responder import PublicResponder
+from jarvis.public.sheets import SheetsForwarder
 
 log = logging.getLogger("jarvis.public")
 
@@ -68,13 +69,20 @@ def create_app(
     contacts: ContactStore | None = None,
     ask_limiter: RateLimiter | None = None,
     contact_limiter: RateLimiter | None = None,
+    forwarder: SheetsForwarder | None = None,
 ) -> FastAPI:
     brief = brief or Brief.load(settings.brief_path)
     if backend is None:
         from jarvis.llm.factory import answer_backend
 
         backend = answer_backend(settings.llm)
-    responder = PublicResponder(brief, backend)
+    addendum = ""
+    if settings.prompt_db:
+        from jarvis.eval.bench import active_addendum
+
+        addendum = active_addendum(settings.prompt_db)
+    responder = PublicResponder(brief, backend, addendum)
+    forwarder = forwarder or SheetsForwarder(settings.sheets_webhook)
     contacts = contacts or ContactStore(settings.contacts_db, settings.ip_hash_salt)
     ask_limiter = ask_limiter or RateLimiter(settings.rate_per_minute, settings.rate_burst)
     contact_limiter = contact_limiter or RateLimiter(3, 2)
@@ -178,17 +186,16 @@ def create_app(
     def contact(body: ContactRequest, request: Request) -> dict[str, str]:
         ip = limit(contact_limiter, request)
         try:
-            contacts.add(
-                Contact(
-                    name=clean_text(body.name, 120),
-                    email=clean_text(body.email, 254),
-                    organization=clean_text(body.organization, 160) if body.organization else None,
-                    message=clean_text(body.message, 2000) if body.message else None,
-                ),
-                client_ip=ip,
+            record = Contact(
+                name=clean_text(body.name, 120),
+                email=clean_text(body.email, 254),
+                organization=clean_text(body.organization, 160) if body.organization else None,
+                message=clean_text(body.message, 2000) if body.message else None,
             )
+            contacts.add(record, client_ip=ip)
         except (InputError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        forwarder.forward(record)
         log.info(json.dumps({"event": "contact_received"}))
         return {"status": "received"}
 

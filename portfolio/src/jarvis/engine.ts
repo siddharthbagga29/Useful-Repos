@@ -12,7 +12,8 @@ export type Skill =
   | { name: "draft_email" }
   | { name: "call" }
   | { name: "open_linkedin" }
-  | { name: "run_digest" };
+  | { name: "run_digest" }
+  | { name: "open_lab" };
 
 export interface Citation {
   section: string;
@@ -189,12 +190,57 @@ const INTENTS: Intent[] = [
       ),
   },
   {
+    id: "boundary.advice",
+    test: [
+      /\b(manage|invest|grow|handle|allocate)\b.{0,25}\b(my|our)\b.{0,25}\b(money|capital|portfolio|wealth|assets|savings|funds)\b/,
+      /\bshould (i|we) (buy|sell|invest|hold)\b|\bwhat (stocks?|etfs?|funds?) should\b|\binvestment advice\b|\bguarantee/,
+      /\bwhat should (i|we) do\b|\bconcentrated (stock|position)|\bmy (portfolio|position|stock|holdings|investments)\b/,
+      /\b(are you|is he) an? (registered |financial |wealth |investment )?(advis[oe]r|wealth manager|fiduciary)\b|\bwhat returns? (can|will|does) (he|you)\b/,
+    ],
+    respond: () =>
+      pinned(
+        `He doesn't manage anyone's money or give personal investment advice, and I won't either. What he does is the analysis behind capital decisions — diligence, valuation, downside cases — and he's looking to do that inside a family office, private wealth or PE team. If that's a conversation you'd like to have, I'll set it up.`,
+        [],
+        [{ name: "draft_email" }, { name: "open_lab" }],
+      ),
+  },
+  {
     id: "cfa",
     test: [/\bcfa\b|\bcharter(holder)?\b|\blevel (1|i|one)\b/],
     respond: ({ index }) =>
       pinned(
         "No. He is not a CFA charterholder and has not sat the Level I exam. In 2025 he was awarded a merit-based scholarship covering the Level I exam fee; he hasn't attempted the exam yet.",
         cite(index, "Credentials").concat(citeText(index, "CFA Level I")).slice(-1),
+      ),
+  },
+  {
+    id: "lab",
+    test: [/\b(strategy lab|trading bot|trading system|algo(rithm)?(ic)?( trading| strateg\w*)?|backtest\w*|quant(itative)? strateg\w*|live systems?)\b/],
+    respond: ({ index }) =>
+      pinned(
+        "The Strategy Lab is his research sandbox: six allocation and risk rules — 60/40, a trend filter, dual momentum, inverse volatility, volatility targeting and buy-and-hold — backtested in your browser on weekly ETF prices from Dec 2015 to Sep 2026. Signals only use data available at the time (tested for look-ahead), trading costs are modelled, and each run shows stress windows like the 2022 rate shock. It's hypothetical research, not a live trading system, and no capital is managed with it.",
+        citeText(index, "Strategy Lab"),
+        [{ name: "open_lab" }],
+      ),
+  },
+  {
+    id: "family-office",
+    test: [/\bfamily offices?\b|\bprivate wealth\b|\bu?hnw(i|is)?\b|\bhigh.net.worth\b|\bprincipals?\b/],
+    respond: ({ index }) =>
+      pinned(
+        "He's looking for a seat with a family office, a private wealth team or a lower-middle-market PE firm. The fit: he has already done the job a principal needs from an analyst — underwriting a $6M+ acquisition pipeline, normalizing EBITDA, testing seller forecasts against backlog, and writing the go/no-go memo the Managing Partner acted on. He's early in his career (14 months), and he says so.",
+        citeText(index, "family office"),
+        [{ name: "draft_email" }, { name: "run_digest" }],
+      ),
+  },
+  {
+    id: "downside",
+    test: [/\bdownside\b|\bdrawdowns?\b|\brisk management\b|\bhigh.?(interest|rate)\b|\brate shock\b|\bhedg/],
+    respond: ({ index }) =>
+      pinned(
+        "In his deal work, downside came first: purchase-price sensitivity, a base case set well below the upside ($3.5M vs $21M equity), and seller forecasts tested against backlog instead of accepted. In the Strategy Lab you can see how rules like trend filters and volatility targeting behaved in the 2022 rate shock, when stocks and bonds fell together. For a view on a specific portfolio, that's a conversation with him, not something I'll advise on.",
+        citeText(index, "Target diligence").concat(citeText(index, "Strategy Lab")),
+        [{ name: "open_lab" }, { name: "draft_email" }],
       ),
   },
   {

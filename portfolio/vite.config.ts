@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -12,5 +13,11 @@ export default defineConfig({
     target: "es2022",
     sourcemap: false,
     chunkSizeWarningLimit: 7000, // web-llm is lazy-loaded and only fetched on opt-in
+    rollupOptions: {
+      input: {
+        main: resolve(import.meta.dirname, "index.html"),
+        lab: resolve(import.meta.dirname, "lab/index.html"),
+      },
+    },
   },
 });

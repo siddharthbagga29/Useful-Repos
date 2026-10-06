@@ -4,9 +4,8 @@ import { bus } from "../jarvis/bus.ts";
 
 const LINKS: { id: StationId; label: string }[] = [
   { id: "experience", label: "Experience" },
-  { id: "model", label: "Model" },
   { id: "dealroom", label: "Deal room" },
-  { id: "exhibits", label: "Work" },
+  { id: "research", label: "Research" },
   { id: "jarvis", label: "Jarvis" },
 ];
 
@@ -27,7 +26,7 @@ export function Nav({ active }: { active: StationId }) {
         </span>
         <span className="nav-name">
           Siddharth Bagga
-          <em>Valuation · CDD</em>
+          <em>Private capital · Diligence</em>
         </span>
       </a>
       <nav className="nav-links" aria-label="Sections">
@@ -45,6 +44,9 @@ export function Nav({ active }: { active: StationId }) {
             {active === l.id && <motion.i layoutId="nav-underline" className="nav-u" />}
           </a>
         ))}
+        <a href={`${import.meta.env.BASE_URL}lab/`} data-testid="nav-lab">
+          Strategy Lab ↗
+        </a>
       </nav>
       <div className="nav-cta">
         <a className="nav-btn" href={CONTACT.resume} target="_blank" rel="noopener" data-testid="nav-resume">

@@ -67,6 +67,9 @@ const skillCases: [string, (s: Skill[]) => boolean][] = [
   ["how do I contact him?", (s) => s.some((x) => x.name === "draft_email")],
   ["We're interested in interviewing him", (s) => s.some((x) => x.name === "draft_email")],
   ["I want to connect with Siddharth", (s) => s.some((x) => x.name === "draft_email")],
+  ["Tell me about his trading bot", (s) => s.some((x) => x.name === "open_lab")],
+  ["How do you manage downside risk in a high-interest environment?", (s) => s.some((x) => x.name === "open_lab")],
+  ["Can he manage my family's money?", (s) => s.some((x) => x.name === "draft_email")],
 ];
 for (const [q, ok] of skillCases) {
   const a = engine.answer(q);

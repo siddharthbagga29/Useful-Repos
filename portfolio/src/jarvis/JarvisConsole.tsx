@@ -405,6 +405,12 @@ function SkillButton({ s }: { s: Skill }) {
           LinkedIn ↗
         </a>
       );
+    case "open_lab":
+      return (
+        <a className="skill" href={`${import.meta.env.BASE_URL}lab/`}>
+          Open the Strategy Lab →
+        </a>
+      );
     case "run_digest":
       return (
         <button className="skill" type="button" onClick={j.runDigest}>

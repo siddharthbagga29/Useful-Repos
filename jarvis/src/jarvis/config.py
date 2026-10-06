@@ -93,6 +93,8 @@ class PublicSettings:
     contacts_db: Path = Path("var/contacts.sqlite3")
     ip_hash_salt: str = ""
     brief_path: Path = DEFAULT_BRIEF
+    sheets_webhook: str = ""  # Positioning OS Apps Script /exec URL; contacts are forwarded there
+    prompt_db: Path | None = None  # jarvis-bench database; its promoted prompt refinement is used
 
 
 @dataclass(frozen=True)
@@ -104,7 +106,9 @@ class OwnerSettings:
     voice_name: str = "Daniel"
     voice_confirm: bool = False  # side effects need a typed "yes" unless explicitly enabled
     whisper_model: str = "base.en"
+    wake_engine: str = "openwakeword"  # "openwakeword" (free, no key) | "porcupine" (Picovoice key)
     wake_threshold: float = 0.5  # openWakeWord score that counts as "Hey Jarvis"
+    picovoice_access_key: str = ""
     brief_path: Path = DEFAULT_BRIEF
 
 
@@ -136,7 +140,16 @@ def load_public(env: Mapping[str, str] | None = None) -> PublicSettings:
         contacts_db=Path(_get(env, "CONTACTS_DB", "var/contacts.sqlite3")),
         ip_hash_salt=salt,
         brief_path=Path(_get(env, "BRIEF_PATH", str(DEFAULT_BRIEF))),
+        sheets_webhook=_https(env, "SHEETS_WEBHOOK"),
+        prompt_db=Path(_get(env, "PROMPT_DB", "")) if _get(env, "PROMPT_DB", "") else None,
     )
+
+
+def _https(env: Mapping[str, str], key: str) -> str:
+    value = _get(env, key, "")
+    if value and not value.startswith("https://"):
+        raise ConfigError(f"JARVIS_{key} must be an https:// URL")
+    return value
 
 
 def load_owner(env: Mapping[str, str] | None = None) -> OwnerSettings:
@@ -149,6 +162,8 @@ def load_owner(env: Mapping[str, str] | None = None) -> OwnerSettings:
         voice_name=_get(env, "VOICE", "Daniel"),
         voice_confirm=_bool(env, "VOICE_CONFIRM", False),
         whisper_model=_get(env, "WHISPER_MODEL", "base.en"),
+        wake_engine=_choice(env, "WAKE_ENGINE", "openwakeword", ("openwakeword", "porcupine")),
         wake_threshold=_float(env, "WAKE_THRESHOLD", 0.5, 0.05, 0.99),
+        picovoice_access_key=_get(env, "PICOVOICE_ACCESS_KEY", ""),
         brief_path=Path(_get(env, "BRIEF_PATH", str(DEFAULT_BRIEF))),
     )

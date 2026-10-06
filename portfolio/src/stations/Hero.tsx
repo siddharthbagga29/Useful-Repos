@@ -4,7 +4,7 @@ import { CONTACT } from "../data/site.ts";
 import { bus } from "../jarvis/bus.ts";
 
 const HUD: [string, string][] = [
-  ["CLASS", "Analyst · Valuation / CDD"],
+  ["CLASS", "Analyst · Private capital"],
   ["LEVEL", "Associate"],
   ["XP", "14 months · 11 full-time"],
   ["SPAWNED", "May 2025 · M.S. Fin. Math"],
@@ -24,8 +24,9 @@ export function Hero() {
         <em>Bagga</em>
       </motion.h1>
       <motion.p className="sub" variants={rise}>
-        Valuation and commercial due diligence analyst with an M.S. in Financial Mathematics. I build the{" "}
-        <b>evidence base</b> capital decisions get made on: models, memoranda, and the discipline to say no when the numbers say no.
+        Diligence and valuation analyst for private capital, with an M.S. in Financial Mathematics. For a Managing Partner deploying it, I built
+        the <b>evidence behind every go/no-go</b>: normalized earnings, downside cases, and the memo. I want to do that work for families and
+        principals who think in decades.
       </motion.p>
       <motion.dl className="hud" variants={rise}>
         {HUD.map(([k, v]) => (

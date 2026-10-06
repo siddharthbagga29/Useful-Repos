@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { CONTACT, composeLinks, type Draft } from "../data/site.ts";
+import { CONTACT, INTEGRATIONS, composeLinks, type Draft } from "../data/site.ts";
+import { track, trackLead } from "../lib/track.ts";
 import { bus } from "../jarvis/bus.ts";
 import { useJarvis } from "../jarvis/JarvisProvider.tsx";
 
@@ -17,7 +18,7 @@ export type Intent = "hiring" | "network" | "deal" | "other";
 const INTENTS: { id: Intent; label: string; hint: string }[] = [
   { id: "hiring", label: "I'm hiring", hint: "A role or interview" },
   { id: "network", label: "Let's connect", hint: "Coffee chat or networking" },
-  { id: "deal", label: "Deal or project", hint: "Diligence, valuation, modelling" },
+  { id: "deal", label: "Compare notes", hint: "A deal, thesis or model" },
   { id: "other", label: "Something else", hint: "Anything at all" },
 ];
 
@@ -44,8 +45,8 @@ export function draftFor(f: Fields): Draft {
       ask: `I'm ${who}${at}. I enjoyed your portfolio and Jarvis, and I'd be glad to connect and trade notes on finance and diligence work. Would a short coffee chat or call suit you?`,
     },
     deal: {
-      subject: `Project inquiry${at}`,
-      ask: `I'm ${who}${at}. We're working on ${role || "a diligence / valuation project"} and your background looks relevant. Could we set up a quick call to discuss scope?`,
+      subject: `Comparing notes${role ? ` on ${role}` : ""}${at}`,
+      ask: `I'm ${who}${at}. I'm thinking through ${role || "a deal"} and would value your perspective on the diligence and valuation questions. Open to a quick call?`,
     },
     other: {
       subject: `Hello from ${who}${at}`,
@@ -98,6 +99,7 @@ export function Connect() {
       if (intent) setF((x) => ({ ...x, intent }));
       setPhase("edit");
       setOpen(true);
+      track("connect_open", { intent: intent ?? "default" });
       if (location.hash !== "#connect") history.replaceState(null, "", "#connect");
     };
     if (location.hash === "#connect") openIt();
@@ -143,6 +145,14 @@ export function Connect() {
     setTouched(true);
     if (!valid) return;
     setPhase("sending");
+    trackLead({
+      name: f.name.trim(),
+      email: f.email.trim(),
+      company: f.company.trim(),
+      role: f.role.trim(),
+      reason: INTENTS.find((i) => i.id === f.intent)?.label,
+      message: draft.body,
+    });
     try {
       const ctl = new AbortController();
       const timer = setTimeout(() => ctl.abort(), 12000);
@@ -235,7 +245,7 @@ export function Connect() {
                   <Field id="cx-name" label="Your name" required value={f.name} onChange={set("name")} inputRef={first} autoComplete="name" error={touched && f.name.trim().length < 2 ? "Add your name" : undefined} />
                   <Field id="cx-email" label="Your email" type="email" required value={f.email} onChange={set("email")} autoComplete="email" error={touched && !EMAIL_RE.test(f.email.trim()) ? "Add an email he can reply to" : undefined} />
                   <Field id="cx-company" label="Company" value={f.company} onChange={set("company")} autoComplete="organization" />
-                  <Field id="cx-role" label={f.intent === "deal" ? "Project" : "Role"} value={f.role} onChange={set("role")} placeholder={f.intent === "deal" ? "e.g. buy-side diligence" : "e.g. CDD Associate"} />
+                  <Field id="cx-role" label={f.intent === "deal" ? "Topic" : "Role"} value={f.role} onChange={set("role")} placeholder={f.intent === "deal" ? "e.g. a services roll-up" : "e.g. Family Office Analyst"} />
                 </div>
 
                 <div className="cx-preview" aria-live="polite">
@@ -281,7 +291,7 @@ export function Connect() {
                   </a>
                 </div>
                 <p className="cx-fine">
-                  Sending shares only what you typed above with Siddharth, by email. Prefer to write yourself?{" "}
+                  Sending shares only what you typed above with Siddharth{INTEGRATIONS.sheetsWebhook ? ", by email and in his contact list" : ", by email"}. Prefer to write yourself?{" "}
                   <button type="button" className="linkish" onClick={() => copy(CONTACT.email, "email")}>
                     {copied === "email" ? "Copied ✓" : CONTACT.email}
                   </button>{" "}

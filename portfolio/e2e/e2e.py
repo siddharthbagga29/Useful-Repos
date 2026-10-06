@@ -77,7 +77,9 @@ def desktop(p) -> None:
     page.screenshot(path=f"{SHOTS}/desktop-hero.png")
 
     html = page.content().lower()
-    check("no OpenJarvis / GitHub link on the site", "github.com" not in html and "openjarvis" not in html)
+    import re as _re
+    gh = set(_re.findall(r'https://github\.com/[^"\s<]+', html))
+    check("no OpenJarvis link; GitHub links only to his own repos", "openjarvis" not in html and all(u.startswith("https://github.com/siddharthbagga29/") for u in gh), str(gh))
     check("JSON-LD Person present", page.locator('script[type="application/ld+json"]').count() == 1)
     check("canonical + og:image", page.locator('link[rel="canonical"]').count() == 1 and page.locator('meta[property="og:image"]').count() == 1)
 
@@ -205,7 +207,7 @@ def connect_and_links(p) -> None:
     raw = urllib.request.urlopen(BASE).read().decode()
     check("prerendered HTML carries crawlable bio", "Strategic Finance Lead" in raw and "M.S. Financial Mathematics" in raw and "<h1>Siddharth Bagga</h1>" in raw)
     check("one h1 after hydration", page.locator("h1").count() == 1, str(page.locator("h1").count()))
-    for path in ["Siddharth_Bagga_Resume.pdf", "siddharth-bagga.vcf", "robots.txt", "sitemap.xml", "llms.txt", "og.png", "favicon.svg", "site.webmanifest", "jarvis/"]:
+    for path in ["lab/", "Siddharth_Bagga_Resume.pdf", "siddharth-bagga.vcf", "robots.txt", "sitemap.xml", "llms.txt", "og.png", "favicon.svg", "site.webmanifest", "jarvis/"]:
         try:
             code = urllib.request.urlopen(BASE + path).status
         except Exception as e:  # noqa: BLE001
@@ -282,7 +284,7 @@ def connect_and_links(p) -> None:
     page.keyboard.press("Escape")
 
     # contact station paths open the composer with the right reason
-    page.keyboard.press("9")
+    page.keyboard.press("0")
     page.wait_for_timeout(1500)
     page.get_by_test_id("path-network").click()
     expect(page.locator(".cx")).to_be_visible()
@@ -298,6 +300,50 @@ def connect_and_links(p) -> None:
     box.press("Enter")
     page.wait_for_timeout(900)
     check("Jarvis opens the composer on interest", page.locator(".cx").is_visible())
+    browser.close()
+
+
+def research_and_lab(p) -> None:
+    browser = p.chromium.launch(executable_path=CHROME)
+    page = browser.new_page(viewport={"width": 1440, "height": 900})
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.on("console", lambda m: m.type == "error" and errors.append(m.text))
+    page.goto(BASE)
+    page.wait_for_timeout(800)
+    page.keyboard.press("8")
+    page.wait_for_timeout(1600)
+    check("key 8 → research section", page.locator(".dots button[aria-current=true]").get_attribute("aria-label") == "Research")
+    check("research shows five projects", page.locator(".rs-card").count() == 5, str(page.locator(".rs-card").count()))
+    check("research links the public repo only", page.locator(".rs-card a[href*='github.com']").count() == 1)
+    check("no fork presented as own work", "odysseus" not in page.content().lower())
+    page.screenshot(path=f"{SHOTS}/research.png")
+    check("nav links the Strategy Lab", page.get_by_test_id("nav-lab").get_attribute("href") == "/lab/")
+    check("Calendly hidden until configured", page.locator(".sched").count() == 0)
+
+    page.goto(BASE + "lab/")
+    page.wait_for_timeout(1200)
+    check("lab renders KPIs", page.locator(".kpi").count() == 6)
+    cagr0 = page.locator(".kpi .v").first.inner_text()
+    page.get_by_role("button", name="Trend on SPY").click()
+    page.wait_for_timeout(700)
+    cagr1 = page.locator(".kpi .v").first.inner_text()
+    check("preset changes the result", cagr0 != cagr1, f"{cagr0} -> {cagr1}")
+    check("equity + drawdown charts drawn", page.locator(".chart svg path").count() >= 3)
+    check("stress windows include 2022", "2022 rate shock" in page.locator(".lab-stress").inner_text())
+    check("lab carries the not-advice disclosure", "Not investment advice" in page.locator(".lab-flag").inner_text())
+    page.get_by_role("radio", name="Volatility target").click()
+    page.locator("#tv").fill("8")
+    page.wait_for_timeout(500)
+    check("vol target lowers volatility", float(page.locator(".kpi").nth(1).locator(".v").inner_text().rstrip("%")) < 15)
+    page.screenshot(path=f"{SHOTS}/lab.png", full_page=True)
+    m = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+    m.goto(BASE + "lab/")
+    m.wait_for_timeout(1000)
+    check("lab mobile: no horizontal overflow", m.evaluate("document.documentElement.scrollWidth") <= 390)
+    m.screenshot(path=f"{SHOTS}/lab-mobile.png", full_page=True)
+    real = [e for e in errors if "fonts.g" not in e and "Failed to load resource" not in e]
+    check("lab: no console errors", not real, "; ".join(real)[:300])
     browser.close()
 
 
@@ -332,6 +378,7 @@ if __name__ == "__main__":
     with sync_playwright() as p:
         desktop(p)
         connect_and_links(p)
+        research_and_lab(p)
         mobile(p)
     print(f"\n{len(failures)} failing" if failures else "\nall passing")
     sys.exit(1 if failures else 0)

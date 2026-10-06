@@ -23,6 +23,7 @@ voice = [
   "faster-whisper>=1.0",
   "numpy>=1.26",
 ]
+porcupine = ["pvporcupine>=3.0"]
 dev = [
   "pytest>=8",
   "ruff>=0.6",
@@ -34,6 +35,7 @@ dev = [
 jarvis-public = "jarvis.public.app:main"
 jarvis-owner = "jarvis.owner.cli:main"
 jarvis-eval = "jarvis.eval.runner:main"
+jarvis-bench = "jarvis.eval.bench:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/jarvis"]
@@ -66,5 +68,5 @@ mypy_path = "src"
 packages = ["jarvis"]
 
 [[tool.mypy.overrides]]
-module = ["openwakeword", "openwakeword.*", "pyaudio", "faster_whisper", "numpy"]
+module = ["openwakeword", "openwakeword.*", "pvporcupine", "pyaudio", "faster_whisper", "numpy"]
 ignore_missing_imports = true

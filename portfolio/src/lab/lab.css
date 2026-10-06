@@ -1,0 +1,72 @@
+/* Strategy Lab — same tokens and type as the portfolio, laid out as a working instrument. */
+.lab .nav { top: 0; }
+.lab-main { max-width: 1240px; margin: 0 auto; padding: 84px var(--gutter) 80px; display: flex; flex-direction: column; gap: 34px; }
+.lab-hero h1 { font-weight: 900; font-size: clamp(44px, 8vw, 104px); line-height: .88; letter-spacing: -.045em; text-transform: uppercase; margin: 8px 0 12px; }
+.lab-hero h1 em { font-style: normal; -webkit-text-stroke: 1.4px var(--bone); color: transparent; }
+.lab-flag { margin: 10px 0 0; font-family: var(--mono); font-size: 11.5px; color: var(--amber); border: 1px solid #4d3a14; background: rgba(255,176,32,.06); padding: 8px 12px; border-radius: 8px; max-width: 80ch; }
+.lab-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 920px) { .lab-grid { grid-template-columns: 1fr; } }
+.lab-controls { position: sticky; top: 70px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--edge); background: var(--ink2); border-radius: 12px; padding: 14px; max-height: calc(100vh - 90px); overflow-y: auto; }
+@media (max-width: 920px) { .lab-controls { position: static; max-height: none; } }
+.lab-h { font-family: var(--mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--amber); }
+.lab-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.lab-strats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.lab-strats button { text-align: left; border: 1px solid var(--edge); background: none; border-radius: 8px; padding: 8px; cursor: pointer; font-size: 12.5px; }
+.lab-strats button.on { border-color: var(--hot); background: rgba(255,74,28,.08); }
+.lab-blurb { margin: 0; font-size: 12.5px; color: var(--dim); line-height: 1.5; }
+.lab-controls select { background: var(--ink); color: var(--bone); border: 1px solid var(--edge); border-radius: 6px; padding: 7px; font: 12px var(--mono); }
+.lab-weights { display: flex; flex-direction: column; gap: 6px; }
+.lab-weights .sl output { font-size: 12px; }
+.lab-universe { border: 1px solid var(--edge); border-radius: 8px; padding: 8px; display: flex; flex-wrap: wrap; gap: 8px 12px; font: 12px var(--mono); }
+.lab-universe legend { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); padding: 0 4px; }
+.lab-universe label { display: flex; gap: 5px; align-items: center; }
+.lab-results { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.kpi { border: 1px solid var(--edge); border-radius: 10px; padding: 10px 12px; background: var(--ink2); display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
+.kpi .k { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.kpi .v { font-family: var(--mono); font-size: clamp(17px, 2vw, 22px); font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi .v.good { color: var(--grn); }
+.kpi .v.bad { color: var(--bone); }
+.kpi .vs { font-family: var(--mono); font-size: 10px; color: var(--dim); }
+.chart { position: relative; border: 1px solid var(--edge); border-radius: 10px; background: #0e0e0d; padding: 6px; }
+.chart svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.chart .grid { stroke: var(--edge); stroke-width: 1; }
+.chart .ax { fill: var(--dim); font: 10px var(--mono); }
+.chart .ln { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.chart .ln.s { stroke: var(--hot); }
+.chart .ln.b { stroke: #6e7a86; stroke-width: 1.5; }
+.chart .end { fill: var(--bone); }
+.chart .cross { stroke: var(--dim); stroke-dasharray: 3 3; }
+.chart .dot.s { fill: var(--hot); }
+.chart .dot.b { fill: #6e7a86; }
+.chart .tip { position: absolute; top: 12px; transform: translateX(-50%); background: var(--ink2); border: 1px solid var(--edge); border-radius: 6px; padding: 6px 8px; font: 11px var(--mono); display: flex; flex-direction: column; pointer-events: none; white-space: nowrap; }
+.chart.dd .dd-area { fill: rgba(255,77,77,.35); stroke: var(--red); stroke-width: 1; }
+.chart .dd-label { position: absolute; right: 12px; top: 8px; font: 10px var(--mono); color: var(--dim); letter-spacing: .1em; text-transform: uppercase; }
+.lab-chart-foot { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--dim); }
+.lab-chart-foot label { display: flex; gap: 6px; align-items: center; }
+.sw { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin: 0 4px 0 10px; }
+.sw.s { background: var(--hot); }
+.sw.b { background: #6e7a86; }
+.lab-table { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 700px) { .lab-table { grid-template-columns: 1fr; } }
+.lab-table table { width: 100%; border-collapse: collapse; font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+.lab-table th { text-align: left; font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--edge); padding: 6px 0; }
+.lab-table td { padding: 6px 0; border-bottom: 1px solid #1d1d1b; }
+.lab-table .r { text-align: right; }
+.holdings { display: flex; flex-direction: column; gap: 7px; }
+.hold { display: grid; grid-template-columns: 44px 1fr 44px; gap: 8px; align-items: center; font: 12px var(--mono); }
+.hold i { height: 8px; background: var(--edge); border-radius: 4px; overflow: hidden; }
+.hold i b { display: block; height: 100%; background: var(--hot); }
+.hold em { font-style: normal; text-align: right; color: var(--dim); }
+.stress-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+@media (max-width: 860px) { .stress-grid { grid-template-columns: 1fr 1fr; } }
+.stress { border: 1px solid var(--edge); border-radius: 10px; padding: 12px; background: var(--ink2); display: flex; flex-direction: column; gap: 6px; }
+.stress div { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--mono); }
+.stress span { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stress em { font-style: normal; font-size: 10.5px; color: var(--dim); }
+.pos { color: var(--grn); }
+.neg { color: var(--red); }
+.lab-method ul { margin: 10px 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; max-width: 86ch; color: #cfccc2; font-size: 14px; line-height: 1.55; }
+.lab-method a { color: var(--bone); }
+@media (max-width: 760px) { .lab-main { padding-top: 76px; } .kpi .k, .lab-h, .chart .ax { font-size: 11px; } }

@@ -8,7 +8,11 @@ Siddharth must be traceable to a line in this file. Edit facts here, nowhere els
 - Based in Cincinnati, OH; relocating, New York preferred.
 - Email: siddharthbagga29@gmail.com. Phone: (860) 595-8333.
 - LinkedIn: linkedin.com/in/siddharth-bagga-sid29
-- Looking for: commercial due diligence, valuation, corporate strategy or investment analysis roles.
+- Looking for: a seat with a family office, private wealth team or lower-middle-market private equity
+  firm; also commercial due diligence, valuation and investment analysis roles.
+- He does not offer investment advice or manage anyone's money. Visitors asking him to invest for
+  them, or for personal investment recommendations, should be told that plainly and offered a
+  conversation instead.
 
 ## Education
 - M.S., Financial Mathematics — University of Cincinnati, Jan 2024 to May 2025.
@@ -61,6 +65,20 @@ Siddharth must be traceable to a line in this file. Edit facts here, nowhere els
   near SPGI's market cap (about $113.6B on 2 Oct 2026). That output is a demo calibration.
 - It is NOT the capstone's result. Never present the site model's ~$111B output as his valuation.
 - The 12% WACC on his resume belongs to the private-company work at Turnkey, which carried more risk.
+
+## Live systems on the site
+- Strategy Lab (/lab/): six allocation and risk rules (buy and hold, strategic allocation such as
+  60/40, a moving-average trend filter, dual momentum, inverse volatility, volatility targeting)
+  backtested in the browser on weekly ETF prices from Dec 2015 to Sep 2026 (SPY, QQQ, IWM, EFA,
+  AGG, TLT, GLD, VNQ). Signals use data up to week t and earn week t+1 (tested for look-ahead).
+  Trading costs are modelled. Prices exclude dividends, which understates bonds and REITs.
+  It shows stress windows including the 2022 rate shock, when stocks and bonds fell together.
+  It is hypothetical research, not a live trading system; no capital is managed with it.
+- Sentinel: research on AI-failure losses: 29 public loss claims graded A to D by source quality,
+  a 60,000-trial Monte Carlo of strategy viability and a 400,000-simulation pricing model.
+  Code is private; a walkthrough is available on request.
+- High Properties: a lead-generation web platform for a real-estate business (Vercel, Supabase,
+  WhatsApp follow-up). The code is public on his GitHub.
 
 ## Tools
 - Advanced Excel (VBA, PivotTables, XLOOKUP, dynamic models), Bloomberg Terminal, S&P Capital IQ,
