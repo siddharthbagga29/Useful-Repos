@@ -10,6 +10,7 @@ class Range {
   setValues(v) { v.forEach((row, i) => row.forEach((x, j) => this.sh.put(this.r + i, this.c + j, x))); return this; }
   getValue() { return this.sh.get(this.r, this.c); }
   setValue(v) { this.sh.put(this.r, this.c, v); return this; }
+  getFormulas() { return this.getValues().map((r) => r.map((v) => (typeof v === "string" && v.startsWith("=") ? v : ""))); }
   getFormula() { const v = this.sh.get(this.r, this.c); return typeof v === "string" && v.startsWith("=") ? v : ""; }
   setFontWeight() { return this; }
 }
@@ -106,6 +107,22 @@ sheets.Opportunities = saved;
 ctx.webhookInstallTriggers();
 assert.equal(ctx.triggerFn, "webhookRefreshDashboard");
 assert.equal(typeof ctx.webhookRefreshDashboard, "function");
+
+// buildWorkbook layout: R2 holds an ARRAYFORMULA for Days Since Contact. The webhook must never write
+// into that column (a literal there blocks the spill and shows #REF!).
+{
+  const P2 = sheets["People CRM"];
+  const dsc = people.indexOf("Days Since Contact") + 1;
+  P2.put(2, dsc, "=ARRAYFORMULA(IF(O3:O=\"\",,TODAY()-O3:O))");
+  for (let rr = 3; rr <= P2.getLastRow(); rr++) P2.put(rr, dsc, ""); // as if the spill filled them
+  const before = P2.getLastRow();
+  r = post({ sid: "s10", page: "/", events: [{ event: "lead", lead: { name: "Arjun Mehta", email: "arjun@example.org", company: "Mehta Family Office", role: "", reason: "Let's connect", message: "hi" } }] });
+  assert.equal(r.ok, true);
+  assert.equal(P2.getLastRow(), before + 1, "lead appended");
+  for (let rr = 3; rr <= P2.getLastRow(); rr++) assert.equal(P2.get(rr, dsc), "", `Days Since Contact row ${rr} left to the formula`);
+  assert.equal(P2.get(before + 1, people.indexOf("Full Name") + 1), "Arjun Mehta");
+  assert.equal(P2.get(before + 1, people.indexOf("Follow-Up Due") + 1), "DUE", "plain columns still written");
+}
 
 console.log("Code.gs harness: all assertions passed");
 console.log("Dashboard:", D.cells.filter(Boolean).map((r) => r.slice(0, 2).join(" = ")).join(" | "));

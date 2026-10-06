@@ -352,6 +352,11 @@ var PositioningWebhook = (function () {
     let first = headerRow + 1;
     while (first < all.length && String(all[first][headers.indexOf(idHeader)]).trim() === idHeader) first++; // skip duplicate header rows
     const rows = all.slice(first);
+    // Columns the sheet calculates itself (an ARRAYFORMULA under the header, or formulas down the column).
+    // Writing a plain value into one of them breaks the formula (#REF!), so those columns are never written.
+    const formulas = sh.getRange(1, 1, lastRow, lastCol).getFormulas();
+    const computed = headers.map((_, c) => formulas.slice(headerRow + 1).some((r) => r[c]));
+    const writable = (h) => !computed[col(h)];
     const col = (h) => {
       const i = headers.indexOf(h);
       if (i < 0) throw new Error(`No "${h}" column in ${name}`);
@@ -366,18 +371,23 @@ var PositioningWebhook = (function () {
       firstDataRow: first + 1,
       col,
       read: (rowNum, h) => sh.getRange(rowNum, col(h) + 1).getValue(),
-      set: (rowNum, values) => Object.keys(values).forEach((h) => sh.getRange(rowNum, col(h) + 1).setValue(safe_(values[h]))),
+      set: (rowNum, values) =>
+        Object.keys(values)
+          .filter(writable)
+          .forEach((h) => sh.getRange(rowNum, col(h) + 1).setValue(safe_(values[h]))),
       setIfValue: (rowNum, values) =>
-        Object.keys(values).forEach((h) => {
-          const cell = sh.getRange(rowNum, col(h) + 1);
-          if (!cell.getFormula() && cell.getValue() !== values[h]) cell.setValue(values[h]);
-        }),
+        Object.keys(values)
+          .filter(writable)
+          .forEach((h) => {
+            const cell = sh.getRange(rowNum, col(h) + 1);
+            if (!cell.getFormula() && cell.getValue() !== values[h]) cell.setValue(values[h]);
+          }),
       append: (values) => {
         const target = first + 1 + lastDataIndex + 1; // first empty row after the last ID
         const row = headers.map((h) => (h in values ? safe_(values[h]) : ''));
         // Fill only the columns we know, so formulas elsewhere in the row survive.
         headers.forEach((h, i) => {
-          if (h in values) sh.getRange(target, i + 1).setValue(row[i]);
+          if (h in values && !computed[i]) sh.getRange(target, i + 1).setValue(row[i]);
         });
         lastDataIndex += 1;
         rows[lastDataIndex] = row;
