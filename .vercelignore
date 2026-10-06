@@ -1,0 +1,4 @@
+# Not part of the High Properties site. Keep the Jarvis service, its brief
+# (contains contact details) and CI config out of the static deployment.
+jarvis/
+.github/
