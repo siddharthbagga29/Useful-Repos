@@ -13,7 +13,8 @@ export type Skill =
   | { name: "call" }
   | { name: "open_linkedin" }
   | { name: "run_digest" }
-  | { name: "open_lab" };
+  | { name: "open_lab" }
+  | { name: "open_research" };
 
 export interface Citation {
   section: string;
@@ -211,6 +212,26 @@ const INTENTS: Intent[] = [
       pinned(
         "No. He is not a CFA charterholder and has not sat the Level I exam. In 2025 he was awarded a merit-based scholarship covering the Level I exam fee; he hasn't attempted the exam yet.",
         cite(index, "Credentials").concat(citeText(index, "CFA Level I")).slice(-1),
+      ),
+  },
+  {
+    id: "brain",
+    test: [/\b(the brain|self.?(evolving|improving)|evolv\w*|autonomous|agent loop|auto.?research|elo|deflated sharpe|overfit\w*|data.?min\w*|locked holdout)\b/],
+    respond: ({ index }) =>
+      pinned(
+        "The Brain is his self-improving strategy search. Every 6 hours, on GitHub Actions at no cost, it mutates the Strategy Lab's rule families, backtests the children on 2016–2021 data only and scores them out of 100. A challenger replaces the champion only if it wins more folds than it loses (Elo-rated) and scores higher. Against overfitting: 2021–2026 is a locked holdout it never sees (a test scrambles those prices and proves nothing it picks changes), and every score is discounted by the Deflated Sharpe Ratio, which gets stricter with every strategy tried. He's upfront that choosing the eight ETFs in 2026 is itself hindsight.",
+        citeText(index, "The Brain"),
+        [{ name: "open_research" }],
+      ),
+  },
+  {
+    id: "research-city",
+    test: [/\b(research (city|hq)|(ai|the) city|buildings|knowledge graph|obsidian|research vault|what is he building|agents? (are |is )?building)\b/],
+    respond: ({ index }) =>
+      pinned(
+        "His research is laid out as a city: each project is a building whose lit floors are shipped milestones and whose scaffolding is unfinished work, and each bot is a real automated job — a scheduled search, a CI test run, a release gate or a reproducible script. The Brain sits in the centre, and Research HQ adds a knowledge graph of his Obsidian research vault, including peer-review logs of mistakes he caught and fixed.",
+        citeText(index, "Research HQ"),
+        [{ name: "open_research" }],
       ),
   },
   {

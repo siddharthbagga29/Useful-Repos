@@ -456,7 +456,13 @@ a.chip { text-decoration: none; }
 .sched-ok { margin: 0; color: var(--grn); font-family: var(--mono); font-size: 12px; }
 
 /* research */
-.panel-research { justify-content: flex-start; overflow-y: auto; }
+.panel-research { justify-content: flex-start; overflow-y: auto; padding-top: 84px; gap: 10px; }
+.rs-head { display: flex; align-items: flex-end; gap: 24px; max-width: 1240px; width: 100%; }
+.rs-head p { margin: 0; color: #bdbab0; font-size: 13px; line-height: 1.5; max-width: 620px; }
+.rs-more { color: #22d3ee; white-space: nowrap; }
+.rs-loading { font-family: var(--mono); font-size: 11px; color: var(--dim); padding: 40px 0; }
+.rs-city { width: 100%; max-width: 1240px; min-height: 0; flex: 1; display: flex; }
+@media (max-width: 900px) { .rs-head { flex-direction: column; align-items: flex-start; gap: 8px; } }
 .rs { display: grid; grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 12px; max-width: 1180px; width: 100%; }
 .rs-card { border: 1px solid var(--edge); border-radius: 12px; background: var(--ink2); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
 .rs-tag { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--amber); }
@@ -466,3 +472,16 @@ a.chip { text-decoration: none; }
 .rs-card li { font-family: var(--mono); font-size: 10.5px; color: var(--grn); border: 1px solid #1d4a33; border-radius: 999px; padding: 2px 8px; }
 .rs-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
 @media (max-width: 760px) { .rs-card li { font-size: 12px; } }
+
+/* ---------- Jarvis greeting ---------- */
+.greet { position: fixed; right: 16px; bottom: 84px; z-index: 51; width: min(340px, calc(100vw - 32px)); background: rgba(14,16,20,.96); border: 1px solid #1f3a44; border-radius: 14px; padding: 12px 14px; box-shadow: 0 18px 50px rgba(0,0,0,.55), 0 0 0 1px rgba(34,211,238,.08), 0 0 40px rgba(34,211,238,.08); backdrop-filter: blur(10px); }
+.greet::after { content: ""; position: absolute; right: 38px; bottom: -7px; width: 12px; height: 12px; background: rgba(14,16,20,.96); border-right: 1px solid #1f3a44; border-bottom: 1px solid #1f3a44; transform: rotate(45deg); }
+.greet-who { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 10px; letter-spacing: .2em; color: #22d3ee; }
+.greet-who i { width: 8px; height: 8px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 10px #22d3ee; animation: greetp 1.4s ease-in-out infinite; }
+@keyframes greetp { 50% { opacity: .35; } }
+.greet p { margin: 6px 0 10px; font-size: 14px; line-height: 1.5; color: var(--bone); }
+.greet-row { display: flex; gap: 6px; align-items: center; }
+.greet-row button { border: 1px solid var(--edge); background: none; color: var(--dim); font-family: var(--mono); font-size: 10.5px; padding: 5px 10px; border-radius: 999px; cursor: pointer; }
+.greet-row .greet-go { background: var(--hot); border-color: var(--hot); color: var(--ink); font-weight: 600; }
+.greet-row .greet-x { margin-left: auto; padding: 5px 8px; }
+@media (prefers-reduced-motion: reduce) { .greet-who i { animation: none; } }

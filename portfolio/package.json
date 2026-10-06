@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run -s build:brain",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc -b",
     "eval": "node --experimental-strip-types --no-warnings scripts/eval.ts",
-    "test:e2e": "python3 e2e/e2e.py"
+    "test:e2e": "python3 e2e/e2e.py",
+    "build:brain": "rolldown scripts/brain-run.ts -p node -f esm -o dist/brain/evolve.mjs --silent && cp src/lab/weekly.json dist/brain/weekly.json && node dist/brain/evolve.mjs --state dist/brain/state.json --data dist/brain/weekly.json --generations 48"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.85",

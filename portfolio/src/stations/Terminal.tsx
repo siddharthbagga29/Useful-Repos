@@ -68,6 +68,8 @@ const SCREENS: Record<string, Line[]> = {
   ],
 };
 
+const FKEYS = ["DES", "EXP", "VAL", "CERT", "HELP", "CLR"];
+
 export function Terminal() {
   const j = useJarvis();
   const [lines, setLines] = useState<Line[]>([L("sys", "SB TERMINAL v5.0 · AUTH OK · FIGURES CANDIDATE-SUPPLIED"), L("sys", "TYPE HELP <GO> FOR COMMANDS, OR JUST ASK A QUESTION"), L("txt")]);
@@ -151,12 +153,27 @@ export function Terminal() {
         </div>
         <form className="cl" onSubmit={submit}>
           <span>&gt;</span>
-          <input value={cmd} onChange={(e) => setCmd(e.target.value)} autoComplete="off" spellCheck={false} aria-label="Terminal command" placeholder="DES, or a question" />
+          <input
+            value={cmd}
+            onChange={(e) => setCmd(e.target.value)}
+            onKeyDown={(e) => {
+              // Bloomberg-style function keys, only while the terminal has focus (F5 still reloads elsewhere)
+              const f = /^F([1-6])$/.exec(e.key);
+              if (f) {
+                e.preventDefault();
+                run(FKEYS[+f[1]! - 1]!);
+              }
+            }}
+            autoComplete="off"
+            spellCheck={false}
+            aria-label="Terminal command (F1–F6 run the shortcuts)"
+            placeholder="DES, or a question · F1–F6"
+          />
           <button type="submit">&lt;GO&gt;</button>
         </form>
       </motion.div>
       <motion.div className="fkrow" variants={rise}>
-        {["DES", "EXP", "VAL", "CERT", "HELP", "CLR"].map((c, i) => (
+        {FKEYS.map((c, i) => (
           <motion.button key={c} className="fk" whileTap={{ scale: 0.92, backgroundColor: "#ffb020", color: "#000" }} onClick={() => run(c)}>
             F{i + 1} {c}
           </motion.button>

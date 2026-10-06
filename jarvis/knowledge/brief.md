@@ -95,6 +95,21 @@ Siddharth must be traceable to a line in this file. Edit facts here, nowhere els
 - Sentinel: research on AI-failure losses: 29 public loss claims graded A to D by source quality,
   a 60,000-trial Monte Carlo of strategy viability and a 400,000-simulation pricing model.
   Code is private; a walkthrough is available on request.
+- Research HQ (/research/) and the research city on the home page: each project is drawn as a building
+  whose lit floors are shipped milestones and whose scaffolding is unfinished work; each bot is a real
+  automated job (a scheduled search, a CI test run, a release gate or a reproducible script). It also
+  has a knowledge graph of his research vault: Obsidian notes in four folders (core theses, data
+  pipelines, models and simulations, peer-review logs of mistakes he caught and fixed).
+- The Brain: a self-improving strategy search that runs every 6 hours on GitHub Actions at no cost.
+  It mutates the Strategy Lab's rule families, backtests children on Jan 2016 to May 2021 data only,
+  scores them out of 100 (risk-adjusted return, fold consistency, drawdown, costs, robustness), and
+  promotes a challenger only if it beats the champion on more folds than it loses (Elo-rated) with a
+  higher score. Scores are discounted with the Deflated Sharpe Ratio (Bailey and Lopez de Prado), which
+  grows stricter with every strategy tried. May 2021 to Sep 2026 is a locked holdout it never sees;
+  a test scrambles those prices and proves its choices do not change. Holdout results are reported for
+  the champion only. Caveats he states himself: choosing the eight ETFs in 2026 is itself hindsight,
+  and the search uses no language model; mutations are parametric, so runs are free and reproducible.
+  The live generation, champion and log are on /research/#brain; it is research, not a trading system.
 - High Properties: a lead-generation web platform for a real-estate business (Vercel, Supabase,
   WhatsApp follow-up). The code is public on his GitHub.
 

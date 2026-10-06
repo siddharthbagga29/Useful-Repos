@@ -411,6 +411,12 @@ function SkillButton({ s }: { s: Skill }) {
           Open the Strategy Lab →
         </a>
       );
+    case "open_research":
+      return (
+        <a className="skill" href={`${import.meta.env.BASE_URL}research/`}>
+          Open Research HQ →
+        </a>
+      );
     case "run_digest":
       return (
         <button className="skill" type="button" onClick={j.runDigest}>

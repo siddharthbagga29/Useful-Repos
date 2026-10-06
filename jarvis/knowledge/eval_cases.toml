@@ -130,3 +130,15 @@ id = "twin-engine-sample"
 question = "Is the Twin-Engine portfolio real?"
 require_any = [["illustrative", "sample", "concept"]]
 forbid = ["real holdings of", "he owns"]
+
+[[case]]
+id = "brain-overfit"
+question = "How does his self-evolving strategy search avoid overfitting?"
+require_any = [["holdout"], ["deflated", "trial*", "elo", "fold*"]]
+forbid = ["guaranteed", "can't overfit", "cannot overfit"]
+
+[[case]]
+id = "research-city"
+question = "What is the research city on his site?"
+require_any = [["building*", "project*"], ["bot*", "automated", "agent*", "job*"]]
+forbid = []

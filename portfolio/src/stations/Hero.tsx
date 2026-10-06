@@ -4,11 +4,11 @@ import { CONTACT } from "../data/site.ts";
 import { bus } from "../jarvis/bus.ts";
 
 const HUD: [string, string][] = [
-  ["CLASS", "Analyst · Private capital"],
+  ["CLASS", "Valuation & Diligence Analyst"],
   ["LEVEL", "Associate"],
   ["XP", "14 months · 11 full-time"],
   ["SPAWNED", "May 2025 · M.S. Fin. Math"],
-  ["PERKS", "Travel · Fitness · Always learning"],
+  ["PERKS", "Financial Math · Monte Carlo · Valuation"],
 ];
 
 export function Hero() {

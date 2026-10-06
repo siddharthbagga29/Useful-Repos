@@ -1,0 +1,87 @@
+/* Research city — isometric districts, bots and the Brain. Uses the site's tokens. */
+.city { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 16px; width: 100%; max-width: 1240px; min-height: 0; }
+.city-stage { position: relative; border: 1px solid var(--edge); border-radius: 14px; background:
+  radial-gradient(ellipse at 50% 40%, rgba(34, 211, 238, .08), transparent 60%),
+  linear-gradient(rgba(255, 255, 255, .03) 1px, transparent 1px) 0 0 / 24px 24px,
+  linear-gradient(90deg, rgba(255, 255, 255, .03) 1px, transparent 1px) 0 0 / 24px 24px,
+  #0a0b0e; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+.city-svg { width: 100%; height: auto; display: block; flex: 1; min-height: 0; }
+.city-hud { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 14px 0; font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.city-hud b { color: #22d3ee; font-weight: 500; }
+.city-pick { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 14px 8px; }
+.city-pick button { border: 1px solid var(--edge); background: none; color: var(--dim); font-family: var(--mono); font-size: 10px; padding: 4px 8px; border-radius: 999px; cursor: pointer; }
+.city-pick button::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--c); margin-right: 5px; vertical-align: 1px; }
+.city-pick button:hover, .city-pick button.on { color: var(--bone); border-color: var(--c); }
+@media (max-width: 760px) { .city-pick button { font-size: 12px; padding: 6px 10px; } }
+.city-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 0 14px 10px; font-family: var(--mono); font-size: 10px; color: var(--dim); }
+.city-legend i { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-right: 5px; vertical-align: 1px; }
+
+.ground { fill: rgba(255, 255, 255, .015); stroke: rgba(255, 255, 255, .06); }
+.plot { fill: rgba(255, 255, 255, .025); stroke: rgba(255, 255, 255, .07); stroke-width: .8; transition: stroke .2s; }
+.road { stroke: rgba(255, 255, 255, .07); stroke-width: 12; stroke-linecap: round; }
+.road-flow { stroke: rgba(34, 211, 238, .45); stroke-width: .9; stroke-dasharray: 2 9; animation: flow 3.5s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -66; } }
+
+.bld { cursor: pointer; outline: none; }
+.bld:hover .plot, .bld:focus-visible .plot { stroke: var(--bone); }
+.bld.sel .plot { stroke-width: 1.6; fill: rgba(255, 255, 255, .05); }
+.wire polygon { fill: rgba(255, 255, 255, .015); stroke-width: .5; stroke-dasharray: 1.6 1.6; opacity: .55; }
+.win { fill: #1c2128; }
+.win.on { fill: #fff3c4; opacity: .85; animation: flick 7s steps(1) infinite; }
+@keyframes flick { 0%, 100% { opacity: .85; } 46% { opacity: .35; } 52% { opacity: .85; } 81% { opacity: .6; } }
+.mast { stroke-width: 1.2; opacity: .9; }
+.jib { stroke-width: 1.4; }
+.cable { stroke-width: .6; opacity: .8; }
+.spark { fill: #fff7d6; animation: spark 1.3s steps(2) infinite; }
+@keyframes spark { 0% { opacity: 1; } 50% { opacity: 0; } }
+.sign rect:first-child { fill: rgba(10, 11, 14, .88); stroke: rgba(255, 255, 255, .14); stroke-width: .6; }
+.sign-n { font-family: var(--mono); font-size: 10px; fill: var(--bone); letter-spacing: .04em; }
+.sign-s { font-family: var(--mono); font-size: 8px; fill: #22d3ee; }
+.sign-bar { fill: rgba(255, 255, 255, .12); }
+.bld.sel .sign rect:first-child { stroke: var(--bone); }
+.brain-band { fill: #67e8f9; }
+.ring { fill: none; stroke: #22d3ee; stroke-width: .9; }
+.core-pulse { fill: none; stroke: #67e8f9; stroke-width: 1; }
+.silo-cap { fill: #cbd5e1; }
+
+.bot { pointer-events: none; }
+.bot-glow { opacity: .22; filter: blur(2px); }
+.bot-shadow { fill: rgba(0, 0, 0, .45); }
+.bot-body { fill: #d6d3c8; }
+.bot-head { fill: #f2efe6; }
+.bot-packet { stroke: rgba(0, 0, 0, .4); stroke-width: .3; }
+
+.dossier { border: 1px solid var(--edge); border-radius: 14px; background: var(--ink2); padding: 16px 18px; overflow-y: auto; min-height: 0; max-height: 100%; }
+.dossier h3 { margin: 2px 0 8px; font-size: 22px; font-weight: 900; letter-spacing: -.02em; text-transform: uppercase; }
+.ds-k { font-family: var(--mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+.ds-prog { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 10.5px; color: var(--dim); }
+.ds-bar { flex: 1; height: 5px; border-radius: 3px; background: var(--ink3); overflow: hidden; }
+.ds-bar i { display: block; height: 100%; border-radius: 3px; }
+.ds-sum { color: #cfccc2; font-size: 13px; line-height: 1.5; margin: 10px 0; }
+.ds-params { display: grid; gap: 4px; margin: 0 0 10px; font-size: 12px; }
+.ds-params div { display: grid; grid-template-columns: 96px 1fr; gap: 8px; }
+.ds-params dt { font-family: var(--mono); font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; padding-top: 2px; }
+.ds-params dd { margin: 0; color: var(--bone); }
+.ds-h { font-family: var(--mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--hot); margin: 12px 0 6px; }
+.ds-agents { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ds-agents li { display: flex; gap: 10px; font-size: 12px; }
+.ds-agents p { margin: 2px 0 0; color: #bdbab0; line-height: 1.4; }
+.ds-agents .ds-out { color: var(--grn); font-family: var(--mono); font-size: 11px; }
+.ds-bot { flex: none; width: 10px; height: 14px; border-radius: 3px 3px 2px 2px; margin-top: 2px; box-shadow: 0 0 10px currentColor; }
+.ds-kind { font-family: var(--mono); font-size: 9.5px; color: var(--dim); }
+.ds-ms { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 12px; color: var(--dim); }
+.ds-ms li.on { color: var(--bone); }
+.ds-ms span { font-size: 10px; margin-right: 4px; }
+.ds-ms em { font-style: normal; color: var(--amber); font-family: var(--mono); font-size: 10px; }
+.ds-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+
+.city.compact { height: 100%; max-height: calc(100vh - 290px); max-height: calc(100svh - 290px); }
+.city.compact .dossier { max-height: none; }
+@media (max-width: 900px) {
+  .city { grid-template-columns: 1fr; }
+  .city.compact { height: auto; max-height: none; }
+  .dossier { max-height: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .road-flow, .win.on, .spark { animation: none; }
+}

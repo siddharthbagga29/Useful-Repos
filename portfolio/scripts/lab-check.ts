@@ -1,6 +1,7 @@
 // Sanity checks for the Strategy Lab engine: arithmetic, no look-ahead, costs, and stress windows.
 //   node --experimental-strip-types scripts/lab-check.ts
 import { readFileSync } from "node:fs";
+import { deflatedSharpe, evolve, initState, phi, phiInv, selectionData, SPLIT_DATE } from "../src/brain/engine.ts";
 import { backtest, DEFAULTS, type Dataset, type Params } from "../src/lab/backtest.ts";
 import { blockBootstrap, relatives, rng, runOps, simplex, stats } from "../src/lab/ops.ts";
 import { analyze, DEAL_DEFAULTS, maxPriceFor, simulate } from "../src/deal/model.ts";
@@ -87,6 +88,27 @@ const ds = simulate(DEAL_DEFAULTS, 20000, 3);
 ok("deal: Monte Carlo ≈ workbook (29.5%) and Python (29.3%)", Math.abs(ds.pWorks - 0.294) < 0.015, String(ds.pWorks));
 const mp = maxPriceFor(DEAL_DEFAULTS, 0.6);
 ok("deal: max price for 60% success is below MAO and works", mp < dl.mao && simulate({ ...DEAL_DEFAULTS, contract: mp }, 20000, 5).pWorks >= 0.58, String(mp));
+
+// 9. Brain: the evolution loop must never see the holdout, and must be reproducible
+const sel = selectionData(data);
+ok("brain: selection data ends at the split week", sel.dates.at(-1) === SPLIT_DATE && Object.values(sel.series).every((v) => v.length === sel.dates.length), String(sel.dates.at(-1)));
+const s0 = initState(data, "2026-10-06T00:00:00Z");
+const r1 = evolve(s0, data, 6, "2026-10-06T06:00:00Z");
+const r2 = evolve(s0, data, 6, "2026-10-06T06:00:00Z");
+ok("brain: same state + same generations = same result", JSON.stringify(r1) === JSON.stringify(r2));
+const scrambled: Dataset = JSON.parse(JSON.stringify(data));
+const cut = data.dates.indexOf(SPLIT_DATE);
+const noise = rng(99);
+for (const v of Object.values(scrambled.series)) for (let i = cut + 1; i < v.length; i++) v[i] = v[i]! * (0.5 + noise());
+const r3 = evolve(s0, scrambled, 6, "2026-10-06T06:00:00Z");
+// everything except the holdout report itself (and log text quoting it)
+const strip = (s: typeof r1) =>
+  JSON.stringify({ ...s, log: s.log.map((l) => l.text.replace(/Holdout Sharpe .*$/, "")) }, (k, v) => (k === "holdout" ? undefined : v));
+ok("brain: selection is blind to the holdout (scrambled post-2021 prices change nothing it chose)", strip(r1) === strip(r3));
+ok("brain: holdout report does use the holdout", r1.champion.holdout!.cagr !== r3.champion.holdout!.cagr);
+ok("brain: scores stay within 0–100", [r1.champion, ...r1.hallOfFame].every((c) => c.score >= 0 && c.score <= 100));
+ok("brain: phi and its inverse agree", [0.01, 0.2, 0.5, 0.9, 0.999].every((p) => Math.abs(phi(phiInv(p)) - p) < 1e-6));
+ok("brain: more trials deflate the Sharpe ratio", deflatedSharpe(0.15, 250, 0, 3, 1000, 0.003) < deflatedSharpe(0.15, 250, 0, 3, 10, 0.003));
 
 console.log(`\nSPY buy&hold: CAGR ${pct(hold.metrics.cagr)}, vol ${pct(hold.metrics.vol)}, maxDD ${pct(hold.metrics.maxDD)}`);
 console.log(`60/40:        CAGR ${pct(sixty.metrics.cagr)}, vol ${pct(sixty.metrics.vol)}, maxDD ${pct(sixty.metrics.maxDD)}`);
