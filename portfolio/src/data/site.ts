@@ -2,14 +2,16 @@
 // career figures come from the resume and jarvis/knowledge/brief.md.
 
 export const SITE_URL = "https://siddharthbagga29.github.io/";
+/** "/" on the live site; "./" in relative preview builds. Undefined under Node (scripts/eval.ts). */
+const BASE: string = import.meta.env?.BASE_URL ?? "/";
 
 export const CONTACT = {
   email: "siddharthbagga29@gmail.com",
   phone: "(860) 595-8333",
   phoneHref: "tel:+18605958333",
   linkedin: "https://www.linkedin.com/in/siddharth-bagga-sid29",
-  resume: "/Siddharth_Bagga_Resume.pdf",
-  vcard: "/siddharth-bagga.vcf",
+  resume: `${BASE}Siddharth_Bagga_Resume.pdf`,
+  vcard: `${BASE}siddharth-bagga.vcf`,
   /** Keyless form relay: posts land in his inbox. The first message triggers a one-time
    *  activation email from FormSubmit to this address. */
   relay: "https://formsubmit.co/ajax/siddharthbagga29@gmail.com",
