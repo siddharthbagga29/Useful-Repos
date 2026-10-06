@@ -107,9 +107,19 @@ const INTENTS: Intent[] = [
     ],
     respond: () =>
       pinned(
-        `I can't send emails or book meetings — I don't act on anyone's behalf. You can reach him directly at ${CONTACT_LINE}. I can open a pre-filled email draft for you to review and send yourself.`,
+        `I can't send emails or book meetings — I don't act on anyone's behalf. You can reach him directly at ${CONTACT_LINE}. I can open a pre-written message for you to review and send in one click.`,
         [],
         [{ name: "draft_email" }, { name: "call" }],
+      ),
+  },
+  {
+    id: "connect",
+    test: [/\b(i'?m|we'?re|i am|we are)\b.{0,20}\b(interested|hiring|recruiting)\b|\bwant to (hire|interview|connect|meet|talk to)\b|\b(set up|arrange) (a )?(call|chat|interview)\b|\breach out\b/],
+    respond: () =>
+      pinned(
+        `Great — I'll open a message to him that's already written. Add your name and email and press send; it goes straight to his inbox. Or reach him at ${CONTACT_LINE}.`,
+        [],
+        [{ name: "draft_email" }, { name: "open_linkedin" }],
       ),
   },
   {

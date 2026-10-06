@@ -2,42 +2,61 @@ import { motion } from "framer-motion";
 import { Panel, Kicker, rise } from "../ui/Panel.tsx";
 import { CONTACT } from "../data/site.ts";
 import { bus } from "../jarvis/bus.ts";
+import { CopyEmail } from "../ui/Connect.tsx";
+
+const PATHS = [
+  { intent: "hiring" as const, title: "Hiring?", text: "Interview request, pre-written. Add your name and send.", cta: "Request an interview" },
+  { intent: "network" as const, title: "Networking?", text: "Coffee chat or a call to trade notes on deals.", cta: "Start a conversation" },
+  { intent: "deal" as const, title: "Project?", text: "Diligence, valuation or modelling support.", cta: "Describe the project" },
+];
 
 export function Contact() {
   return (
     <Panel id="contact" label="Contact">
       <Kicker>Where this goes</Kicker>
-      <motion.h2 className="mega" variants={rise}>
-        Wall
-        <br />
-        Street
-        <br />
-        <em>Next</em>
+      <motion.h2 className="mega mega-sm" variants={rise}>
+        Wall Street <em>Next</em>
       </motion.h2>
       <motion.p className="sub" variants={rise}>
-        Commercial due diligence, valuation, strategy. Relocating for the right desk.
-        <br />
-        <a href={`mailto:${CONTACT.email}`}>
-          <b>{CONTACT.email}</b>
-        </a>{" "}
-        ·{" "}
-        <a href={CONTACT.phoneHref}>
-          <b>{CONTACT.phone}</b>
-        </a>
+        Commercial due diligence, valuation, strategy. Relocating to New York for the right desk. Every message gets a reply.
       </motion.p>
-      <motion.div className="row" variants={rise}>
-        <motion.a className="cta hot" href={`mailto:${CONTACT.email}`} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-          Email me
-        </motion.a>
-        <motion.a className="cta" href={CONTACT.linkedin} target="_blank" rel="noopener noreferrer" whileHover={{ scale: 1.04 }}>
-          LinkedIn ↗
-        </motion.a>
-        <motion.button className="cta" onClick={() => bus.emit({ type: "open_jarvis", agent: "digest" })} whileHover={{ scale: 1.04 }}>
-          Ask Jarvis
-        </motion.button>
+      <motion.div className="paths" variants={rise}>
+        {PATHS.map((p) => (
+          <motion.button key={p.intent} className="path" whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }} onClick={() => bus.emit({ type: "open_connect", intent: p.intent })} data-testid={`path-${p.intent}`}>
+            <b>{p.title}</b>
+            <span>{p.text}</span>
+            <em>{p.cta} →</em>
+          </motion.button>
+        ))}
+      </motion.div>
+      <motion.div className="direct" variants={rise}>
+        <div>
+          <span className="lbl">Email</span>
+          <span className="val" data-testid="contact-email">
+            {CONTACT.email}
+          </span>
+        </div>
+        <div>
+          <span className="lbl">Phone</span>
+          <a className="val" href={CONTACT.phoneHref}>
+            {CONTACT.phone}
+          </a>
+        </div>
+        <div className="row">
+          <CopyEmail className="chip" />
+          <a className="chip" href={CONTACT.vcard} download="Siddharth-Bagga.vcf" data-testid="contact-vcard">
+            Save contact
+          </a>
+          <a className="chip" href={CONTACT.resume} target="_blank" rel="noopener">
+            Résumé PDF
+          </a>
+          <a className="chip" href={CONTACT.linkedin} target="_blank" rel="noopener noreferrer">
+            LinkedIn ↗
+          </a>
+        </div>
       </motion.div>
       <motion.p className="foot" variants={rise}>
-        Built with React 19 and Framer Motion. Jarvis is my own build: Web Speech for voice, a retrieval engine over my brief, and an optional on-device LLM on WebGPU. Free to run, private by design.
+        Built with React 19 and Framer Motion. Jarvis is my own build: Web Speech for voice, a retrieval engine over my brief, and an optional on-device LLM on WebGPU.
       </motion.p>
     </Panel>
   );

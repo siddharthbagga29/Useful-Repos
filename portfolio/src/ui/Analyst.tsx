@@ -276,7 +276,11 @@ export function Analyst({ act, doing, energy }: { act: Act; doing: string; energ
       }
     };
 
-    const tick = () => {
+    let last = 0;
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      if (now - last < 32 || document.hidden) return; // ~30 fps is plenty for a 200px sprite
+      last = now;
       const a = actRef.current;
       if (a !== st.last) {
         if (a === "type" || a === "model") {
@@ -287,7 +291,7 @@ export function Analyst({ act, doing, energy }: { act: Act; doing: string; energ
         st.last = a;
       }
       const boost = 1 + Math.min(3, energy.current ?? 0);
-      st.t += boost;
+      st.t += boost * 2;
       const t = Math.floor(st.t);
       if (a === "type" && t % 4 === 0 && st.cells.length < 36) st.cells.push(st.cells.length);
       if (a === "model") {
@@ -297,7 +301,6 @@ export function Analyst({ act, doing, energy }: { act: Act; doing: string; energ
       }
       if (a === "command" && t % 10 === 0 && st.term < 7) st.term++;
       draw();
-      raf = requestAnimationFrame(tick);
     };
 
     if (reduce) {

@@ -8,7 +8,25 @@ export const CONTACT = {
   phone: "(860) 595-8333",
   phoneHref: "tel:+18605958333",
   linkedin: "https://www.linkedin.com/in/siddharth-bagga-sid29",
+  resume: "/Siddharth_Bagga_Resume.pdf",
+  vcard: "/siddharth-bagga.vcf",
+  /** Keyless form relay: posts land in his inbox. The first message triggers a one-time
+   *  activation email from FormSubmit to this address. */
+  relay: "https://formsubmit.co/ajax/siddharthbagga29@gmail.com",
+  availability: "Open to commercial due diligence, valuation & strategy roles · New York · available now",
 };
+
+export interface Draft {
+  subject: string;
+  body: string;
+}
+
+const enc = encodeURIComponent;
+export const composeLinks = (d: Draft) => ({
+  gmail: `https://mail.google.com/mail/?view=cm&fs=1&to=${enc(CONTACT.email)}&su=${enc(d.subject)}&body=${enc(d.body)}`,
+  outlook: `https://outlook.office.com/mail/deeplink/compose?to=${enc(CONTACT.email)}&subject=${enc(d.subject)}&body=${enc(d.body)}`,
+  mailto: `mailto:${CONTACT.email}?subject=${enc(d.subject)}&body=${enc(d.body)}`,
+});
 
 const drive = (id: string) => `https://drive.google.com/file/d/${id}/view`;
 
@@ -43,6 +61,7 @@ export const TAPE: [string, string, "up" | "down" | "flat"][] = [
 export const STATIONS = [
   { id: "hero", label: "Spawn point", act: "type", doing: "building the model" },
   { id: "numbers", label: "The numbers", act: "model", doing: "running sensitivities" },
+  { id: "experience", label: "Track record", act: "type", doing: "updating the CV" },
   { id: "terminal", label: "Terminal", act: "command", doing: "pulling the tape" },
   { id: "model", label: "The model", act: "model", doing: "solving the DCF" },
   { id: "dealroom", label: "Deal room", act: "docs", doing: "reading the dossier" },

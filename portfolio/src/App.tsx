@@ -24,6 +24,9 @@ import { DealRoom } from "./stations/DealRoom.tsx";
 import { Exhibits } from "./stations/Exhibits.tsx";
 import { JarvisStation } from "./stations/JarvisStation.tsx";
 import { Contact } from "./stations/Contact.tsx";
+import { Experience } from "./stations/Experience.tsx";
+import { Nav } from "./ui/Nav.tsx";
+import { Connect } from "./ui/Connect.tsx";
 
 const N = STATIONS.length;
 
@@ -128,9 +131,9 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
-      if (t.closest("input, textarea, select, [contenteditable]") || e.metaKey || e.ctrlKey || e.altKey || j.open) return;
+      if (t.closest("input, textarea, select, [contenteditable], .cx-back") || e.metaKey || e.ctrlKey || e.altKey || j.open) return;
       const k = e.key;
-      if (/^[1-8]$/.test(k)) go(STATIONS[+k - 1]!.id);
+      if (/^[1-9]$/.test(k)) go(STATIONS[+k - 1]!.id);
       else if (k === "j" || k === "J") j.setOpen(true);
       else if (horizontal && (k === "ArrowRight" || k === "ArrowLeft")) {
         e.preventDefault();
@@ -149,6 +152,7 @@ export default function App() {
     <>
       <Hero />
       <Numbers />
+      <Experience />
       <Terminal />
       <Model />
       <DealRoom />
@@ -164,6 +168,7 @@ export default function App() {
         Skip to Jarvis
       </a>
       <Tape />
+      <Nav active={station.id} />
       <main>
         {horizontal ? (
           <div className="rig" ref={rig} style={{ height: `${N * 115}vh` }}>
@@ -201,6 +206,7 @@ export default function App() {
       <Cursor />
       <JarvisOverlay />
       <CommandPalette />
+      <Connect />
     </>
   );
 }
@@ -236,7 +242,7 @@ function TapBursts() {
     let n = 0;
     const onDown = (e: PointerEvent) => {
       const el = e.target as HTMLElement;
-      if (el.closest("input, textarea, select, .overlay, .pal-back, .jx, input[type=range]")) return;
+      if (el.closest("input, textarea, select, .overlay, .pal-back, .jx, .cx-back, .nav, input[type=range]")) return;
       bus.emit({ type: "tap" });
       if (reduce) return;
       const t = TAPS[Math.floor(Math.random() * TAPS.length)]!;

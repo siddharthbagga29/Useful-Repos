@@ -26,7 +26,7 @@ const SKILLS = [
   ["navigate", "Moves the page to any station"],
   ["set_dcf", "Drives the S&P Global model"],
   ["open_exhibit", "Opens the original documents"],
-  ["draft_email", "Pre-fills an email you send"],
+  ["draft_email", "Writes the message for you to send"],
   ["remember", "Remembers your name on this device"],
 ] as const;
 
@@ -375,7 +375,6 @@ function Message({ m }: { m: Msg }) {
   );
 }
 
-const MAIL = `mailto:${CONTACT.email}?subject=${encodeURIComponent("Saw your portfolio — let's talk")}&body=${encodeURIComponent("Hi Siddharth,\n\nI came across your portfolio and Jarvis. I'd like to talk about ")}`;
 
 function SkillButton({ s }: { s: Skill }) {
   const j = useJarvis();
@@ -390,9 +389,9 @@ function SkillButton({ s }: { s: Skill }) {
     }
     case "draft_email":
       return (
-        <a className="skill" href={MAIL}>
-          ✉ Draft email
-        </a>
+        <button className="skill" type="button" onClick={() => bus.emit({ type: "open_connect" })}>
+          ✉ Write to him
+        </button>
       );
     case "call":
       return (

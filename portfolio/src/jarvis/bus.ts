@@ -6,6 +6,7 @@ export type BusEvent =
   | { type: "set_dcf"; wacc?: number; g?: number }
   | { type: "open_jarvis"; agent?: "chat" | "digest" | "research" }
   | { type: "close_jarvis" }
+  | { type: "open_connect"; intent?: "hiring" | "network" | "deal" | "other" }
   | { type: "tap" };
 
 type Fn = (e: BusEvent) => void;

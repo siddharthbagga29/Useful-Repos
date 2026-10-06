@@ -202,7 +202,7 @@ const GS = [2.0, 2.5, 3.0, 3.5, 4.0];
 
 function Sensitivity({ wacc, g, onPick }: { wacc: number; g: number; onPick(w: number, g: number): void }) {
   return (
-    <div className="sens" role="table" aria-label="Implied equity sensitivity, WACC by terminal growth, $B">
+    <div className="sens" role="group" aria-label="Implied equity sensitivity, WACC by terminal growth, $B">
       <div className="sens-h">Sensitivity · implied equity $B · rows WACC, cols g</div>
       <div className="sens-grid">
         <span />

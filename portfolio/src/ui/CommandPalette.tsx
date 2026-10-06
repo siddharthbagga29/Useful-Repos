@@ -45,6 +45,8 @@ export function CommandPalette() {
       f();
     };
     return [
+      { id: "connect", group: "Contact", label: "Get in touch — pre-written message", run: close(() => bus.emit({ type: "open_connect" })) },
+      { id: "resume", group: "Contact", label: "Open résumé (PDF)", run: close(() => window.open(CONTACT.resume, "_blank", "noopener")) },
       { id: "jarvis", group: "Jarvis", label: "Open Jarvis", hint: "J", run: close(() => j.setOpen(true)) },
       { id: "digest", group: "Jarvis", label: "Brief me — 60-second spoken brief", run: close(() => { j.setOpen(true); j.runDigest(); }) },
       { id: "voice", group: "Jarvis", label: "Talk to Jarvis (push to talk)", run: close(() => { j.setOpen(true); j.pushToTalk(); }) },
@@ -53,7 +55,7 @@ export function CommandPalette() {
       { id: "llm", group: "Jarvis", label: "Load the on-device LLM (WebGPU)", run: close(() => { j.setOpen(true); void j.enableNeural(); }) },
       ...STATIONS.map((s, i) => ({ id: `go-${s.id}`, group: "Go to", label: s.label, hint: String(i + 1), run: close(() => bus.emit({ type: "navigate", station: s.id })) })),
       ...EXHIBITS.map((e) => ({ id: `ex-${e.id}`, group: "Exhibits", label: e.title, hint: e.kind, run: close(() => window.open(e.url, "_blank", "noopener")) })),
-      { id: "email", group: "Contact", label: `Email ${CONTACT.email}`, run: close(() => (location.href = `mailto:${CONTACT.email}`)) },
+      { id: "email", group: "Contact", label: `Copy ${CONTACT.email}`, run: close(() => void navigator.clipboard?.writeText(CONTACT.email).catch(() => {})) },
       { id: "li", group: "Contact", label: "LinkedIn", run: close(() => window.open(CONTACT.linkedin, "_blank", "noopener")) },
     ];
   }, [j]);

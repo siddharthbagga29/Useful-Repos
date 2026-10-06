@@ -255,6 +255,7 @@ export function JarvisProvider({ children }: { children: ReactNode }) {
           if (s.name === "navigate") bus.emit({ type: "navigate", station: s.station });
           if (s.name === "set_dcf") bus.emit({ type: "set_dcf", wacc: s.wacc, g: s.g });
         }
+        if (ans.intent === "connect") bus.emit({ type: "open_connect", intent: /hir|recruit|interview/.test(text.toLowerCase()) ? "hiring" : "network" });
         if (ans.skills.some((s) => s.name === "run_digest") && ans.intent === "digest") {
           runDigest();
           return;
