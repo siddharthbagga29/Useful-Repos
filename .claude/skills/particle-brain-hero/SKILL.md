@@ -13,6 +13,11 @@ Siddharth's own spec for this look lives in `references/` — **read both before
   out of it, the fading ring, the copy column, pills, giant wordmark, spring cascade, breakpoint
   tables. Its own rule: *adapt, do not transliterate* — port it into the stack in use.
 
+- `references/zoomable-universe-prompt.md` — the generalized master prompt for applying this look to
+  a NEW business: a zoomable, real-time "living universe" where granular particles (real records)
+  combine into one big form and separate again as you zoom in. Use it when he asks for this look
+  "for another business idea"; fill section 0 from what he says.
+
 ## What he asked for (his words, condensed)
 
 - "Small particles combining to make a bigger thing and then moving when the mouse moves."
