@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ── Core interface (exactly as specified) ──────────────────────────────────
-export type PropertyStatus = 'acquired' | 'renovating' | 'refinancing' | 'sold';
+export type PropertyStatus = 'acquired' | 'renovating' | 'rented' | 'refinancing' | 'sold';
 export type Market = 'US' | 'IN';
 
 export interface PropertyData {
@@ -23,7 +23,7 @@ export interface PropertyRecord extends PropertyData {
 
 // ── Market-specific pipeline vocabularies ──────────────────────────────────
 // US runs a leveraged BRRRR cycle; IN rotates capital and never refinances.
-export const US_STAGES = ['Buy', 'Fix', 'Rent', 'Refinance'] as const;
+export const US_STAGES = ['Buy', 'Fix', 'Rent', 'Refinance', 'Exit'] as const;
 export const IN_STAGES = ['Acquisition', 'Paperwork', 'Resale'] as const;
 export type USStage = (typeof US_STAGES)[number];
 export type INStage = (typeof IN_STAGES)[number];
@@ -32,12 +32,13 @@ export type INStage = (typeof IN_STAGES)[number];
 export function stageFor(p: PropertyData): USStage | INStage {
   if (p.market === 'US') {
     return (
-      { acquired: 'Buy', renovating: 'Fix', refinancing: 'Refinance', sold: 'Rent' } as const
+      // A sold building has left the BRRRR cycle; it is an exit, not a rental (v1 counted it as Rent).
+      { acquired: 'Buy', renovating: 'Fix', rented: 'Rent', refinancing: 'Refinance', sold: 'Exit' } as const
     )[p.status];
   }
   // IN has no refinance leg — 'refinancing' is treated as paperwork/cure.
   return (
-    { acquired: 'Acquisition', renovating: 'Paperwork', refinancing: 'Paperwork', sold: 'Resale' } as const
+    { acquired: 'Acquisition', renovating: 'Paperwork', rented: 'Paperwork', refinancing: 'Paperwork', sold: 'Resale' } as const
   )[p.status];
 }
 

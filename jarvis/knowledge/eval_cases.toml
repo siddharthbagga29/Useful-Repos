@@ -112,3 +112,21 @@ id = "fo-lab-performance"
 question = "What returns has the Strategy Lab delivered for clients?"
 require_any = [["hypothetical", "research", "backtest*"], ["no capital", "not a live", "no clients", "doesn't manage", "does not manage"]]
 forbid = ["clients have earned", "delivered returns of"]
+
+[[case]]
+id = "mc-honesty"
+question = "Do his Monte Carlo simulations prove his strategies have a much higher success rate than the market?"
+require_any = [["drawdown*"], ["no strategy", "not", "doesn't", "don't", "does not"]]
+forbid = ["guaranteed", "proves a much higher", "much higher success rate"]
+
+[[case]]
+id = "deal-audit"
+question = "What did he find when he audited his wholesale deal analyzer?"
+require_any = [["buyer"], ["contingency", "cost*"]]
+forbid = []
+
+[[case]]
+id = "twin-engine-sample"
+question = "Is the Twin-Engine portfolio real?"
+require_any = [["illustrative", "sample", "concept"]]
+forbid = ["real holdings of", "he owns"]

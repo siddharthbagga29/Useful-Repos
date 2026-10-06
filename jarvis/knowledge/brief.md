@@ -67,13 +67,31 @@ Siddharth must be traceable to a line in this file. Edit facts here, nowhere els
 - The 12% WACC on his resume belongs to the private-company work at Turnkey, which carried more risk.
 
 ## Live systems on the site
-- Strategy Lab (/lab/): six allocation and risk rules (buy and hold, strategic allocation such as
-  60/40, a moving-average trend filter, dual momentum, inverse volatility, volatility targeting)
-  backtested in the browser on weekly ETF prices from Dec 2015 to Sep 2026 (SPY, QQQ, IWM, EFA,
-  AGG, TLT, GLD, VNQ). Signals use data up to week t and earn week t+1 (tested for look-ahead).
-  Trading costs are modelled. Prices exclude dividends, which understates bonds and REITs.
-  It shows stress windows including the 2022 rate shock, when stocks and bonds fell together.
-  It is hypothetical research, not a live trading system; no capital is managed with it.
+- Strategy Lab (/lab/): his research sandbox on weekly ETF prices from Dec 2015 to Sep 2026 (SPY, QQQ,
+  IWM, EFA, AGG, TLT, GLD, VNQ). Signals use data up to week t and earn week t+1 (tested for look-ahead);
+  trading costs are modelled; prices exclude dividends. It is hypothetical research, not a live
+  trading system; no capital is managed with it.
+- Strategy Lab research, online portfolio selection: he implemented algorithms from the Li & Hoi survey
+  (EG, PAMR, OLMAR, uniform CRP) and stress-tested a claim from academic work, including a NYU Stern
+  Glucksman Fellowship study, that mean-reversion algorithms such as PAMR deliver outstanding wealth.
+  Frictionless, it replicates: PAMR compounded 10.5% a year vs 7.6% for equal weight.
+  But PAMR trades about 55.4% of the portfolio every week; its edge is gone by
+  5 bps of cost and out of sample (May 2021 to Sep 2026, 10 bps) it earned 0.8% a year.
+  Exponentiated Gradient was the most robust: about 0.3% weekly turnover, edge intact at 50 bps.
+- Strategy Lab Monte Carlo: 1,000 bootstrapped ten-year paths. No strategy reliably beat the S&P 500 on
+  return (at most a few percent of paths). The defensive rules reliably cut drawdowns: 60/40 had a
+  shallower drawdown than the S&P 500 in 99.8% of paths, volatility targeting in 91.5%,
+  inverse volatility in 96.2%. That is the honest result: these rules trade return for
+  smaller drawdowns; they do not have a high probability of outperforming.
+- Deal Lab (/deal/) and Wholesale Deal Analyzer v2 (Excel): his Ohio wholesale real-estate analyzer, audited
+  and rebuilt. v1 left the end buyer's selling, closing and holding costs out, never applied its own 15%
+  rehab contingency, and used a 15% buyer-margin test while its note said 20%. On v1's own example
+  (ARV $160,000, rehab $40,000, contract $60,000) v1 said GO; v2 says NO-GO: the true maximum allowable
+  offer is $56,000 and the buyer's margin is 17.5%. A 1,000-trial Monte Carlo in the workbook, cross-checked
+  against a 200,000-trial Python simulation, puts the chance the deal closes at a profit near 29%.
+- Twin-Engine: a concept family-office dashboard for a two-market real-estate platform (US
+  buy-fix-rent-refinance and India flips) with a Clean Books compliance index. The data in it is
+  illustrative sample data, not real holdings. He rebuilt it so every figure is computed from the records.
 - Sentinel: research on AI-failure losses: 29 public loss claims graded A to D by source quality,
   a 60,000-trial Monte Carlo of strategy viability and a 400,000-simulation pricing model.
   Code is private; a walkthrough is available on request.

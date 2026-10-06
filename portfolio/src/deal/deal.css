@@ -1,0 +1,16 @@
+.deal-group { display: flex; flex-direction: column; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--edge); }
+.deal-group .sl output { font-size: 13px; }
+.signal { border: 1px solid var(--edge); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.signal .lbl { font: 10px var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--dim); }
+.signal b { font-size: clamp(20px, 2.6vw, 28px); letter-spacing: -.01em; }
+.signal.go { border-color: #1d4a33; background: rgba(21,194,107,.07); }
+.signal.go b { color: var(--grn); }
+.signal.no { border-color: #4d3a14; background: rgba(255,176,32,.06); }
+.signal.no b { color: var(--amber); }
+.signal .v1 { font-size: 12px; color: var(--dim); }
+.signal .v1 i { font-style: normal; color: var(--bone); }
+.deal-hist { grid-template-columns: repeat(30, minmax(0, 1fr)); position: relative; padding: 8px 8px 20px; }
+.deal-hist .hb.ok { background: rgba(21,194,107,.7); }
+.deal-hist .minline { position: absolute; top: 0; bottom: 18px; width: 2px; background: var(--bone); }
+.deal-notes { display: flex; flex-direction: column; gap: 8px; }
+.deal-notes ul { margin: 0; padding-left: 16px; font-size: 13px; color: #cfccc2; line-height: 1.5; }

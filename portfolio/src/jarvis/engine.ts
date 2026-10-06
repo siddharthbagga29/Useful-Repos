@@ -214,6 +214,36 @@ const INTENTS: Intent[] = [
       ),
   },
   {
+    id: "research-findings",
+    test: [/\bmonte carlo\b|\bsuccess rate\b|\bwin rate\b|\bprobabilit|\bpamr\b|\bolmar\b|\bonline portfolio\b|\bmean.reversion\b|\bdoes (it|the strategy|his strategy) (actually )?work\b|\bprove/],
+    respond: ({ index }) =>
+      pinned(
+        "Honestly: his Monte Carlo (1,000 bootstrapped ten-year paths) shows no strategy reliably beats the S&P 500 on return. What the defensive rules do reliably is cut drawdowns — 60/40 had a shallower drawdown than the S&P 500 in 99.8% of paths, volatility targeting in 91.5%. He also stress-tested the academic claim that mean-reversion algorithms like PAMR win: true at zero cost (10.5% a year), but PAMR trades 55.4% of the book weekly and its edge is gone by 5 bps.",
+        citeText(index, "Strategy Lab Monte Carlo").concat(citeText(index, "online portfolio selection")),
+        [{ name: "open_lab" }],
+      ),
+  },
+  {
+    id: "deal-lab",
+    test: [/\bdeal lab\b|\bwholesal|\bdeal analy[sz]er\b|\breal.?estate\b|\bflip(s|ping)?\b|\bmao\b|\bassignment fee\b/],
+    respond: ({ index }) =>
+      pinned(
+        "He audited his own Ohio wholesale deal analyzer and rebuilt it. v1 left the end buyer's selling, closing and holding costs out and never applied its own 15% rehab contingency — so its example deal said GO. With the fixes the true maximum offer is $56,000 against a $60,000 contract, the buyer's margin is 17.5%, and a Monte Carlo puts the chance it closes at a profit near 29%. The Deal Lab lets you stress-test any deal; the Excel model has a live Monte Carlo.",
+        citeText(index, "Deal Lab"),
+        [{ name: "navigate", station: "research" }],
+      ),
+  },
+  {
+    id: "twin-engine",
+    test: [/\btwin.?engine\b|\bcontrol room\b|\bclean books\b/],
+    respond: ({ index }) =>
+      pinned(
+        "Twin-Engine is a concept family-office dashboard for a two-market real-estate platform — US buy-fix-rent-refinance and India flips — with a Clean Books compliance index. The properties in it are illustrative sample data, not real holdings. He rebuilt it so every figure is computed from the records; the first version typed in an IRR and counted a sold building as a rental.",
+        citeText(index, "Twin-Engine"),
+        [{ name: "navigate", station: "research" }],
+      ),
+  },
+  {
     id: "lab",
     test: [/\b(strategy lab|trading bot|trading system|algo(rithm)?(ic)?( trading| strateg\w*)?|backtest\w*|quant(itative)? strateg\w*|live systems?)\b/],
     respond: ({ index }) =>

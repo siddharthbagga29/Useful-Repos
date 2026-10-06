@@ -1,6 +1,7 @@
 import type { ComplianceCheck, PropertyRecord, Market } from '@/types/property';
 import { pipeline } from '@/types/property';
 import { fmt } from '@/lib/data';
+import type { Metrics } from '@/lib/metrics';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Unseen Studio · atmospheric command center.
@@ -11,31 +12,18 @@ import { fmt } from '@/lib/data';
 
 interface DashboardLayoutProps {
   properties: PropertyRecord[];
-  compliance: { score: number; checks: ComplianceCheck[] };
-  metrics: { totalEquity: number; blendedIrr: string };
+  checks: ComplianceCheck[];
+  metrics: Metrics;
+  /** true while the records are illustrative; shows a banner so no one mistakes them for holdings */
+  sample?: boolean;
 }
 
-// Hairline, non-scaling 1px sparkline. Data rendered as a line — no fill, no dot.
-function Spark({ data }: { data: number[] }) {
-  const w = 140, h = 24;
-  const min = Math.min(...data), max = Math.max(...data);
-  const x = (i: number) => (i * w) / (data.length - 1);
-  const y = (v: number) => h - ((v - min) / (max - min || 1)) * h;
-  const d = data.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  return (
-    <svg className="u-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden>
-      <path d={d} fill="none" stroke="currentColor" strokeWidth={1} vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
-}
-
-function Metric({ label, value, sub, trend }: { label: string; value: string; sub?: string; trend?: number[] }) {
+function Metric({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="u-tile">
       <div className="u-label">{label}</div>
       <div className="u-metric u-num">{value}</div>
       {sub && <div className="u-sub">{sub}</div>}
-      {trend && <div className="u-sparkwrap"><Spark data={trend} /></div>}
     </div>
   );
 }
@@ -104,10 +92,12 @@ function Compliance({ score, checks }: { score: number; checks: ComplianceCheck[
   );
 }
 
-export function DashboardLayout({ properties, compliance, metrics }: DashboardLayoutProps) {
+export function DashboardLayout({ properties, checks, metrics, sample = false }: DashboardLayoutProps) {
+  const pct = (x: number) => `${(x * 100).toFixed(0)}%`;
   return (
     <div className="u-root">
       <div className="u-page">
+        {sample && <div className="u-banner">Concept build · illustrative sample data, not real holdings</div>}
         {/* Masthead */}
         <header className="u-mast">
           <div>
@@ -121,12 +111,16 @@ export function DashboardLayout({ properties, compliance, metrics }: DashboardLa
         </header>
         <div className="u-rule" />
 
-        {/* Movement I — Position */}
+        {/* Movement I — Position (all computed from the records) */}
         <section className="u-band u-band-4" aria-label="Position">
-          <Metric label="Blended Net IRR" value={metrics.blendedIrr} sub="+1.8 over 15.0 target" trend={[12, 13, 14, 15, 16, 16.8]} />
-          <Metric label="MOIC · realized" value="1.9×" sub="trailing eight exits" trend={[1.4, 1.5, 1.6, 1.7, 1.8, 1.9]} />
-          <Metric label="Capital Velocity · IN" value="1.6×" sub="rotations / 24 months" trend={[1.1, 1.2, 1.35, 1.4, 1.5, 1.6]} />
-          <Metric label="Days to Stabilize · US" value="41" sub="−21 against entry" trend={[62, 55, 50, 47, 44, 41]} />
+          <Metric label="Gross value-add" value={pct(metrics.grossValueAdd)} sub="ARV ÷ basis − 1, before costs" />
+          <Metric
+            label="Exits · gross multiple"
+            value={metrics.realizedGrossMultiple === null ? '—' : `${metrics.realizedGrossMultiple.toFixed(2)}×`}
+            sub={`${metrics.exits} sold · ARV ÷ basis`}
+          />
+          <Metric label="Active assets" value={String(metrics.active)} sub={`${pct(metrics.inRenovationShare)} in renovation`} />
+          <Metric label="Net IRR" value="—" sub="needs dated cash flows" />
         </section>
 
         {/* Movement II — Engines */}
@@ -137,12 +131,15 @@ export function DashboardLayout({ properties, compliance, metrics }: DashboardLa
 
         {/* Movement III — Compliance */}
         <section className="u-band" aria-label="Compliance" style={{ display: 'block' }}>
-          <Compliance score={compliance.score} checks={compliance.checks} />
+          <Compliance score={metrics.compliance.score} checks={checks} />
         </section>
 
         <footer className="u-foot">
-          <span>Exit readiness · 71% · 42 of 59 items</span>
-          <span>USD normalized · every figure traces to source</span>
+          <span>
+            Clean books · {metrics.compliance.clear} of {metrics.compliance.total} checks clear
+            {metrics.issues.length ? ` · ${metrics.issues.length} data issue(s)` : ''}
+          </span>
+          <span>USD normalized · every figure computed from the records</span>
         </footer>
       </div>
     </div>

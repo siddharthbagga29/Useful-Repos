@@ -4,6 +4,7 @@ import raw from "./weekly.json";
 import { ASSETS, backtest, DEFAULTS, STRATEGIES, type Dataset, type Params, type Result, type StrategyId } from "./backtest.ts";
 import { CONTACT } from "../data/site.ts";
 import { loadAnalytics, track } from "../lib/track.ts";
+import { ResearchSections } from "./Research.tsx";
 
 const DATA = raw as Dataset;
 const SYMBOLS = Object.keys(ASSETS);
@@ -56,6 +57,8 @@ export function Lab() {
           <a href="#build">Build</a>
           <a href="#results">Results</a>
           <a href="#stress">Stress</a>
+          <a href="#ops">Research</a>
+          <a href="#montecarlo">Monte Carlo</a>
           <a href="#method">Method</a>
         </nav>
         <div className="nav-cta">
@@ -206,6 +209,8 @@ export function Lab() {
             ))}
           </div>
         </section>
+
+        <ResearchSections />
 
         <section id="method" className="lab-method">
           <h2 className="sec">Method &amp; limits</h2>

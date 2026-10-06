@@ -12,17 +12,30 @@ twin-engine-dashboard/
 │  ├─ layout.tsx           # Inter (UI) + JetBrains Mono (figures) via next/font
 │  └─ page.tsx             # server component — fetches data, renders layout
 ├─ components/
-│  ├─ DashboardLayout.tsx  # masthead + 4-col bento grid (composition root)
-│  ├─ MarketTile.tsx       # US / IN engine tile with stage rail
-│  ├─ ROIIndicator.tsx     # minimal stat tile + hairline sparkline (no chart lib)
-│  └─ ComplianceWidget.tsx # exit-critical "Clean Books" widget
+│  └─ DashboardLayout.tsx  # masthead, metrics band, engines, compliance (composition root)
 ├─ lib/
-│  └─ data.ts              # sample portfolio + Clean-Books checks (swap for your DB)
+│  ├─ data.ts              # ILLUSTRATIVE sample portfolio + Clean-Books checks (swap for your DB)
+│  └─ metrics.ts           # every headline number, computed from the records
+├─ scripts/
+│  └─ render-preview.ts    # regenerates preview.html from lib/ and checks the numbers
 ├─ types/
 │  └─ property.ts          # PropertyData interface + pipeline/stage helpers
 ├─ tailwind.config.ts      # palette, squircle radius, tile shadows, fonts
 └─ preview.html            # standalone visual preview (no build needed)
 ```
+
+## v2 fixes
+
+| Issue in v1 | Fix |
+|---|---|
+| A **sold** US building was mapped to the **Rent** stage, so the pipeline showed a rental that didn't exist | `rented` status added; sold maps to a new **Exit** stage |
+| Headline tiles were typed in: Net IRR 16.8%, MOIC 1.9× "trailing eight exits" (the data has two sales), Capital velocity 1.6×, Days to stabilize 41, "Exit readiness 71% · 42 of 59" — while the footer said "every figure traces to source" | All tiles now come from `lib/metrics.ts`. IRR shows "—" until dated cash flows exist rather than inventing one |
+| `fmt(-1500000)` printed `$-1500000` | Formats negatives as `−$1.5M` |
+| `MarketTile`, `ROIIndicator`, `ComplianceWidget` were never rendered | Removed |
+| `preview.html` was a hand-copied snapshot that could drift from the app | Generated from the same data and metric code |
+| Sample properties looked like real holdings | A visible "illustrative sample data" banner while `sample` is set |
+
+`node --experimental-strip-types scripts/render-preview.ts` rebuilds the preview and asserts the fixes.
 
 ## Run it
 

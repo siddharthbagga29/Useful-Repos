@@ -16,11 +16,31 @@ interface Item {
 // Only work Siddharth built. Code links appear only for public repositories.
 const ITEMS: Item[] = [
   {
-    tag: "Live system",
+    tag: "Quant research",
     title: "Strategy Lab",
-    body: "Six allocation and risk rules — 60/40, trend, dual momentum, inverse volatility, volatility targeting — backtested in the browser on ten years of weekly ETF data, with stress windows for 2018, 2020 and the 2022 rate shock.",
-    proof: ["Look-ahead bias tested", "Costs & turnover modelled", "Benchmarked to S&P 500"],
-    links: [{ label: "Open the Lab ↗", href: `${BASE}lab/` }],
+    body: "Ten allocation and online-portfolio-selection strategies on ten years of weekly ETF data. Replicates the academic claim that mean-reversion algorithms win — then shows it was a frictionless artefact: PAMR earns 10.5% a year at zero cost but trades 55% of the book weekly, and its edge is gone by 5 bps.",
+    proof: ["Walk-forward, out-of-sample", "1,000-decade Monte Carlo", "No look-ahead (tested)"],
+    links: [
+      { label: "Open the Lab ↗", href: `${BASE}lab/` },
+      { label: "Monte Carlo ↗", href: `${BASE}lab/#montecarlo` },
+    ],
+  },
+  {
+    tag: "Real-estate underwriting",
+    title: "Deal Lab",
+    body: "My Ohio wholesale deal analyzer, audited and rebuilt. v1 left the end buyer's selling and holding costs out and never applied its own rehab contingency — so its example deal said GO. With the fixes it's a NO-GO that works in only ~29% of simulated outcomes.",
+    proof: ["Excel with live Monte Carlo", "Cross-checked vs Python (200k trials)", "Max price for 60% success"],
+    links: [
+      { label: "Open the Deal Lab ↗", href: `${BASE}deal/` },
+      { label: "Excel model ↓", href: `${BASE}Wholesale_Deal_Analyzer_v2.xlsx` },
+    ],
+  },
+  {
+    tag: "Product concept",
+    title: "Twin-Engine control room",
+    body: "A family-office dashboard for a two-market real-estate platform: US buy-fix-rent-refinance and India flips, with a Clean Books compliance index. Rebuilt so every figure is computed from the records — v1 typed in an IRR and counted a sold building as a rental.",
+    proof: ["Next.js + TypeScript", "Generated preview", "Illustrative sample data"],
+    links: [{ label: "View the concept ↗", href: `${BASE}projects/twin-engine/` }],
   },
   {
     tag: "AI system",

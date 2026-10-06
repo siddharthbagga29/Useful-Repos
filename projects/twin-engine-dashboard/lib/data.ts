@@ -1,10 +1,13 @@
 import type { PropertyRecord, ComplianceCheck } from '@/types/property';
 
 // Compact INR/USD-agnostic currency formatter (values are USD-normalized here).
-export const fmt = (n: number): string =>
-  n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${Math.round(n / 1e3)}K` : `$${n}`;
+export const fmt = (n: number): string => {
+  const a = Math.abs(n);
+  const s = a >= 1e6 ? `$${(a / 1e6).toFixed(1)}M` : a >= 1e3 ? `$${Math.round(a / 1e3)}K` : `$${Math.round(a)}`;
+  return n < 0 ? `−${s}` : s; // v1 printed "$-1500000" for negatives
+};
 
-// ── Illustrative portfolio (replace with your API / Supabase query) ─────────
+// ── ILLUSTRATIVE SAMPLE DATA — not real holdings. Replace with your API / Supabase query. ──
 export const properties: PropertyRecord[] = [
   { id: 'us-01', market: 'US', label: 'Maple Ct · 24u', status: 'refinancing', equity: 1_240_000, basis: 2_050_000, arv: 3_290_000, updatedAt: '2026-07-10' },
   { id: 'us-02', market: 'US', label: 'Norwood · 16u',  status: 'renovating',  equity: 640_000,   basis: 1_180_000, arv: 1_820_000, updatedAt: '2026-07-12' },
@@ -16,7 +19,6 @@ export const properties: PropertyRecord[] = [
   { id: 'in-04', market: 'IN', label: 'e-Auction · 3BHK', status: 'renovating', equity: 74_000,   basis: 148_000,   arv: 205_000,   updatedAt: '2026-07-11' },
 ];
 
-export const totalEquity = properties.reduce((s, p) => s + p.equity, 0);
 
 // ── Clean Books index — the exit-critical KPI ───────────────────────────────
 export const complianceChecks: ComplianceCheck[] = [
@@ -27,7 +29,3 @@ export const complianceChecks: ComplianceCheck[] = [
   { id: 'entity',  label: 'US / IN capital pools separated (FEMA)', ok: true },
   { id: 'fx',      label: 'Dual-currency ledger reconciled', ok: true },
 ];
-
-export const cleanScore = Math.round(
-  (complianceChecks.filter((c) => c.ok).length / complianceChecks.length) * 100,
-);

@@ -17,6 +17,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, "index.html"),
         lab: resolve(import.meta.dirname, "lab/index.html"),
+        deal: resolve(import.meta.dirname, "deal/index.html"),
       },
     },
   },

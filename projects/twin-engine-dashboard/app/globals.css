@@ -172,3 +172,4 @@ body {
 /* ── quiet, deliberate focus + reduced motion ───────────────────────────── */
 :focus-visible { outline: 1px solid rgb(var(--base) / 0.4); outline-offset: 4px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.u-banner{display:inline-block;margin-bottom:2rem;padding:.35rem .7rem;border:1px solid var(--hair);border-radius:999px;font-size:var(--fs-micro);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
