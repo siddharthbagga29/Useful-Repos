@@ -37,6 +37,17 @@ def _int(env: Mapping[str, str], key: str, default: int, lo: int, hi: int) -> in
     return value
 
 
+def _float(env: Mapping[str, str], key: str, default: float, lo: float, hi: float) -> float:
+    raw = _get(env, key, str(default))
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise ConfigError(f"JARVIS_{key} must be a number, got {raw!r}") from exc
+    if not lo <= value <= hi:
+        raise ConfigError(f"JARVIS_{key} must be between {lo} and {hi}, got {value}")
+    return value
+
+
 def _bool(env: Mapping[str, str], key: str, default: bool) -> bool:
     raw = _get(env, key, "true" if default else "false").lower()
     if raw in {"1", "true", "yes", "on"}:
@@ -93,7 +104,7 @@ class OwnerSettings:
     voice_name: str = "Daniel"
     voice_confirm: bool = False  # side effects need a typed "yes" unless explicitly enabled
     whisper_model: str = "base.en"
-    picovoice_access_key: str = ""
+    wake_threshold: float = 0.5  # openWakeWord score that counts as "Hey Jarvis"
     brief_path: Path = DEFAULT_BRIEF
 
 
@@ -138,6 +149,6 @@ def load_owner(env: Mapping[str, str] | None = None) -> OwnerSettings:
         voice_name=_get(env, "VOICE", "Daniel"),
         voice_confirm=_bool(env, "VOICE_CONFIRM", False),
         whisper_model=_get(env, "WHISPER_MODEL", "base.en"),
-        picovoice_access_key=_get(env, "PICOVOICE_ACCESS_KEY", ""),
+        wake_threshold=_float(env, "WAKE_THRESHOLD", 0.5, 0.05, 0.99),
         brief_path=Path(_get(env, "BRIEF_PATH", str(DEFAULT_BRIEF))),
     )

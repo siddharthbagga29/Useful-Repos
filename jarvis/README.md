@@ -112,13 +112,13 @@ jarvis-owner                               # keyboard mode
 jarvis-owner --dry-run                     # every action is shown and declined
 ```
 
-Voice mode adds the wake word and local speech recognition:
+Voice mode adds the wake word and local speech recognition. Everything is free and offline:
+openWakeWord's "hey jarvis" model (downloaded once, no key), faster-whisper, and macOS `say`.
 
 ```bash
 brew install portaudio
 pip install -e '.[voice]'
-export JARVIS_PICOVOICE_ACCESS_KEY=...     # free key from console.picovoice.ai
-jarvis-owner --voice                       # say "Jarvis", then your request
+jarvis-owner --voice                       # say "Hey Jarvis", then your request
 ```
 
 macOS asks the first time Jarvis controls Mail or Calendar and the first time it uses the

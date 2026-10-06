@@ -25,48 +25,54 @@ def speak(text: str, voice: str) -> None:
 
 
 class VoiceIO:
-    """Porcupine for the "Jarvis" wake word, faster-whisper for transcription."""
+    """openWakeWord for "Hey Jarvis" (free, no key), faster-whisper for transcription."""
 
+    SAMPLE_RATE = 16_000
+    FRAME = 1_280  # 80 ms, the chunk size openWakeWord is trained on
+    WAKE_MODEL = "hey_jarvis"
     SILENCE_RMS = 500  # int16 RMS below this counts as silence; raise it in a noisy room
 
-    def __init__(self, access_key: str, whisper_model: str) -> None:
-        if not access_key:
-            raise VoiceUnavailable(
-                "Set JARVIS_PICOVOICE_ACCESS_KEY (free key at console.picovoice.ai) "
-                "to use voice mode."
-            )
+    def __init__(self, whisper_model: str, wake_threshold: float = 0.5) -> None:
         try:
             import numpy as np
-            import pvporcupine
             import pyaudio
             from faster_whisper import WhisperModel
+            from openwakeword.model import Model
+            from openwakeword.utils import download_models
         except ImportError as exc:
             raise VoiceUnavailable(
                 f"Voice extras are not installed ({exc.name}). Run: pip install -e '.[voice]'"
             ) from exc
         self._np: Any = np
-        self._porcupine: Any = pvporcupine.create(access_key=access_key, keywords=["jarvis"])
+        self._threshold = wake_threshold
+        try:
+            download_models(model_names=[self.WAKE_MODEL])  # no-op once cached
+            self._wake: Any = Model(wakeword_models=[self.WAKE_MODEL], inference_framework="onnx")
+        except Exception as exc:  # network on first run, or a corrupt cache
+            raise VoiceUnavailable(f"Couldn't load the wake-word model: {exc}") from exc
         self._audio: Any = pyaudio.PyAudio()
         self._stream: Any = self._audio.open(
-            rate=self._porcupine.sample_rate,
+            rate=self.SAMPLE_RATE,
             channels=1,
             format=pyaudio.paInt16,
             input=True,
-            frames_per_buffer=self._porcupine.frame_length,
+            frames_per_buffer=self.FRAME,
         )
         self._model: Any = WhisperModel(whisper_model, device="cpu", compute_type="int8")
 
     def _frame(self) -> Any:
-        data = self._stream.read(self._porcupine.frame_length, exception_on_overflow=False)
+        data = self._stream.read(self.FRAME, exception_on_overflow=False)
         return self._np.frombuffer(data, dtype=self._np.int16)
 
     def wait_for_wake_word(self) -> None:
-        while self._porcupine.process(self._frame()) < 0:
-            pass
+        while True:
+            scores: dict[str, float] = self._wake.predict(self._frame())
+            if max(scores.values(), default=0.0) >= self._threshold:
+                self._wake.reset()  # clear the buffer so one phrase fires once
+                return
 
     def record_utterance(self, max_seconds: float = 15.0, trailing_silence: float = 1.2) -> Any:
-        rate = self._porcupine.sample_rate
-        frame_seconds = self._porcupine.frame_length / rate
+        frame_seconds = self.FRAME / self.SAMPLE_RATE
         frames: list[Any] = []
         heard_speech = False
         quiet = 0.0
@@ -99,7 +105,6 @@ class VoiceIO:
     def close(self) -> None:
         self._stream.close()
         self._audio.terminate()
-        self._porcupine.delete()
 
 
 class VoiceConfirmer:

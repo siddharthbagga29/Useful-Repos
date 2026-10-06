@@ -6,3 +6,5 @@ temp_interactive_push.bat
 portfolio/node_modules/
 portfolio/dist/
 portfolio/test-results/
+portfolio/**/__pycache__/
+portfolio/*.tsbuildinfo

@@ -68,3 +68,12 @@ def test_bad_environment_fails_loudly(key: str, value: str) -> None:
 def test_origins_parse_from_csv() -> None:
     settings = load_public({"JARVIS_ALLOWED_ORIGINS": "https://a.example, https://b.example ,"})
     assert settings.allowed_origins == ("https://a.example", "https://b.example")
+
+
+def test_wake_threshold_is_validated() -> None:
+    from jarvis.config import ConfigError, load_owner
+
+    assert load_owner({"JARVIS_WAKE_THRESHOLD": "0.7"}).wake_threshold == 0.7
+    assert load_owner({}).wake_threshold == 0.5
+    with pytest.raises(ConfigError):
+        load_owner({"JARVIS_WAKE_THRESHOLD": "2"})

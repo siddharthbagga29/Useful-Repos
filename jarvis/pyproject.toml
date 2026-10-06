@@ -18,7 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 voice = [
-  "pvporcupine>=3.0",
+  "openwakeword>=0.6",
   "pyaudio>=0.2.14",
   "faster-whisper>=1.0",
   "numpy>=1.26",
@@ -66,5 +66,5 @@ mypy_path = "src"
 packages = ["jarvis"]
 
 [[tool.mypy.overrides]]
-module = ["pvporcupine", "pyaudio", "faster_whisper", "numpy"]
+module = ["openwakeword", "openwakeword.*", "pyaudio", "faster_whisper", "numpy"]
 ignore_missing_imports = true
