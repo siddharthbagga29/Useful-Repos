@@ -11,7 +11,7 @@ export function JarvisStation() {
       </motion.h2>
       <motion.p className="sub" variants={rise}>
         Built by me, running <b>entirely in your browser</b>: voice in, voice out, agents, skills and memory. No servers, no
-        API keys, <b>$0</b> — and nothing you say leaves this page.
+        API keys, <b>$0</b>. Answers are worked out on your device; voice uses your browser's own speech service.
       </motion.p>
       <motion.div variants={rise} className="jv-wrap">
         <JarvisConsole variant="station" />
