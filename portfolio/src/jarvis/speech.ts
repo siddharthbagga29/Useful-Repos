@@ -179,10 +179,20 @@ export class Listener {
 // ---------------- speech out ----------------
 
 const PREFERRED = [/daniel/i, /google uk english male/i, /arthur/i, /oliver/i, /ryan/i, /george/i, /en-gb/i, /^en/i];
+// Neural voices (Edge "… Online (Natural)", Apple "Premium"/"Enhanced") sound far more human than
+// the classic system voices; take one whenever the browser offers it.
+const NATURAL = /natural|neural|premium|enhanced/i;
+const NATURAL_PREF = [/ryan|thomas|guy|andrew|christopher|eric|brian|daniel|oliver|george|arthur/i, /en-gb/i, /en-us/i];
 
 export function pickVoice(): SpeechSynthesisVoice | null {
   if (!canSpeak()) return null;
   const voices = speechSynthesis.getVoices();
+  const natural = voices.filter((v) => NATURAL.test(v.name) && /^en/i.test(v.lang));
+  for (const re of NATURAL_PREF) {
+    const v = natural.find((x) => re.test(x.name) || re.test(x.lang));
+    if (v) return v;
+  }
+  if (natural[0]) return natural[0];
   for (const re of PREFERRED) {
     const v = voices.find((x) => re.test(x.name) || re.test(x.lang));
     if (v) return v;
@@ -253,6 +263,44 @@ export class Speaker {
         u.onstart = () => onSentence?.(i);
         u.onend = () => next(i + 1);
         u.onerror = () => next(i + 1);
+        speechSynthesis.speak(u);
+      };
+      next(0);
+    });
+  }
+
+  /**
+   * Speak a scripted line (markup.ts) like a person: one clause at a time, real silence between
+   * clauses, a slightly slower and lifted delivery on questions, and small pace variation so it
+   * doesn't sound metronomic. Resolves when finished or cancelled.
+   */
+  speakScript(segments: { text: string; pauseAfterMs: number; question: boolean }[]): Promise<void> {
+    if (!canSpeak() || !segments.length) return Promise.resolve();
+    this.cancel();
+    const ticket = ++this.queue;
+    const voice = pickVoice();
+    const natural = !!voice && NATURAL.test(voice.name);
+    this.onState(true);
+    return new Promise((resolve) => {
+      const done = () => {
+        if (ticket === this.queue) this.onState(false);
+        resolve();
+      };
+      const next = (i: number) => {
+        if (ticket !== this.queue || i >= segments.length) return done();
+        const seg = segments[i]!;
+        const u = new SpeechSynthesisUtterance(speakable(seg.text));
+        if (voice) u.voice = voice;
+        const jitter = (((i * 37) % 5) - 2) * 0.012; // deterministic, ±2.4%
+        u.rate = (natural ? 1.0 : 1.03) + jitter - (seg.question ? 0.04 : 0) - (i === 0 ? 0.03 : 0);
+        u.pitch = (natural ? 1.0 : 0.93) + (seg.question ? 0.05 : 0);
+        const after = () => {
+          if (ticket !== this.queue) return done();
+          if (seg.pauseAfterMs > 0) setTimeout(() => next(i + 1), seg.pauseAfterMs);
+          else next(i + 1);
+        };
+        u.onend = after;
+        u.onerror = after;
         speechSynthesis.speak(u);
       };
       next(0);

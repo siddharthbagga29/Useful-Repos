@@ -14,7 +14,7 @@ import { STATIONS, TAPE, type Act, type StationId } from "./data/site.ts";
 import { bus } from "./jarvis/bus.ts";
 import { useJarvis } from "./jarvis/JarvisProvider.tsx";
 import { JarvisOverlay } from "./jarvis/JarvisOverlay.tsx";
-import { Greeting } from "./jarvis/Greeting.tsx";
+import { Concierge } from "./jarvis/sales/Concierge.tsx";
 import { Backdrop } from "./scene/Backdrop.tsx";
 import { Analyst } from "./ui/Analyst.tsx";
 import { CommandPalette } from "./ui/CommandPalette.tsx";
@@ -219,7 +219,7 @@ export default function App() {
       <TapBursts />
       <Cursor />
       <JarvisOverlay />
-      <Greeting />
+      <Concierge station={station.id} />
       <CommandPalette />
       <Connect />
     </>

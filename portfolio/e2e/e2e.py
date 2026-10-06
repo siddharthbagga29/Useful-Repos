@@ -74,7 +74,8 @@ def desktop(p) -> None:
     page.goto(BASE)
     expect(page.locator("h1.mega")).to_contain_text("Siddharth")
     expect(page.get_by_test_id("greeting")).to_be_visible(timeout=4000)
-    check("Jarvis greets on landing", "Siddharth's den" in page.get_by_test_id("greeting").inner_text())
+    check("Jarvis greets on landing", "Siddharth's assistant" in page.get_by_test_id("greeting").inner_text())
+    check("greeting opens with discovery, not a pitch", page.get_by_test_id("greeting").get_attribute("data-line") == "open.first" and page.get_by_test_id("chip-I'm hiring").count() == 1)
     check("greeting stays silent until the visitor interacts", page.evaluate("window.__spoken.length") == 0)
     check("character sheet: class and perks", "Valuation & Diligence Analyst" in page.locator(".hud").inner_text() and "Monte Carlo" in page.locator(".hud").inner_text())
     page.screenshot(path=f"{SHOTS}/desktop-hero.png")
@@ -94,9 +95,13 @@ def desktop(p) -> None:
     page.keyboard.press("4")
     page.wait_for_timeout(1500)
     check("key 4 → terminal is the active dot", page.locator(".dots button[aria-current=true]").get_attribute("aria-label") == "Terminal")
+    try:  # the key press also unlocks the greeting's speech; the analyst "briefs you" until it ends
+        page.wait_for_function("document.querySelector('.desk-act').innerText.toLowerCase().includes('pulling the tape')", timeout=8000)
+    except Exception:
+        pass
     check("analyst activity follows the station", "pulling the tape" in page.locator(".desk-act").inner_text().lower(), page.locator(".desk-act").inner_text())
     page.wait_for_timeout(300)
-    check("first key press speaks the greeting once", sum("Siddharth's den" in t for t in page.evaluate("window.__spoken")) == 1, str(page.evaluate("window.__spoken"))[:200])
+    check("first key press speaks the greeting once", sum("Siddharth's assistant" in t for t in page.evaluate("window.__spoken")) == 1, str(page.evaluate("window.__spoken"))[:200])
     page.get_by_label("Terminal command (F1–F6 run the shortcuts)").focus()
     page.keyboard.press("F3")
     page.wait_for_timeout(400)
@@ -361,7 +366,10 @@ def research_and_lab(p) -> None:
     page.wait_for_timeout(500)
     check("city: picking a district opens its dossier", "underwriting row" in page.get_by_test_id("dossier").inner_text().lower())
     page.get_by_test_id("bld-high-properties").click(force=True)
-    page.wait_for_timeout(500)
+    try:
+        page.wait_for_function("document.querySelectorAll(\"[data-testid=dossier] a[href*='github.com']\").length === 1", timeout=3000)
+    except Exception:
+        pass
     check("city: only the public repo is linked", page.locator("[data-testid=dossier] a[href*='github.com']").count() == 1)
     page.get_by_test_id("pick-brain").click()
     page.wait_for_function("document.querySelector('[data-testid=dossier]').innerText.toLowerCase().includes('strategies tried')", timeout=8000)
@@ -483,10 +491,49 @@ def mobile(p) -> None:
     browser.close()
 
 
+def concierge(p) -> None:
+    browser = p.chromium.launch(executable_path=CHROME)
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    ctx.add_init_script(FAKE_VOICE)
+    page = ctx.new_page()
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(BASE)
+    g = page.get_by_test_id("greeting")
+    expect(g).to_be_visible(timeout=4000)
+    page.get_by_test_id("chip-I'm hiring").click()
+    page.wait_for_function("document.querySelector('[data-testid=greeting]')?.dataset.line === 'pitch.recruiter'", timeout=3000)
+    expect(g.locator("p")).to_contain_text("$6M", timeout=3000)
+    check("concierge: 'I'm hiring' leads to the recruiter pitch", "$6M" in g.inner_text(), g.inner_text()[:160])
+    page.wait_for_timeout(2500)
+    spoken = page.evaluate("window.__spoken")
+    check("concierge: speaks clause by clause after the tap", len(spoken) >= 3 and all(len(t.split()) <= 22 for t in spoken), str(spoken)[:300])
+    check("concierge: no pause marks in what is spoken or shown", not any("|" in t for t in spoken) and "|" not in g.inner_text())
+    page.get_by_test_id("chip-Diligence or valuation").click()
+    page.wait_for_function("document.querySelector('[data-testid=greeting]')?.dataset.line === 'proof.recruiter'", timeout=3000)
+    page.get_by_test_id("chip-Book 30 minutes").click()
+    page.wait_for_function("document.querySelector('[data-testid=greeting]')?.dataset.line === 'close.call'", timeout=3000)
+    page.wait_for_function("!!document.querySelector('.sched-frame')", timeout=5000)
+    check("concierge: Book opens the scheduler", (page.locator(".sched-frame").get_attribute("src") or "").startswith("https://calendly.com/siddharthbagga29/30min?"))
+    page.screenshot(path=f"{SHOTS}/concierge-close.png")
+    page.locator(".greet-later").click()
+    expect(g).to_be_hidden(timeout=2000)
+    page.reload()
+    page.wait_for_timeout(2500)
+    check("concierge: no second greeting in the same visit", page.get_by_test_id("greeting").count() == 0)
+    page2 = ctx.new_page()
+    page2.goto(BASE)
+    expect(page2.get_by_test_id("greeting")).to_be_visible(timeout=4000)
+    check("concierge: returning visitor gets welcomed back", page2.get_by_test_id("greeting").get_attribute("data-line") == "open.return")
+    check("concierge: no script errors", not errors, "; ".join(errors)[:300])
+    browser.close()
+
+
 if __name__ == "__main__":
     os.makedirs(SHOTS, exist_ok=True)
     with sync_playwright() as p:
         desktop(p)
+        concierge(p)
         connect_and_links(p)
         research_and_lab(p)
         den_scene(p)

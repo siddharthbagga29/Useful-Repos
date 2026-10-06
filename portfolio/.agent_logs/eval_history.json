@@ -1,0 +1,268 @@
+[
+  {
+    "at": "2026-10-07T13:00:00.000Z",
+    "iteration": 1,
+    "score": 9.6,
+    "passed": true,
+    "points": {
+      "code": 40,
+      "conversation": 24,
+      "state": 17,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": true,
+      "honesty": true
+    },
+    "issues": [
+      {
+        "code": "NO_ASK",
+        "where": "line:nudge.dealroom",
+        "detail": "turn ends without a question",
+        "cost": 1
+      },
+      {
+        "code": "LINE_TOO_LONG",
+        "where": "briefing",
+        "detail": "88 words",
+        "cost": 1
+      },
+      {
+        "code": "BRIEFING_COVERAGE",
+        "where": "briefing",
+        "detail": "not mentioned: high-properties-audit",
+        "cost": 3
+      }
+    ],
+    "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-07T13:00:00.000Z",
+    "iteration": 1,
+    "score": 9.9,
+    "passed": false,
+    "points": {
+      "code": 39.2,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": false,
+      "honesty": true
+    },
+    "issues": [
+      {
+        "code": "TESTS",
+        "where": "code",
+        "detail": "briefing: names what needs the owner, without meta-fluff, and ends on a question",
+        "cost": 0.7894736842105274
+      },
+      {
+        "code": "LINE_TOO_LONG",
+        "where": "briefing",
+        "detail": "86 words",
+        "cost": 1
+      }
+    ],
+    "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-07T13:00:00.000Z",
+    "iteration": 2,
+    "score": 9.9,
+    "passed": false,
+    "points": {
+      "code": 39.2,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": false,
+      "honesty": true
+    },
+    "issues": [
+      {
+        "code": "TESTS",
+        "where": "code",
+        "detail": "briefing: names what needs the owner, without meta-fluff, and ends on a question",
+        "cost": 0.7894736842105274
+      },
+      {
+        "code": "LINE_TOO_LONG",
+        "where": "briefing",
+        "detail": "86 words",
+        "cost": 1
+      }
+    ],
+    "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-07T13:00:00.000Z",
+    "iteration": 3,
+    "score": 9.9,
+    "passed": false,
+    "points": {
+      "code": 39.2,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": false,
+      "honesty": true
+    },
+    "issues": [
+      {
+        "code": "TESTS",
+        "where": "code",
+        "detail": "briefing: names what needs the owner, without meta-fluff, and ends on a question",
+        "cost": 0.7894736842105274
+      },
+      {
+        "code": "LINE_TOO_LONG",
+        "where": "briefing",
+        "detail": "86 words",
+        "cost": 1
+      }
+    ],
+    "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-07T13:00:00.000Z",
+    "iteration": 4,
+    "score": 9.9,
+    "passed": false,
+    "points": {
+      "code": 39.2,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": false,
+      "honesty": true
+    },
+    "issues": [
+      {
+        "code": "TESTS",
+        "where": "code",
+        "detail": "briefing: names what needs the owner, without meta-fluff, and ends on a question",
+        "cost": 0.7894736842105274
+      },
+      {
+        "code": "LINE_TOO_LONG",
+        "where": "briefing",
+        "detail": "86 words",
+        "cost": 1
+      }
+    ],
+    "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-07T13:00:00.000Z",
+    "iteration": 5,
+    "score": 9.9,
+    "passed": false,
+    "points": {
+      "code": 39.2,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": false,
+      "honesty": true
+    },
+    "issues": [
+      {
+        "code": "TESTS",
+        "where": "code",
+        "detail": "briefing: names what needs the owner, without meta-fluff, and ends on a question",
+        "cost": 0.7894736842105274
+      },
+      {
+        "code": "LINE_TOO_LONG",
+        "where": "briefing",
+        "detail": "86 words",
+        "cost": 1
+      }
+    ],
+    "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-07T13:00:00.000Z",
+    "iteration": 1,
+    "score": 9.7,
+    "passed": true,
+    "points": {
+      "code": 40,
+      "conversation": 25,
+      "state": 17,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": true,
+      "honesty": true
+    },
+    "issues": [
+      {
+        "code": "LINE_TOO_LONG",
+        "where": "briefing",
+        "detail": "74 words",
+        "cost": 1
+      },
+      {
+        "code": "BRIEFING_COVERAGE",
+        "where": "briefing",
+        "detail": "not mentioned: high-properties-audit, linkedin-link",
+        "cost": 3
+      }
+    ],
+    "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-07T13:00:00.000Z",
+    "iteration": 1,
+    "score": 10,
+    "passed": true,
+    "points": {
+      "code": 40,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": true,
+      "honesty": true
+    },
+    "issues": [],
+    "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-06T13:40:43.692Z",
+    "iteration": 1,
+    "score": 10,
+    "passed": true,
+    "points": {
+      "code": 40,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": true,
+      "honesty": true
+    },
+    "issues": [
+      {
+        "code": "LINE_TOO_LONG",
+        "where": "briefing",
+        "detail": "75 words",
+        "cost": 1
+      }
+    ],
+    "critic": "deterministic"
+  }
+]

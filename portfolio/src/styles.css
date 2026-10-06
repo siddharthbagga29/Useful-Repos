@@ -486,4 +486,15 @@ a.chip { text-decoration: none; }
 .greet-row button { border: 1px solid var(--edge); background: none; color: var(--dim); font-family: var(--mono); font-size: 10.5px; padding: 5px 10px; border-radius: 999px; cursor: pointer; }
 .greet-row .greet-go { background: var(--hot); border-color: var(--hot); color: var(--ink); font-weight: 600; }
 .greet-row .greet-x { margin-left: auto; padding: 5px 8px; }
-@media (prefers-reduced-motion: reduce) { .greet-who i { animation: none; } }
+.concierge { width: min(360px, calc(100vw - 32px)); }
+.greet-who .greet-x { margin-left: auto; border: 0; background: none; color: var(--dim); font-size: 12px; padding: 2px 4px; cursor: pointer; line-height: 1; }
+.greet-who .greet-x:hover { color: var(--bone); }
+.greet-who i.talking { animation: greett .5s ease-in-out infinite alternate; }
+@keyframes greett { from { transform: scale(.8); opacity: .6; } to { transform: scale(1.35); opacity: 1; } }
+.greet-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.greet-chips button { border: 1px solid #1f3a44; background: rgba(34,211,238,.06); color: var(--bone); font-size: 12.5px; padding: 7px 12px; border-radius: 999px; cursor: pointer; transition: background .15s, border-color .15s; }
+.greet-chips button:hover, .greet-chips button:focus-visible { background: rgba(34,211,238,.16); border-color: #22d3ee; outline: none; }
+.greet-chips .greet-go { background: var(--hot); border-color: var(--hot); color: var(--ink); font-weight: 600; }
+.greet-row .greet-later { margin-left: auto; }
+@media (max-width: 560px) { .concierge { bottom: 76px; right: 12px; left: 12px; width: auto; } .greet-chips button { font-size: 12px; padding: 6px 10px; } }
+@media (prefers-reduced-motion: reduce) { .greet-who i, .greet-who i.talking { animation: none; } }

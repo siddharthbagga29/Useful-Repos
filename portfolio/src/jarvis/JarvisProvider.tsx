@@ -58,6 +58,8 @@ interface JarvisApi {
   runDigest(): void;
   playDigest(id: number, sections: DigestSection[]): void;
   speak(text: string): void;
+  /** speak a scripted line with natural pauses (sales/markup.ts) */
+  speakScript(segments: { text: string; pauseAfterMs: number; question: boolean }[]): void;
   stopSpeaking(): void;
   pushToTalk(): void;
   stopListening(): void;
@@ -348,6 +350,11 @@ export function JarvisProvider({ children }: { children: ReactNode }) {
     runDigest,
     playDigest,
     speak: (t) => void say(t),
+    speakScript: (segments) => {
+      if (!canSpeak()) return;
+      listener.pause();
+      void speaker.speakScript(segments).then(() => listener.resume());
+    },
     stopSpeaking: () => {
       digestTicket.current++;
       speaker.cancel();

@@ -6,6 +6,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PAGES_DIR=${PAGES_DIR:-../../siddharthbagga29.github.io}
+# Quality gate: the actor-critic loop runs typecheck, lint and tests, then scores Jarvis's lines.
+# Nothing ships unless it approves (S >= 9.5, gates clear); it also writes the approved playbook.
+npm run -s jarvis:loop
 npm run -s eval
 node --experimental-strip-types --no-warnings scripts/lab-check.ts >/dev/null
 npm run -s build

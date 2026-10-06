@@ -8,3 +8,5 @@ portfolio/dist/
 portfolio/test-results/
 portfolio/**/__pycache__/
 portfolio/*.tsbuildinfo
+portfolio/agent/out/
+portfolio/agent/state/

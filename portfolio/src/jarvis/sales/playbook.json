@@ -1,0 +1,453 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-06T13:40:43.692Z",
+  "approved": {
+    "score": 10,
+    "iteration": 1,
+    "critic": "deterministic"
+  },
+  "lines": {
+    "open.first": {
+      "id": "open.first",
+      "stage": "open",
+      "text": "Hi. || I'm Jarvis, Siddharth's assistant. | Most analysts tell you what the model says. | Siddharth shows you where it breaks. || Quick question, so I don't waste your time. | What brings you here?",
+      "chips": [
+        {
+          "label": "I'm hiring",
+          "next": "pitch.recruiter",
+          "audience": "recruiter"
+        },
+        {
+          "label": "I invest family capital",
+          "next": "pitch.principal",
+          "audience": "principal"
+        },
+        {
+          "label": "I run a company",
+          "next": "pitch.founder",
+          "audience": "founder"
+        },
+        {
+          "label": "Just looking",
+          "next": "pitch.explorer",
+          "audience": "explorer"
+        }
+      ]
+    },
+    "open.return": {
+      "id": "open.return",
+      "stage": "open",
+      "text": "Welcome back, {name}. || Good to see you again. | Want the short version, | or should I show you something you haven't seen?",
+      "chips": [
+        {
+          "label": "Short version",
+          "next": "pitch.return"
+        },
+        {
+          "label": "Show me something new",
+          "next": "nudge.research"
+        },
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        }
+      ]
+    },
+    "pitch.return": {
+      "id": "pitch.return",
+      "stage": "pitch",
+      "text": "Here it is. || He underwrote a $6M+ acquisition pipeline. | He wrote the go/no-go memos that decided where the capital went. | And he was promoted after five months. || Shall we put 30 minutes on the calendar?",
+      "chips": [
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        },
+        {
+          "label": "Send a note",
+          "next": "close.email"
+        },
+        {
+          "label": "I have a concern",
+          "next": "objection.menu"
+        }
+      ]
+    },
+    "pitch.recruiter": {
+      "id": "pitch.recruiter",
+      "stage": "pitch",
+      "audience": "recruiter",
+      "text": "Got it. | Then here's what matters. || In his last seat, he underwrote a $6M+ acquisition pipeline. | He wrote the go/no-go memos the Managing Partner used for every capital decision. | And he was promoted after five months. || What's the role you're filling?",
+      "chips": [
+        {
+          "label": "Diligence or valuation",
+          "next": "proof.recruiter"
+        },
+        {
+          "label": "Investment analyst",
+          "next": "proof.recruiter"
+        },
+        {
+          "label": "I have a concern",
+          "next": "objection.menu"
+        },
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        }
+      ]
+    },
+    "pitch.principal": {
+      "id": "pitch.principal",
+      "stage": "pitch",
+      "audience": "principal",
+      "text": "Understood. || First, so we're clear. | Siddharth doesn't manage money or give investment advice. | What he does is the work behind the decision. || Normalized earnings. | Downside cases. | A memo that survives a partner's questions. || Are you building a team, | or looking at a specific deal?",
+      "chips": [
+        {
+          "label": "Building a team",
+          "next": "proof.principal"
+        },
+        {
+          "label": "A specific deal",
+          "next": "proof.principal"
+        },
+        {
+          "label": "I have a concern",
+          "next": "objection.menu"
+        },
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        }
+      ]
+    },
+    "pitch.founder": {
+      "id": "pitch.founder",
+      "stage": "pitch",
+      "audience": "founder",
+      "text": "Good. || Then you'll like this. | He's sat on your side of the table. | He built a finance function from raw bank statements. | Then he wrote the capital-raise package, | and the Reg D offering materials. || Are you raising, | buying, | or selling?",
+      "chips": [
+        {
+          "label": "Raising",
+          "next": "proof.founder"
+        },
+        {
+          "label": "Buying",
+          "next": "proof.founder"
+        },
+        {
+          "label": "Selling",
+          "next": "proof.founder"
+        },
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        }
+      ]
+    },
+    "pitch.explorer": {
+      "id": "pitch.explorer",
+      "stage": "pitch",
+      "audience": "explorer",
+      "text": "Fair enough. || Then let me give you something useful, | no strings attached. || There's a live valuation model, | a strategy lab, | and a research city where bots build his projects in real time. || Want the 60-second tour?",
+      "chips": [
+        {
+          "label": "Yes, the tour",
+          "action": "run_digest"
+        },
+        {
+          "label": "Actually, I'm hiring",
+          "next": "pitch.recruiter",
+          "audience": "recruiter"
+        },
+        {
+          "label": "Maybe later",
+          "action": "snooze"
+        }
+      ]
+    },
+    "proof.recruiter": {
+      "id": "proof.recruiter",
+      "stage": "proof",
+      "audience": "recruiter",
+      "text": "Here's how he works. || He doesn't take a seller's forecast at face value. | He tests it against backlog and pipeline conversion. || You can see the same habit on this site. | He audited his own deal analyzer, | and caught it saying GO on a deal that fails. || Worth a 30-minute conversation?",
+      "chips": [
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        },
+        {
+          "label": "Show me the Deal Lab",
+          "action": "href:/deal/"
+        },
+        {
+          "label": "Send a note",
+          "next": "close.email"
+        }
+      ]
+    },
+    "proof.principal": {
+      "id": "proof.principal",
+      "stage": "proof",
+      "audience": "principal",
+      "text": "Here's the honest version of his research. || He tested ten years of allocation rules across a thousand simulated decades. | None reliably beat the S&P 500 on return. || But the defensive ones cut drawdowns. | The 60/40 mix did it in 99.8% of paths. || He'll tell you what the data says, | not what sells. || Shall I set up 30 minutes?",
+      "chips": [
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        },
+        {
+          "label": "Show me the research",
+          "action": "href:/lab/#montecarlo"
+        },
+        {
+          "label": "I have a concern",
+          "next": "objection.menu"
+        }
+      ]
+    },
+    "proof.founder": {
+      "id": "proof.founder",
+      "stage": "proof",
+      "audience": "founder",
+      "text": "When he joined Turnkey, there was no finance function. || Within a month, | the Managing Partner said decision-making was 75% more efficient. | Later he found levers that cut operating expenses 6%. || If you're weighing a deal, | he'll pressure-test the numbers before anyone else does. || Want to talk it through?",
+      "chips": [
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        },
+        {
+          "label": "Send a note",
+          "next": "close.email"
+        },
+        {
+          "label": "I have a concern",
+          "next": "objection.menu"
+        }
+      ]
+    },
+    "objection.menu": {
+      "id": "objection.menu",
+      "stage": "objection",
+      "text": "Good. | I'd rather hear it now than later. || What's on your mind?",
+      "chips": [
+        {
+          "label": "He's early in his career",
+          "next": "objection.junior"
+        },
+        {
+          "label": "No CFA?",
+          "next": "objection.cfa"
+        },
+        {
+          "label": "Why private capital?",
+          "next": "objection.fit"
+        },
+        {
+          "label": "Not the right time",
+          "next": "objection.timing"
+        }
+      ]
+    },
+    "objection.junior": {
+      "id": "objection.junior",
+      "stage": "objection",
+      "text": "Fair. | Fourteen months isn't twenty years. || But look at what those months held. | A promotion after five. | A $6M+ pipeline underwritten. | Memos that decided where capital went. || Most people get that responsibility later. | He got it early, | and kept it. || Would 30 minutes help you judge for yourself?",
+      "chips": [
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        },
+        {
+          "label": "Send a note",
+          "next": "close.email"
+        }
+      ]
+    },
+    "objection.cfa": {
+      "id": "objection.cfa",
+      "stage": "objection",
+      "text": "Straight answer. || He hasn't sat the CFA exam. | He was awarded a merit-based scholarship for the Level I exam fee, | and his M.S. in Financial Mathematics covers the quant side in depth. || If the charter is a hard requirement, | I'd rather you know now. || Is it?",
+      "chips": [
+        {
+          "label": "Not a hard requirement",
+          "next": "close.call"
+        },
+        {
+          "label": "It is",
+          "next": "objection.timing"
+        }
+      ]
+    },
+    "objection.fit": {
+      "id": "objection.fit",
+      "stage": "objection",
+      "text": "Because the work suits him. || Private, illiquid companies. | Messy data. | A decision someone has to defend. || That's what he did every week at Turnkey, | with a 12% WACC and real capital on the line. || Does your team look at deals like that?",
+      "chips": [
+        {
+          "label": "Yes",
+          "next": "close.call"
+        },
+        {
+          "label": "Not really",
+          "next": "objection.timing"
+        }
+      ]
+    },
+    "objection.timing": {
+      "id": "objection.timing",
+      "stage": "objection",
+      "text": "Understood. || No pressure. | I'll stay quiet. || If it helps later, | his résumé and a pre-written note are one click away. | Want either?",
+      "chips": [
+        {
+          "label": "Résumé",
+          "action": "open_resume"
+        },
+        {
+          "label": "Send a note",
+          "next": "close.email"
+        },
+        {
+          "label": "Not now",
+          "action": "snooze"
+        }
+      ]
+    },
+    "close.call": {
+      "id": "close.call",
+      "stage": "close",
+      "text": "Good. || It's 30 minutes. | You'll leave with a clear read on whether he fits. || I'll open his calendar now. | Pick whatever slot suits you, okay?",
+      "chips": [
+        {
+          "label": "Send a note",
+          "next": "close.email"
+        }
+      ],
+      "action": "open_schedule"
+    },
+    "close.email": {
+      "id": "close.email",
+      "stage": "close",
+      "text": "Easy. || I've drafted a short note for you. | Add your name, | change anything, | and send. || Or would you rather just book a time?",
+      "chips": [
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        }
+      ],
+      "action": "open_connect"
+    },
+    "nudge.dealroom": {
+      "id": "nudge.dealroom",
+      "stage": "nudge",
+      "text": "You've been in the deal room a while. || There's one finding here most people miss. | It takes twenty seconds. || Want it?",
+      "chips": [
+        {
+          "label": "Go on",
+          "next": "proof.dealroom"
+        },
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        }
+      ]
+    },
+    "proof.dealroom": {
+      "id": "proof.dealroom",
+      "stage": "proof",
+      "text": "His own deal analyzer said GO on its example deal. || He audited it. | It had left out the buyer's costs, | and never applied its own contingency. || Fixed, | the deal works in about 29% of outcomes. | That's the habit you'd be hiring. || Shall we talk?",
+      "chips": [
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        },
+        {
+          "label": "Open the Deal Lab",
+          "action": "href:/deal/"
+        }
+      ]
+    },
+    "nudge.model": {
+      "id": "nudge.model",
+      "stage": "nudge",
+      "text": "Try this. || Drag the WACC up a point, | and watch what happens to value. || That sensitivity is how he thinks about every deal. | Want to know what this model can't tell you?",
+      "chips": [
+        {
+          "label": "Tell me",
+          "next": "proof.model"
+        },
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        }
+      ]
+    },
+    "proof.model": {
+      "id": "proof.model",
+      "stage": "proof",
+      "text": "It's an illustration, built on S&P Global's reported revenue. | It isn't his capstone result. || The capstone landed within 10% of analyst consensus. | He'll always tell you which number is which. || Worth 30 minutes?",
+      "chips": [
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        },
+        {
+          "label": "Send a note",
+          "next": "close.email"
+        }
+      ]
+    },
+    "nudge.research": {
+      "id": "nudge.research",
+      "stage": "nudge",
+      "text": "Those buildings aren't decoration. || Every bot is a real job. | Running tests, | or evolving strategies every six hours. || Want me to walk you through the one that matters most to you?",
+      "chips": [
+        {
+          "label": "The strategy research",
+          "next": "proof.principal"
+        },
+        {
+          "label": "The deal audit",
+          "next": "proof.dealroom"
+        },
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        }
+      ]
+    },
+    "nudge.experience": {
+      "id": "nudge.experience",
+      "stage": "nudge",
+      "text": "Quick context on that timeline. || Fourteen months, | eleven of them full-time, | and a promotion in the middle. || Want the one deal story that shows his judgment best?",
+      "chips": [
+        {
+          "label": "Yes",
+          "next": "proof.recruiter"
+        },
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        }
+      ]
+    },
+    "nudge.exit": {
+      "id": "nudge.exit",
+      "stage": "nudge",
+      "text": "Before you go. || If any of this was useful, | the fastest next step is a 30-minute call. | No prep needed on your side. || Shall I open the calendar?",
+      "chips": [
+        {
+          "label": "Book 30 minutes",
+          "next": "close.call"
+        },
+        {
+          "label": "Send a note",
+          "next": "close.email"
+        },
+        {
+          "label": "Not now",
+          "action": "snooze"
+        }
+      ]
+    }
+  }
+}

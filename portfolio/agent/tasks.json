@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "owner": "Siddharth",
+  "timezone": "America/New_York",
+  "tasks": [
+    {
+      "id": "search-console",
+      "title": "Verify the site in Google Search Console",
+      "why": "It's how people find you by name.",
+      "status": "blocked",
+      "blockedOn": "the HTML verification tag",
+      "impact": 5,
+      "due": "2026-10-09",
+      "short": "Search Console"
+    },
+    {
+      "id": "linkedin-link",
+      "title": "Add the portfolio link to LinkedIn, under Contact info and Featured",
+      "why": "Every recruiter who opens your profile sees Jarvis one click later.",
+      "status": "todo",
+      "impact": 5,
+      "due": "2026-10-08",
+      "short": "the LinkedIn link"
+    },
+    {
+      "id": "github-website",
+      "title": "Put the portfolio URL in your GitHub profile's website field",
+      "why": "It links your code to the site that explains it.",
+      "status": "todo",
+      "impact": 3,
+      "due": "2026-10-08",
+      "short": "the GitHub website field"
+    },
+    {
+      "id": "high-properties-audit",
+      "title": "Send the High Properties source for its audit",
+      "why": "It's the one project on the site that hasn't been checked yet.",
+      "status": "blocked",
+      "blockedOn": "a zip or a repository link",
+      "impact": 3,
+      "due": "2026-10-13",
+      "short": "the High Properties source"
+    },
+    {
+      "id": "domain",
+      "title": "Pick a short domain",
+      "why": "A name like siddharthbagga dot me is easier to say out loud than a GitHub address.",
+      "status": "todo",
+      "impact": 2,
+      "due": "2026-10-20",
+      "short": "the domain"
+    },
+    {
+      "id": "cloudflare-mirror",
+      "title": "Set up the optional Cloudflare mirror",
+      "why": "A second address costs nothing and survives a GitHub outage.",
+      "status": "todo",
+      "impact": 1,
+      "due": "2026-10-31",
+      "short": "the Cloudflare mirror"
+    },
+    {
+      "id": "webhook",
+      "title": "Connect the site to Positioning OS",
+      "why": "Every message and booking lands in your sheet.",
+      "status": "done",
+      "impact": 5,
+      "due": "2026-10-06",
+      "completedAt": "2026-10-06"
+    },
+    {
+      "id": "calendly",
+      "title": "Turn on Calendly booking",
+      "why": "Visitors can book thirty minutes without an email thread.",
+      "status": "done",
+      "impact": 4,
+      "due": "2026-10-06",
+      "completedAt": "2026-10-06"
+    },
+    {
+      "id": "crm-row-fix",
+      "title": "Fix the shifted P-001 row in People CRM",
+      "why": "Follow-up dates were being read from the wrong columns.",
+      "status": "done",
+      "impact": 2,
+      "due": "2026-10-06",
+      "completedAt": "2026-10-06"
+    },
+    {
+      "id": "brain-schedule",
+      "title": "Run the strategy search on a schedule",
+      "why": "It improves every six hours without anyone touching it.",
+      "status": "done",
+      "impact": 3,
+      "due": "2026-10-06",
+      "completedAt": "2026-10-06"
+    },
+    {
+      "id": "jarvis-sales",
+      "title": "Make Jarvis proactive on the site",
+      "why": "Visitors get a guided conversation instead of a static page.",
+      "status": "done",
+      "impact": 5,
+      "due": "2026-10-07",
+      "short": "Jarvis's sales mode",
+      "completedAt": "2026-10-06"
+    }
+  ]
+}
