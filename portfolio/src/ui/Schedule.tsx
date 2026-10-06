@@ -36,6 +36,7 @@ export function Schedule() {
   }, [url]);
 
   if (!url) return null;
+  const minutes = url.match(/\/(\d+)min\b/)?.[1];
   const src = `${url}${url.includes("?") ? "&" : "?"}embed_domain=${encodeURIComponent(location.host)}&embed_type=Inline&hide_gdpr_banner=1&background_color=131312&text_color=f2efe6&primary_color=ff4a1c`;
 
   return (
@@ -43,7 +44,7 @@ export function Schedule() {
       <div className="sched-h">
         <div>
           <span className="lbl">Private conversation</span>
-          <b>Book 20 minutes directly</b>
+          <b>{minutes ? `Book ${minutes} minutes directly` : "Book a time directly"}</b>
         </div>
         {!show && (
           <button className="cta hot" onClick={() => setShow(true)} data-testid="sched-open">

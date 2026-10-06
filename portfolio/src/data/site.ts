@@ -9,7 +9,7 @@ const ENV = (import.meta.env ?? {}) as Record<string, string | undefined>;
 /** Public integration settings. All optional: each feature hides itself until its value is set
  *  in portfolio/.env.production (see README → Integrations). None of these values are secret. */
 export const INTEGRATIONS = {
-  /** e.g. https://calendly.com/siddharthbagga29/20min */
+  /** e.g. https://calendly.com/siddharthbagga29/30min */
   calendly: (ENV.VITE_CALENDLY_URL ?? "").trim(),
   /** Google Apps Script web-app URL (…/exec) that writes to the Positioning OS sheet */
   sheetsWebhook: (ENV.VITE_SHEETS_WEBHOOK ?? "").trim(),

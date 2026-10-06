@@ -45,11 +45,15 @@ const ctx = {
   CacheService: (() => { const m = new Map(); const c = { get: (k) => m.get(k) ?? null, put: (k, v) => m.set(k, v) }; return { getScriptCache: () => c }; })(),
   ContentService: { MimeType: { JSON: "json" }, createTextOutput: (t) => ({ setMimeType() { return this; }, getContent: () => t }) },
   Utilities: { formatDate: (d, _tz, f) => { const y = d.getFullYear(), m = pad(d.getMonth() + 1), day = pad(d.getDate()); return f.startsWith("yyyy-MM-dd'T'") ? `${y}-${m}-${day}T00:00:00` : `${y}-${m}-${day}`; } },
-  ScriptApp: { getProjectTriggers: () => [], newTrigger: () => ({ timeBased() { return this; }, everyHours() { return this; }, create() {} }) },
+  ScriptApp: { getProjectTriggers: () => [], newTrigger: (fn) => ((ctx.triggerFn = fn), { timeBased() { return this; }, everyHours() { return this; }, create() {} }) },
   Logger: { log: console.log },
 };
 vm.createContext(ctx);
+// Same project as the user's workbook builder, which declares its own SHEETS and helpers: loaded first, like Code.gs before Webhook.gs.
+vm.runInContext("var SHEETS = { DASH: 'Dashboard', PEOPLE: 'People CRM' }; var CFG = 1; function ensureSheet_() { throw new Error('builder helper called'); } function table_() { throw new Error('builder helper called'); } function buildWorkbook() { return 'built'; }", ctx);
 vm.runInContext(readFileSync(new URL("./Code.gs", import.meta.url), "utf8"), ctx);
+assert.equal(ctx.buildWorkbook(), "built");
+assert.equal(ctx.SHEETS.DASH, "Dashboard");
 const post = (body) => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(body) } }).getContent());
 
 let r = post({ sid: "s1", page: "/", events: [{ event: "page_view" }, { event: "section_view", section: "hero" }, { event: "jarvis_ask" }, { event: "lab_run" }, { event: "connect_open" }] });
@@ -88,5 +92,20 @@ assert.ok(sheets["Web Metrics"].getLastRow() === 2, "one metrics row per day");
 assert.equal(post({ sid: "s9", events: Array(81).fill({ event: "section_view" }).slice(0, 50) }).ok, true);
 assert.equal(post({ sid: "s9", events: Array(50).fill({ event: "section_view" }) }).ok, false, "rate limited");
 assert.equal(JSON.parse(ctx.doPost({ postData: { contents: "x".repeat(20001) } }).getContent()).ok, false);
+// A renamed CRM tab must not lose the visit: the event still lands in Web Activity, flagged.
+const saved = sheets.Opportunities;
+delete sheets.Opportunities;
+const before = sheets["Web Activity"].getLastRow();
+r = post({ sid: "s9", page: "/", events: [{ event: "calendly_booked", event_uri: "x" }] });
+assert.equal(r.ok, true);
+assert.equal(sheets["Web Activity"].getLastRow(), before + 1);
+assert.match(String(sheets["Web Activity"].get(before + 1, 5)), /CRM write failed: Missing sheet: Opportunities/);
+sheets.Opportunities = saved;
+
+// Trigger points at the prefixed global.
+ctx.webhookInstallTriggers();
+assert.equal(ctx.triggerFn, "webhookRefreshDashboard");
+assert.equal(typeof ctx.webhookRefreshDashboard, "function");
+
 console.log("Code.gs harness: all assertions passed");
 console.log("Dashboard:", D.cells.filter(Boolean).map((r) => r.slice(0, 2).join(" = ")).join(" | "));

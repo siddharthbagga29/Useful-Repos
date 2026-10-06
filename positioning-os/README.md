@@ -21,21 +21,29 @@ Inbound people are written as **UNVERIFIED / Low confidence** with the email in 
 
 ## Deploy (10 minutes, once)
 
-1. Open the **Positioning OS** sheet → **Extensions → Apps Script**.
-2. Delete what's in `Code.gs`, paste the contents of [`Code.gs`](Code.gs), save.
-3. ⚙ **Project Settings** → tick **Show "appsscript.json" manifest file in editor** → open `appsscript.json` and
-   replace it with [`appsscript.json`](appsscript.json), save.
-4. Select `selfTest` in the function dropdown → **Run** → **Review permissions** → choose your Google account →
-   *Advanced* → *Go to … (unsafe)* → **Allow**. (Google shows "unsafe" for every personal script that isn't
-   published to the Marketplace. The script only asks for: this spreadsheet, and creating its own trigger.)
-   Check the sheet: a `TEST — delete me` row appears in People CRM, Target Companies and Opportunities. Delete those rows.
-5. Select `installTriggers` → **Run** (creates the hourly dashboard refresh).
-6. **Deploy → New deployment** → type **Web app** → *Execute as*: **Me** → *Who has access*: **Anyone** → **Deploy**.
-   Copy the **Web app URL** (ends in `/exec`).
-7. Send that URL to Claude (or put it in `portfolio/.env.production` as `VITE_SHEETS_WEBHOOK=` and run
-   `npm run build && scripts/deploy.sh`).
+The webhook goes in the **same Apps Script project as `buildWorkbook`** (the one opened from the sheet via
+**Extensions → Apps Script**), as a **second file**. Keep your `Code.gs` exactly as it is. Everything in
+`Code.gs` from this folder sits inside one namespace, so its names can't collide with `buildWorkbook`'s
+(`SHEETS`, helpers, and so on). Leave `appsscript.json` as it is: Apps Script works out the permissions itself.
 
-Updating later: edit `Code.gs` → **Deploy → Manage deployments → ✎ → Version: New version → Deploy**.
+1. Open the **Positioning OS** sheet → **Extensions → Apps Script**.
+2. In **Files**, click **+** → **Script** → name it `Webhook` (it becomes `Webhook.gs`).
+   Paste the whole of [`Code.gs`](Code.gs) from this folder into it → **Save** (⌘S).
+3. In the function dropdown next to **Debug**, pick `webhookSelfTest` → **Run** → **Review permissions** →
+   your Google account → **Advanced** → **Go to … (unsafe)** → **Allow**. Google says "unsafe" for every
+   personal script that isn't published on the Marketplace.
+   Check the sheet: a `TEST — delete me` row appears in People CRM, Target Companies and Opportunities,
+   and a `Web Activity` tab appears. Delete the three TEST rows.
+4. Pick `webhookInstallTriggers` → **Run**. This creates the hourly Dashboard refresh.
+5. **Deploy → New deployment** → ⚙ next to *Select type* → **Web app**.
+   *Execute as*: **Me**. *Who has access*: **Anyone** (not "Anyone with Google account") → **Deploy**.
+   Copy the **Web app URL** (it ends in `/exec`).
+6. Send that URL to Claude, or put it in `portfolio/.env.production` as `VITE_SHEETS_WEBHOOK=` and run
+   `scripts/deploy.sh`.
+
+To check the URL by hand, open it in a browser. It should show `{"ok":true,"service":"positioning-os-webhook",…}`.
+
+Updating later: edit `Webhook.gs` → **Deploy → Manage deployments → ✎ → Version: New version → Deploy**.
 The URL stays the same.
 
 ## Tests
