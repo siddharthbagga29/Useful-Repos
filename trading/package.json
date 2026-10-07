@@ -1,0 +1,9 @@
+{
+  "name": "trading-loop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --no-warnings --test test/trading.test.ts",
+    "gate": "node --experimental-strip-types --no-warnings scripts/gate.ts"
+  }
+}

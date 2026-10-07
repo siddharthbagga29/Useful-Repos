@@ -1,0 +1,18 @@
+{
+  "mode": "paper",
+  "sleeveCapital": 10000,
+  "targetMonthlyReturnPct": 1.0,
+  "symbols": ["SPY", "QQQ", "IWM", "EFA", "AGG", "TLT", "GLD", "VNQ"],
+  "maxPositionPct": 5,
+  "maxExposurePct": 40,
+  "stopPct": 1.5,
+  "kellyFraction": 0.25,
+  "dailyLossLimitUsd": 1000,
+  "maxDailyDrawdownPct": 2.0,
+  "maxDrawdownPct": 6.0,
+  "limitOffsetPct": 0.05,
+  "maxSlippagePct": 0.2,
+  "cancelIfMovesPct": 0.15,
+  "maxDataAgeDays": 14,
+  "warmupDays": 10
+}

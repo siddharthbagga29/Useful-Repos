@@ -86,7 +86,7 @@ const norm = (w: Record<string, number>) => {
 };
 
 /** Target weights decided with information up to and including week t. */
-function target(p: Params, t: number, px: Record<string, number[]>, rets: Record<string, number[]>): Record<string, number> {
+export function target(p: Params, t: number, px: Record<string, number[]>, rets: Record<string, number[]>): Record<string, number> {
   const safe = p.safe === "CASH" ? {} : { [p.safe]: 1 };
   switch (p.strategy) {
     case "hold":
