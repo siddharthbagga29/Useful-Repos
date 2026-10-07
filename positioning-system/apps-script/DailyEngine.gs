@@ -10,7 +10,7 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Positioning OS')
     .addItem("Generate today's tasks", 'generateDailyTasks')
-    .addItem('Email me the morning brief', 'emailMorningBrief')
+    .addItem('Run the analyst now (test)', 'testAnalystNow')
     .addSeparator()
     .addItem('Compute this week\'s score', 'computeWeeklyScore')
     .addItem('Flag stale verifications', 'flagStaleVerification')
@@ -158,7 +158,12 @@ function requireSheet_(name) {
   return name;
 }
 
-/** Emails the brief. Read-only: it reports, it does not act. */
+/**
+ * RETIRED 2026-10-07. This is the reminder email that kept arriving daily at
+ * 10:17 UTC and told Siddharth what to do instead of doing it. dailyRun_ now
+ * calls emailWorkReport_ (Analyst.gs) instead. Kept only so an old trigger
+ * bound to this name does not throw. Do not re-wire it.
+ */
 function emailMorningBrief() {
   var ss = ssz_();
   var dash = ss.getSheetByName(SHEETS.DASH);
@@ -380,21 +385,27 @@ function removeTriggers() {
   ScriptApp.getProjectTriggers().forEach(function (tr) { ScriptApp.deleteTrigger(tr); });
 }
 
-/** Trigger entry point. UI alerts are unavailable here, so failures are logged. */
+/** Trigger entry point. Each step is isolated; one failure never blocks the rest. */
 function dailyRun_() {
   try { var n = repairDashboard_(); if (n) Logger.log('repaired ' + n + ' dashboard formulas'); }
   catch (e) { Logger.log('dashboard repair failed: ' + e); }
+
   try { var ing = ingestAgentQueue_(); if (ing > 0) Logger.log('ingested ' + ing + ' agent rows'); }
   catch (e) { Logger.log('agent ingest failed: ' + e); }
-  try { generateDailyTasksSilent_(); } catch (e) { Logger.log('task gen failed: ' + e); }
+
   try { flagStaleVerificationSilent_(); } catch (e) { Logger.log('verification sweep failed: ' + e); }
-  // The reminder email is OFF by design. The daily agent (see agent/RUNBOOK.md)
-  // runs ~90 min later, does the actual work, and sends one report instead.
-  // Set EMAIL_BRIEF to true if you ever want the plain reminder back.
-  var EMAIL_BRIEF = false;
-  if (EMAIL_BRIEF) {
-    try { emailMorningBrief(); } catch (e) { Logger.log('brief failed: ' + e); }
-  }
+
+  // THE WORK. Real data pulled, written to the sheet, then reported.
+  var census = { naics: '', rows: [], errors: ['pullCensusCBP_ did not run'], total: 0, label: '' };
+  try { census = pullCensusCBP_(); } catch (e) { census.errors = ['' + e]; }
+
+  var crm = { overdue: [], noValue: [], unverified: [], total: 0 };
+  try { crm = auditCRM_(); } catch (e) { Logger.log('crm audit failed: ' + e); }
+
+  try { generateDailyTasksSilent_(); } catch (e) { Logger.log('task gen failed: ' + e); }
+
+  // ONE email: a work report. The old reminder brief is retired.
+  try { emailWorkReport_(census, crm); } catch (e) { Logger.log('work report failed: ' + e); }
 }
 
 function generateDailyTasksSilent_() {
