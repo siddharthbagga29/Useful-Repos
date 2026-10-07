@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useMemo, useState, type KeyboardEvent } from "react";
-import { KIND_LABEL, PROJECTS, progress, type AgentKind, type Project } from "./projects.ts";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as RPointerEvent } from "react";
+import { createPortal } from "react-dom";
+import { KIND_LABEL, PROJECTS, progress, type Agent, type AgentKind, type Project } from "./projects.ts";
 import { useBrain, nextRun } from "../brain/useBrain.ts";
 import type { BrainState } from "../brain/engine.ts";
 import { bus } from "../jarvis/bus.ts";
@@ -38,7 +39,15 @@ const VIEWBOX = (() => {
   return `${minX} ${top} ${maxX - minX} ${bottom - top}`;
 })();
 
-type Sel = { type: "project"; p: Project } | { type: "brain" } | { type: "foundry" };
+type Sel = { type: "project"; p: Project } | { type: "brain" } | { type: "foundry" } | { type: "agent"; p: Project; a: Agent; key: string };
+
+/** The grid turned a quarter clockwise `rot` times; the Brain sits at the centre and never moves. */
+const turn = ([i, j]: [number, number], rot: number): [number, number] => {
+  let q: [number, number] = [i, j];
+  for (let n = 0; n < ((rot % 4) + 4) % 4; n++) q = [2 - q[1], q[0]];
+  return q;
+};
+const VB = VIEWBOX.split(" ").map(Number) as [number, number, number, number];
 
 function shade(hex: string, f: number) {
   const n = parseInt(hex.slice(1), 16);
@@ -86,8 +95,8 @@ function Windows({ x, y, z, w, d, h, seed }: { x: number; y: number; z: number; 
   return <g>{out}</g>;
 }
 
-function Building({ p, selected, onSelect, reduce }: { p: Project; selected: boolean; onSelect: () => void; reduce: boolean }) {
-  const [i, j] = p.plot;
+function Building({ p, plot, selected, onSelect, reduce }: { p: Project; plot: [number, number]; selected: boolean; onSelect: () => void; reduce: boolean }) {
+  const [i, j] = plot;
   const x = i * P + 3.75;
   const y = j * P + 3.75;
   const w = 7.5;
@@ -171,8 +180,8 @@ function BrainTower({ gen, selected, onSelect, reduce }: { gen: number | null; s
   );
 }
 
-function Foundry({ selected, onSelect }: { selected: boolean; onSelect: () => void }) {
-  const [i, j] = FOUNDRY;
+function Foundry({ plot, selected, onSelect }: { plot: [number, number]; selected: boolean; onSelect: () => void }) {
+  const [i, j] = plot;
   const x = i * P + 2.5;
   const y = j * P + 3;
   const [lx, ly] = iso(x + 1, y + 9, 12); // sign offset to the left so the Brain doesn't hide it
@@ -210,58 +219,204 @@ function route(from: [number, number], to: [number, number]): [number, number][]
   return [...go, ...go.slice(0, -1).reverse()];
 }
 
-function Bot({ path, color, packet, delay, speed, reduce, label }: { path: [number, number][]; color: string; packet: string; delay: number; speed: number; reduce: boolean; label: string }) {
+function Bot({ path, color, packet, delay, speed, reduce, label, selected, onSelect }: { path: [number, number][]; color: string; packet: string; delay: number; speed: number; reduce: boolean; label: string; selected: boolean; onSelect: () => void }) {
   const screen = path.map(([x, y]) => iso(x, y, 0));
   const segs = screen.slice(1).map((p, k) => Math.hypot(p[0] - screen[k]![0], p[1] - screen[k]![1]));
   const total = segs.reduce((a, b) => a + b, 0) || 1;
   let acc = 0;
   const times = [0, ...segs.map((s) => (acc += s) / total)];
   const [x0, y0] = screen[0]!;
+  const key = (e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect());
   return (
     <motion.g
-      className="bot"
+      className={`bot${selected ? " sel" : ""}`}
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      aria-pressed={selected}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
+      onKeyDown={key}
       initial={{ x: x0, y: y0 }}
       animate={reduce ? { x: x0, y: y0 } : { x: screen.map((p) => p[0]), y: screen.map((p) => p[1]) }}
       transition={reduce ? undefined : { duration: total / speed, times, repeat: Infinity, ease: "linear", delay, repeatDelay: 0.8 }}
     >
       <title>{label}</title>
+      <circle cx={0} cy={-5} r={11} className="bot-hit" />
+      {selected && <circle cx={0} cy={-5} r={10} className="bot-ring" stroke={color} />}
       <circle cx={0} cy={-5} r={7} fill={color} className="bot-glow" />
       <ellipse cx={0} cy={0.8} rx={3.8} ry={1.5} className="bot-shadow" />
       <rect x={-2.6} y={-7.6} width={5.2} height={7} rx={1.8} className="bot-body" />
       <circle cx={0} cy={-9.8} r={2.6} className="bot-head" />
       <rect x={-1.7} y={-10.6} width={3.4} height={1.3} rx={0.6} fill={color} />
       <rect x={2.9} y={-8} width={3.2} height={3.2} rx={0.6} fill={packet} className="bot-packet" />
+      {selected && (
+        <g className="bot-tag" transform="translate(0,-22)">
+          <rect x={-34} y={-8} width={68} height={12} rx={3} />
+          <text y={0.6} textAnchor="middle">
+            {label.split(" · ")[0]}
+          </text>
+        </g>
+      )}
     </motion.g>
   );
 }
 
-export function City({ compact = false, active = true }: { compact?: boolean; active?: boolean }) {
+/** Pan, zoom and pinch for the explorer, in viewBox units so the drawing stays crisp. */
+function useCamera(svg: React.RefObject<SVGSVGElement | null>, on: boolean) {
+  const [cam, setCam] = useState({ k: 1, x: 0, y: 0 });
+  const ptrs = useRef(new Map<number, { x: number; y: number }>());
+  const moved = useRef(0);
+  const toView = useCallback(
+    (cx: number, cy: number) => {
+      const el = svg.current;
+      const m = el?.getScreenCTM();
+      if (!el || !m) return { x: 0, y: 0, s: 1 };
+      const pt = new DOMPoint(cx, cy).matrixTransform(m.inverse());
+      return { x: pt.x, y: pt.y, s: 1 / m.a };
+    },
+    [svg],
+  );
+  const zoomAt = useCallback((vx: number, vy: number, f: number) => {
+    setCam((c) => {
+      const k = Math.min(6, Math.max(0.7, c.k * f));
+      const r = k / c.k;
+      return { k, x: vx - (vx - c.x) * r, y: vy - (vy - c.y) * r };
+    });
+  }, []);
+  useEffect(() => {
+    const el = svg.current;
+    if (!el || !on) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const v = toView(e.clientX, e.clientY);
+      zoomAt(v.x, v.y, Math.exp(-e.deltaY * 0.0015));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [svg, on, toView, zoomAt]);
+  const handlers = on
+    ? {
+        onPointerDown: (e: RPointerEvent) => {
+          ptrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          moved.current = 0;
+        },
+        onPointerMove: (e: RPointerEvent) => {
+          const prev = ptrs.current.get(e.pointerId);
+          if (!prev) return;
+          const next = { x: e.clientX, y: e.clientY };
+          if (ptrs.current.size === 2) {
+            const other = [...ptrs.current.entries()].find(([id]) => id !== e.pointerId)?.[1];
+            if (other) {
+              const d0 = Math.hypot(prev.x - other.x, prev.y - other.y);
+              const d1 = Math.hypot(next.x - other.x, next.y - other.y);
+              const mid = toView((next.x + other.x) / 2, (next.y + other.y) / 2);
+              if (d0 > 0) zoomAt(mid.x, mid.y, d1 / d0);
+              moved.current += Math.abs(d1 - d0);
+            }
+          } else {
+            const s = toView(0, 0).s;
+            const dx = (next.x - prev.x) * s;
+            const dy = (next.y - prev.y) * s;
+            moved.current += Math.abs(next.x - prev.x) + Math.abs(next.y - prev.y);
+            if (moved.current > 4) {
+              (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+              setCam((c) => ({ ...c, x: c.x + dx, y: c.y + dy }));
+            }
+          }
+          ptrs.current.set(e.pointerId, next);
+        },
+        onPointerUp: (e: RPointerEvent) => void ptrs.current.delete(e.pointerId),
+        onPointerCancel: (e: RPointerEvent) => void ptrs.current.delete(e.pointerId),
+        // a drag is not a click
+        onClickCapture: (e: React.MouseEvent) => {
+          if (moved.current > 4) {
+            e.stopPropagation();
+            e.preventDefault();
+          }
+          moved.current = 0;
+        },
+      }
+    : {};
+  const centre = { x: VB[0] + VB[2] / 2, y: VB[1] + VB[3] / 2 };
+  return {
+    cam,
+    handlers,
+    zoom: (f: number) => zoomAt(centre.x, centre.y, f),
+    pan: (dx: number, dy: number) => setCam((c) => ({ ...c, x: c.x + dx, y: c.y + dy })),
+    reset: () => setCam({ k: 1, x: 0, y: 0 }),
+  };
+}
+
+export function City({ compact = false, active = true, explore = false, onClose, initial }: { compact?: boolean; active?: boolean; explore?: boolean; onClose?: () => void; initial?: Sel }) {
   const reduce = !!useReducedMotion();
   const { data } = useBrain(compact ? 0 : 120_000);
   const brain = data?.state ?? null;
-  const [sel, setSel] = useState<Sel>({ type: "project", p: PROJECTS[0]! });
+  const [sel, setSel] = useState<Sel>(initial ?? { type: "project", p: PROJECTS[0]! });
+  const [rot, setRot] = useState(0);
+  const [tab, setTab] = useState<"detail" | "crew">("detail");
+  const [open, setOpen] = useState(false); // the full-screen explorer, from the inline city
+  const svg = useRef<SVGSVGElement>(null);
+  const { cam, handlers, zoom, pan, reset } = useCamera(svg, explore);
+
+  const plotOf = useCallback((plot: [number, number]) => turn(plot, rot), [rot]);
+  const foundryPlot = plotOf(FOUNDRY);
 
   const bots = useMemo(() => {
-    const out: { key: string; path: [number, number][]; color: string; packet: string; delay: number; speed: number; label: string }[] = [];
+    const out: { key: string; p: Project; a: Agent; path: [number, number][]; color: string; packet: string; delay: number; speed: number; label: string }[] = [];
     let n = 0;
     for (const p of PROJECTS) {
+      const home = turn(p.plot, rot);
+      const foundry = turn(FOUNDRY, rot);
       p.agents.forEach((a, k) => {
-        const target: [number, number] = a.kind === "script" || a.kind === "local" ? FOUNDRY : BRAIN;
-        const path = target[0] === p.plot[0] && target[1] === p.plot[1] ? route(p.plot, BRAIN) : route(p.plot, target);
-        out.push({ key: `${p.id}-${k}`, path, color: KIND_COLOR[a.kind], packet: p.color, delay: (n++ * 1.37) % 7, speed: 26 + ((n * 7) % 11), label: `${a.name} · ${p.name} · ${KIND_LABEL[a.kind]}` });
+        const target: [number, number] = a.kind === "script" || a.kind === "local" ? foundry : BRAIN;
+        const path = target[0] === home[0] && target[1] === home[1] ? route(home, BRAIN) : route(home, target);
+        out.push({ key: `${p.id}-${k}`, p, a, path, color: KIND_COLOR[a.kind], packet: p.color, delay: (n++ * 1.37) % 7, speed: 26 + ((n * 7) % 11), label: `${a.name} · ${p.name} · ${KIND_LABEL[a.kind]}` });
       });
     }
     return out;
-  }, []);
+  }, [rot]);
 
   const order = useMemo(() => {
     const items: { k: string; depth: number; el: "brain" | "foundry" | Project }[] = [
-      ...PROJECTS.map((p) => ({ k: p.id, depth: p.plot[0] + p.plot[1], el: p as Project })),
+      ...PROJECTS.map((p) => {
+        const [i, j] = turn(p.plot, rot);
+        return { k: p.id, depth: i + j, el: p as Project };
+      }),
       { k: "brain", depth: BRAIN[0] + BRAIN[1], el: "brain" as const },
-      { k: "foundry", depth: FOUNDRY[0] + FOUNDRY[1], el: "foundry" as const },
+      { k: "foundry", depth: turn(FOUNDRY, rot)[0] + turn(FOUNDRY, rot)[1], el: "foundry" as const },
     ];
     return items.sort((a, b) => a.depth - b.depth);
-  }, []);
+  }, [rot]);
+
+  // explorer keys: arrows pan, + / - zoom, R turns the city, 0 resets, Esc leaves
+  useEffect(() => {
+    if (!explore) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if ((e.target as HTMLElement | null)?.closest?.("input, textarea")) return;
+      const step = 24 / cam.k;
+      if (e.key === "Escape") onClose?.();
+      else if (e.key === "+" || e.key === "=") zoom(1.25);
+      else if (e.key === "-" || e.key === "_") zoom(0.8);
+      else if (e.key === "r" || e.key === "R") setRot((r) => r + 1);
+      else if (e.key === "0") reset();
+      else if (e.key === "ArrowLeft") pan(step, 0);
+      else if (e.key === "ArrowRight") pan(-step, 0);
+      else if (e.key === "ArrowUp") pan(0, step);
+      else if (e.key === "ArrowDown") pan(0, -step);
+      else return;
+      e.preventDefault();
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, [explore, cam.k, onClose, zoom, pan, reset]);
+
+  const pick = (s: Sel) => {
+    setSel(s);
+    setTab("detail");
+  };
 
   const roads = [];
   for (let k = 0; k <= 3; k++) {
@@ -274,9 +429,10 @@ export function City({ compact = false, active = true }: { compact?: boolean; ac
   const totalBots = bots.length;
   const shipped = PROJECTS.reduce((a, p) => a + p.milestones.filter(([, m]) => m).length, 0);
   const floors = PROJECTS.reduce((a, p) => a + p.milestones.length, 0);
+  const selKey = sel.type === "project" ? sel.p.id : sel.type === "agent" ? sel.key : sel.type;
 
   return (
-    <div className={`city${compact ? " compact" : ""}`}>
+    <div className={`city${compact ? " compact" : ""}${explore ? " explore" : ""}`}>
       <div className="city-stage">
         <div className="city-hud" aria-hidden>
           <span>
@@ -295,7 +451,40 @@ export function City({ compact = false, active = true }: { compact?: boolean; ac
             <b>{brain ? brain.generation.toLocaleString("en-US") : "…"}</b> brain gens
           </span>
         </div>
-        <svg className="city-svg" viewBox={VIEWBOX} role="group" aria-label="Research city: each building is a project, each floor a milestone, each bot an automated job">
+        <div className="city-ctl" role="toolbar" aria-label="City view">
+          {explore ? (
+            <>
+              <button type="button" onClick={() => zoom(1.25)} aria-label="Zoom in" data-testid="city-zoom-in">
+                +
+              </button>
+              <button type="button" onClick={() => zoom(0.8)} aria-label="Zoom out">
+                −
+              </button>
+              <button type="button" onClick={() => setRot((r) => r + 1)} aria-label="Turn the city" data-testid="city-rotate">
+                ⟳
+              </button>
+              <button type="button" onClick={reset} aria-label="Reset the view">
+                ⌂
+              </button>
+              <button type="button" className="city-close" onClick={onClose} aria-label="Close the explorer" data-testid="city-close">
+                ✕
+              </button>
+            </>
+          ) : (
+            <button type="button" className="city-explore" onClick={() => setOpen(true)} data-testid="city-explore">
+              ⤢ Explore the city
+            </button>
+          )}
+        </div>
+        <svg
+          ref={svg}
+          className="city-svg"
+          viewBox={VIEWBOX}
+          role="group"
+          aria-label="Research city: each building is a project, each floor a milestone, each bot an automated job"
+          data-testid={explore ? "city-explore-svg" : undefined}
+          {...handlers}
+        >
           <defs>
             <radialGradient id="core">
               <stop offset="0" stopColor="#e0fbff" />
@@ -303,32 +492,35 @@ export function City({ compact = false, active = true }: { compact?: boolean; ac
               <stop offset="1" stopColor="#0e7490" stopOpacity=".2" />
             </radialGradient>
           </defs>
-          <polygon className="ground" points={pts([-3, -3, 0], [3 * P + 3, -3, 0], [3 * P + 3, 3 * P + 3, 0], [-3, 3 * P + 3, 0])} />
-          {roads}
-          {order.map(({ k, el }) =>
-            el === "brain" ? (
-              <BrainTower key={k} gen={brain?.generation ?? null} selected={sel.type === "brain"} onSelect={() => setSel({ type: "brain" })} reduce={reduce} />
-            ) : el === "foundry" ? (
-              <Foundry key={k} selected={sel.type === "foundry"} onSelect={() => setSel({ type: "foundry" })} />
-            ) : (
-              <Building key={k} p={el} selected={sel.type === "project" && sel.p.id === el.id} onSelect={() => setSel({ type: "project", p: el })} reduce={reduce} />
-            ),
-          )}
-          {active &&
-            bots.map((b) => (
-              <Bot {...b} key={b.key} reduce={reduce} />
-            ))}
+          <g transform={`translate(${cam.x} ${cam.y}) scale(${cam.k})`} data-testid="city-cam" data-k={cam.k.toFixed(2)}>
+            <polygon className="ground" points={pts([-3, -3, 0], [3 * P + 3, -3, 0], [3 * P + 3, 3 * P + 3, 0], [-3, 3 * P + 3, 0])} />
+            {roads}
+            {order.map(({ k, el }) =>
+              el === "brain" ? (
+                <BrainTower key={k} gen={brain?.generation ?? null} selected={sel.type === "brain"} onSelect={() => pick({ type: "brain" })} reduce={reduce} />
+              ) : el === "foundry" ? (
+                <Foundry key={k} plot={foundryPlot} selected={sel.type === "foundry"} onSelect={() => pick({ type: "foundry" })} />
+              ) : (
+                <Building key={k} p={el} plot={plotOf(el.plot)} selected={(sel.type === "project" || sel.type === "agent") && sel.p.id === el.id} onSelect={() => pick({ type: "project", p: el })} reduce={reduce} />
+              ),
+            )}
+            {active &&
+              bots.map((b) => (
+                <Bot key={`${b.key}-${rot}`} path={b.path} color={b.color} packet={b.packet} delay={b.delay} speed={b.speed} label={b.label} reduce={reduce} selected={sel.type === "agent" && sel.key === b.key} onSelect={() => pick({ type: "agent", p: b.p, a: b.a, key: b.key })} />
+              ))}
+          </g>
         </svg>
+        {explore && <p className="city-tip">Drag to pan · scroll or pinch to zoom · ⟳ turns the city · tap a building or a bot</p>}
         <div className="city-pick" role="toolbar" aria-label="Choose a district">
           {PROJECTS.map((p) => (
-            <button key={p.id} type="button" className={sel.type === "project" && sel.p.id === p.id ? "on" : ""} style={{ ["--c" as string]: p.color }} onClick={() => setSel({ type: "project", p })}>
+            <button key={p.id} type="button" className={(sel.type === "project" || sel.type === "agent") && sel.p.id === p.id ? "on" : ""} style={{ ["--c" as string]: p.color }} onClick={() => pick({ type: "project", p })}>
               {p.name}
             </button>
           ))}
-          <button type="button" className={sel.type === "brain" ? "on" : ""} style={{ ["--c" as string]: "#22d3ee" }} onClick={() => setSel({ type: "brain" })} data-testid="pick-brain">
+          <button type="button" className={sel.type === "brain" ? "on" : ""} style={{ ["--c" as string]: "#22d3ee" }} onClick={() => pick({ type: "brain" })} data-testid="pick-brain">
             The Brain
           </button>
-          <button type="button" className={sel.type === "foundry" ? "on" : ""} style={{ ["--c" as string]: "#94a3b8" }} onClick={() => setSel({ type: "foundry" })}>
+          <button type="button" className={sel.type === "foundry" ? "on" : ""} style={{ ["--c" as string]: "#94a3b8" }} onClick={() => pick({ type: "foundry" })}>
             Data Foundry
           </button>
         </div>
@@ -341,27 +533,196 @@ export function City({ compact = false, active = true }: { compact?: boolean; ac
           ))}
         </div>
       </div>
-      <AnimatePresence mode="wait">
-        <motion.aside
-          key={sel.type === "project" ? sel.p.id : sel.type}
-          className="dossier"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -10 }}
-          transition={{ duration: 0.22 }}
-          aria-live="polite"
-          data-testid="dossier"
-        >
-          {sel.type === "project" ? <ProjectDossier p={sel.p} /> : sel.type === "brain" ? <BrainDossier brain={brain} /> : <FoundryDossier />}
-        </motion.aside>
-      </AnimatePresence>
+      <div className="city-side">
+        <div className="ds-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === "detail"} onClick={() => setTab("detail")}>
+            Dossier
+          </button>
+          <button type="button" role="tab" aria-selected={tab === "crew"} onClick={() => setTab("crew")} data-testid="tab-crew">
+            All bots · {totalBots}
+          </button>
+        </div>
+        <AnimatePresence mode="wait">
+          <motion.aside
+            key={tab === "crew" ? "crew" : selKey}
+            className="dossier"
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.22 }}
+            aria-live="polite"
+            data-testid="dossier"
+          >
+            {tab === "crew" ? (
+              <CrewRoster bots={bots} selected={sel.type === "agent" ? sel.key : null} onPick={(b) => pick({ type: "agent", p: b.p, a: b.a, key: b.key })} />
+            ) : sel.type === "project" ? (
+              <ProjectDossier p={sel.p} onAgent={(a, k) => pick({ type: "agent", p: sel.p, a, key: `${sel.p.id}-${k}` })} />
+            ) : sel.type === "agent" ? (
+              <AgentDossier p={sel.p} a={sel.a} brain={brain} onProject={() => pick({ type: "project", p: sel.p })} />
+            ) : sel.type === "brain" ? (
+              <BrainDossier brain={brain} />
+            ) : (
+              <FoundryDossier />
+            )}
+          </motion.aside>
+        </AnimatePresence>
+      </div>
+      {open && <CityExplorer initial={sel} onClose={() => setOpen(false)} />}
     </div>
   );
 }
 
-function ProjectDossier({ p }: { p: Project }) {
-  const done = p.milestones.filter(([, m]) => m).length;
+/** The city full-screen: free camera, every bot clickable, Esc to leave. */
+function CityExplorer({ initial, onClose }: { initial: Sel; onClose: () => void }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+  return createPortal(
+    <motion.div className="city-x" role="dialog" aria-modal="true" aria-label="Research city explorer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} data-testid="city-explorer">
+      <City explore onClose={onClose} initial={initial} />
+    </motion.div>,
+    document.body,
+  );
+}
+
+type BotInfo = { key: string; p: Project; a: Agent; color: string };
+
+function CrewRoster({ bots, selected, onPick }: { bots: BotInfo[]; selected: string | null; onPick: (b: BotInfo) => void }) {
+  return (
+    <>
+      <div className="ds-k" style={{ color: "#22d3ee" }}>
+        The crew
+      </div>
+      <h3>Every bot</h3>
+      <p className="ds-sum">Each one is a real automated job. Tap one to see its task, its latest result and where to check the work.</p>
+      {PROJECTS.map((p) => (
+        <div key={p.id} className="crew-g">
+          <div className="crew-h" style={{ color: p.color }}>
+            {p.name} · {Math.round(progress(p) * 100)}%
+          </div>
+          <ul className="crew">
+            {bots
+              .filter((b) => b.p.id === p.id)
+              .map((b) => (
+                <li key={b.key}>
+                  <button type="button" className={selected === b.key ? "on" : ""} onClick={() => onPick(b)} data-testid={`crew-${b.key}`}>
+                    <i className="ds-bot" style={{ background: b.color, color: b.color }} aria-hidden />
+                    <span>
+                      <b>{b.a.name}</b>
+                      <small>{b.a.output}</small>
+                    </span>
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function AgentDossier({ p, a, brain, onProject }: { p: Project; a: Agent; brain: BrainState | null; onProject: () => void }) {
+  const done = p.milestones.filter(([, m]) => m);
+  const todo = p.milestones.filter(([, m]) => !m);
+  const when =
+    a.kind === "scheduled"
+      ? brain
+        ? `Last ran ${new Date(brain.lastRun).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · next ${nextRun(brain.lastRun)}`
+        : "Runs every 6 hours"
+      : a.kind === "ci"
+        ? "Runs on every push to the repository"
+        : a.kind === "deploy"
+          ? "Runs before every release; a failure blocks it"
+          : a.kind === "local"
+            ? "Runs on the owner's machine when it's on"
+            : "Runs on demand; same seed, same result";
+  return (
+    <>
+      <div className="ds-k" style={{ color: KIND_COLOR[a.kind] }}>
+        Bot · {p.name}
+      </div>
+      <h3>{a.name}</h3>
+      <dl className="ds-params">
+        <div>
+          <dt>Task</dt>
+          <dd>{a.duty}</dd>
+        </div>
+        <div>
+          <dt>Latest result</dt>
+          <dd className="ds-out">{a.kind === "scheduled" && brain ? `Generation ${brain.generation.toLocaleString("en-US")}: champion "${brain.champion.label}", ${brain.trials.toLocaleString("en-US")} strategies tried` : a.output}</dd>
+        </div>
+        <div>
+          <dt>Schedule</dt>
+          <dd>{when}</dd>
+        </div>
+      </dl>
+      <div className="ds-h">Project progress</div>
+      <div className="ds-prog">
+        <div className="ds-bar">
+          <motion.i style={{ background: p.color }} initial={{ width: 0 }} animate={{ width: `${progress(p) * 100}%` }} transition={{ duration: 0.8 }} />
+        </div>
+        <span>
+          {done.length}/{p.milestones.length} shipped
+        </span>
+      </div>
+      <div className="ds-h">Built so far</div>
+      <ul className="ds-ms">
+        {done.map(([m]) => (
+          <li key={m} className="on">
+            <span aria-hidden>■</span> {m}
+          </li>
+        ))}
+      </ul>
+      {todo.length > 0 && (
+        <>
+          <div className="ds-h">Still to build</div>
+          <ul className="ds-ms">
+            {todo.map(([m]) => (
+              <li key={m}>
+                <span aria-hidden>▢</span> {m}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <div className="ds-h">Where to see it</div>
+      <ViewLinks p={p} extra={a.kind === "scheduled" ? { label: "Brain log", href: `${BASE}research/#brain` } : undefined} />
+      <div className="ds-links">
+        <button type="button" className="chip" onClick={onProject}>
+          ← {p.name} dossier
+        </button>
+      </div>
+    </>
+  );
+}
+
+function ViewLinks({ p, extra }: { p: Project; extra?: { label: string; href: string } }) {
   const onHome = location.pathname === BASE;
+  const links: Project["links"] = [...p.links, ...(extra ? [extra] : [])];
+  if (!links.length) return <p className="ds-sum">Private work: the write-up isn't public yet. Ask Jarvis for the summary.</p>;
+  return (
+    <div className="ds-links">
+      {links.map((l) =>
+        l.station && onHome ? (
+          <button key={l.label} className="chip" type="button" onClick={() => (l.station === "jarvis" ? bus.emit({ type: "open_jarvis" }) : bus.emit({ type: "navigate", station: "model" }))}>
+            {l.label}
+          </button>
+        ) : (
+          <a key={l.label} className="chip" href={l.href} target={l.href.startsWith("http") ? "_blank" : undefined} rel={l.href.startsWith("http") ? "noopener noreferrer" : undefined}>
+            {l.label} ↗
+          </a>
+        ),
+      )}
+    </div>
+  );
+}
+
+function ProjectDossier({ p, onAgent }: { p: Project; onAgent: (a: Agent, k: number) => void }) {
+  const done = p.milestones.filter(([, m]) => m).length;
   return (
     <>
       <div className="ds-k" style={{ color: p.color }}>
@@ -387,14 +748,16 @@ function ProjectDossier({ p }: { p: Project }) {
       </dl>
       <div className="ds-h">Crew</div>
       <ul className="ds-agents">
-        {p.agents.map((a) => (
+        {p.agents.map((a, k) => (
           <li key={a.name}>
-            <i className="ds-bot" style={{ background: KIND_COLOR[a.kind] }} aria-hidden />
-            <div>
-              <b>{a.name}</b> <span className="ds-kind">{KIND_LABEL[a.kind]}</span>
-              <p>{a.duty}</p>
-              <p className="ds-out">→ {a.output}</p>
-            </div>
+            <button type="button" className="ds-agent" onClick={() => onAgent(a, k)} data-testid={`agent-${p.id}-${k}`}>
+              <i className="ds-bot" style={{ background: KIND_COLOR[a.kind], color: KIND_COLOR[a.kind] }} aria-hidden />
+              <div>
+                <b>{a.name}</b> <span className="ds-kind">{KIND_LABEL[a.kind]}</span>
+                <p>{a.duty}</p>
+                <p className="ds-out">→ {a.output}</p>
+              </div>
+            </button>
           </li>
         ))}
       </ul>
@@ -407,21 +770,8 @@ function ProjectDossier({ p }: { p: Project }) {
           </li>
         ))}
       </ul>
-      {p.links.length > 0 && (
-        <div className="ds-links">
-          {p.links.map((l) =>
-            l.station && onHome ? (
-              <button key={l.label} className="chip" type="button" onClick={() => (l.station === "jarvis" ? bus.emit({ type: "open_jarvis" }) : bus.emit({ type: "navigate", station: l.station! }))}>
-                {l.label}
-              </button>
-            ) : (
-              <a key={l.label} className="chip" href={l.href} target={l.href.startsWith("http") ? "_blank" : undefined} rel={l.href.startsWith("http") ? "noopener noreferrer" : undefined}>
-                {l.label} ↗
-              </a>
-            ),
-          )}
-        </div>
-      )}
+      <div className="ds-h">Where to see it</div>
+      <ViewLinks p={p} />
     </>
   );
 }

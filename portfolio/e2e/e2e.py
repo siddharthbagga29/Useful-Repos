@@ -178,7 +178,10 @@ def desktop(p) -> None:
     page.locator(".rail-item", has_text="Research").click()
     box.fill("Is he a CFA charterholder and how did he price the pipeline?")
     box.press("Enter")
-    page.wait_for_timeout(900)
+    try:
+        page.wait_for_function("(() => { const m = document.querySelectorAll('.overlay .jx-msg.a'); const t = m[m.length - 1]?.innerText || ''; return t.includes('[1]') && t.includes('EBITDA'); })()", timeout=6000)
+    except Exception:
+        pass
     check("research splits and cites", "[1]" in jarvis_last(page) and "EBITDA" in jarvis_last(page), jarvis_last(page)[:200])
     page.locator(".overlay .jx-msg.a").last.get_by_role("button", name="trace").click(force=True)
     check("trace is inspectable", page.locator(".overlay .jx-trace li").count() >= 3)
@@ -363,7 +366,10 @@ def research_and_lab(p) -> None:
     check("research city: seven projects + Brain + Foundry", page.locator("[data-testid^='bld-']").count() == 9, str(page.locator("[data-testid^='bld-']").count()))
     check("research city: one bot per automated job", page.locator(".city .bot").count() == 17, str(page.locator(".city .bot").count()))
     page.locator(".city-pick button", has_text="Deal Lab").click()
-    page.wait_for_timeout(500)
+    try:
+        page.wait_for_function("document.querySelector('[data-testid=dossier]')?.innerText.toLowerCase().includes('underwriting row')", timeout=3000)
+    except Exception:
+        pass
     check("city: picking a district opens its dossier", "underwriting row" in page.get_by_test_id("dossier").inner_text().lower())
     page.get_by_test_id("bld-high-properties").click(force=True)
     try:
@@ -529,11 +535,45 @@ def concierge(p) -> None:
     browser.close()
 
 
+def city_explorer(p) -> None:
+    browser = p.chromium.launch(executable_path=CHROME)
+    for vp, mob in [({"width": 1440, "height": 900}, False), ({"width": 390, "height": 844}, True)]:
+        ctx = browser.new_context(viewport=vp, is_mobile=mob, has_touch=mob)
+        ctx.add_init_script("sessionStorage.setItem('jv-greeted','1')")
+        page = ctx.new_page()
+        errors: list[str] = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        tag = "phone" if mob else "desktop"
+        page.goto(BASE + "#research")
+        page.locator("#research").scroll_into_view_if_needed()
+        page.get_by_test_id("city-explore").click()
+        x = page.get_by_test_id("city-explorer")
+        expect(x).to_be_visible(timeout=4000)
+        check(f"city explorer ({tag}): opens full screen", x.bounding_box()["width"] >= vp["width"] - 1)
+        x.get_by_test_id("city-zoom-in").click()
+        check(f"city explorer ({tag}): zooms", float(x.get_by_test_id("city-cam").get_attribute("data-k")) > 1.2)
+        x.get_by_test_id("city-rotate").click()
+        x.get_by_test_id("tab-crew").click()
+        expect(x.locator("[data-testid^=crew-]")).to_have_count(17, timeout=3000)
+        check(f"city explorer ({tag}): lists every bot", x.locator("[data-testid^=crew-]").count() == 17)
+        x.get_by_test_id("crew-deal-lab-1").click()
+        d = x.get_by_test_id("dossier")
+        expect(d).to_contain_text("Built so far", timeout=3000)
+        txt = d.inner_text().lower()
+        check(f"city explorer ({tag}): bot shows task, progress, work and where to see it", all(k in txt for k in ["simulator", "works in 29%", "shipped", "still to build", "open the deal lab"]), txt[:200])
+        page.keyboard.press("Escape")
+        expect(x).to_be_hidden(timeout=2000)
+        check(f"city explorer ({tag}): no script errors", not errors, "; ".join(errors)[:300])
+        ctx.close()
+    browser.close()
+
+
 if __name__ == "__main__":
     os.makedirs(SHOTS, exist_ok=True)
     with sync_playwright() as p:
         desktop(p)
         concierge(p)
+        city_explorer(p)
         connect_and_links(p)
         research_and_lab(p)
         den_scene(p)

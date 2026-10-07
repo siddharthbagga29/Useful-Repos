@@ -6,6 +6,10 @@ import "./backdrop.css";
 // over it, the Atelier scrim: a translucent wash with a circular window cut where the brain floats,
 // ringed by a fading hairline. The site's structure sits on top, unchanged.
 //
+// Readability rule, for every screen size: if the brain's window would sit behind any hero text
+// (tablets in portrait, phones, short laptop windows, big zoom), the window closes and the veil
+// deepens, so text always reads on a calm ground. Wide screens keep the open window.
+//
 // three.js is loaded after first paint so it never delays the page. Without WebGL, or under automated
 // testing without ?scene=1, the static gradient ground stays and nothing else changes.
 export function Backdrop() {
@@ -29,6 +33,28 @@ export function Backdrop() {
     if (!gl) return;
     let cancelled = false;
     const root = document.documentElement;
+    let layout: [number, number, number] | null = null;
+    // body text only (the stats box and buttons carry their own solid ground), measured on the
+    // rendered line boxes: a block element spans the row, its text doesn't
+    const TEXT = "#hero .avail, #hero .sub"; // the headline is large and solid; it reads over anything
+    const veil = () => {
+      if (!layout) return;
+      const [x, y, r] = layout;
+      const hole = r * (matchMedia("(max-width: 760px)").matches ? 1.05 : 1.62);
+      const range = document.createRange();
+      let clash = false;
+      for (const el of document.querySelectorAll<HTMLElement>(TEXT)) {
+        range.selectNodeContents(el);
+        for (const b of Array.from(range.getClientRects())) {
+          if (!b.width) continue;
+          const nx = Math.max(b.left, Math.min(x, b.right));
+          const ny = Math.max(b.top, Math.min(y, b.bottom));
+          if (Math.hypot(nx - x, ny - y) < hole) clash = true;
+        }
+        if (clash) break;
+      }
+      root.classList.toggle("den-veil", clash);
+    };
     const go = async () => {
       const { Den } = await import("./den.ts");
       if (cancelled) return;
@@ -40,6 +66,8 @@ export function Backdrop() {
           root.style.setProperty("--den-x", `${x}px`);
           root.style.setProperty("--den-y", `${y}px`);
           root.style.setProperty("--den-r", `${r}px`);
+          layout = [x, y, r];
+          veil();
         },
       });
       den.current = d;
@@ -53,6 +81,7 @@ export function Backdrop() {
       const h = root.scrollHeight - innerHeight;
       const p = h > 0 ? scrollY / h : 0;
       root.style.setProperty("--den-open", String(Math.max(0, 1 - p / 0.06)));
+      if (p < 0.08) veil();
     };
     onScroll();
     addEventListener("scroll", onScroll, { passive: true });
@@ -61,7 +90,7 @@ export function Backdrop() {
       if (!idle) clearTimeout(id);
       removeEventListener("scroll", onScroll);
       den.current?.dispose();
-      root.classList.remove("den-live");
+      root.classList.remove("den-live", "den-veil");
     };
   }, []);
 

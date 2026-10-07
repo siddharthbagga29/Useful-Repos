@@ -33,3 +33,21 @@ html:not(.den-live) .den-ring { opacity: 0; }
   .den-ring { width: calc(var(--den-r, 200px) * 1.05 * 2.4); height: calc(var(--den-r, 200px) * 1.05 * 2.4); }
 }
 .den-live .sub, .den-live .hud, .den-live .avail { text-shadow: 0 1px 14px rgba(5, 2, 15, 0.9); }
+
+/* Readability guard (set by Backdrop when the brain's window would sit behind hero text, on any
+   screen): the window closes, the ring hides and the veil deepens. The brain still glows through. */
+.den-veil .den-scrim { -webkit-mask-image: none; mask-image: none; background: rgba(8, 6, 22, 0.8); }
+.den-veil .den-ring { opacity: 0; }
+@media (max-width: 760px) { .den-veil .den-scrim { background: rgba(8, 6, 22, 0.84); } }
+/* Past the opening station, phones and tablets get a near-solid ground so long copy reads cleanly. */
+@media (max-width: 1024px), (hover: none) {
+  .den-scrim { background: rgba(8, 6, 22, calc(0.8 + 0.1 * (1 - var(--den-open, 1)))); }
+}
+/* Viewers who ask for more contrast or less transparency get a solid ground everywhere. */
+@media (prefers-contrast: more), (prefers-reduced-transparency: reduce) {
+  .den-scrim { -webkit-mask-image: none; mask-image: none; background: rgba(8, 6, 22, 0.94); }
+  .den-ring { display: none; }
+}
+/* Secondary copy brightens a step when it sits over the live scene. */
+.den-live #hero .sub { color: #b4b0a5; }
+.den-live .sub b, .den-live .sub strong { color: var(--bone); }
