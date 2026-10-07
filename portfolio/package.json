@@ -11,10 +11,11 @@
     "eval": "node --experimental-strip-types --no-warnings scripts/eval.ts",
     "test:e2e": "python3 e2e/e2e.py",
     "build:brain": "rolldown scripts/brain-run.ts -p node -f esm -o dist/brain/evolve.mjs --silent && cp src/lab/weekly.json dist/brain/weekly.json && node dist/brain/evolve.mjs --state dist/brain/state.json --data dist/brain/weekly.json --generations 48",
-    "lint": "biome lint src/agent src/jarvis/sales scripts/jarvis-loop.ts",
+    "lint": "biome lint src/agent src/jarvis/sales scripts/jarvis-loop.ts scripts/voice-build.ts",
     "test:agent": "node --experimental-strip-types --no-warnings --test src/agent/agent.test.ts",
     "test": "npm run -s test:agent && node --experimental-strip-types --no-warnings scripts/lab-check.ts && npm run -s eval",
-    "jarvis:loop": "node --experimental-strip-types --no-warnings scripts/jarvis-loop.ts"
+    "jarvis:loop": "node --experimental-strip-types --no-warnings scripts/jarvis-loop.ts",
+    "voice:build": "node --experimental-strip-types --no-warnings scripts/voice-build.ts"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.85",

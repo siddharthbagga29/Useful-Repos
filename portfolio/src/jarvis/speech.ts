@@ -1,6 +1,8 @@
 // Voice in and out with the browser's built-in Web Speech API. Free, no keys, no server of ours.
 // Push-to-talk: one utterance. Wake mode: listens continuously and acts on "Hey Jarvis …".
 
+import { speakable } from "./sales/markup.ts";
+
 type Recognition = {
   lang: string;
   continuous: boolean;
@@ -201,45 +203,48 @@ export function pickVoice(): SpeechSynthesisVoice | null {
   return voices[0] ?? null;
 }
 
-const MONTHS: Record<string, string> = {
-  Jan: "January", Feb: "February", Mar: "March", Apr: "April", Jun: "June", Jul: "July",
-  Aug: "August", Sep: "September", Oct: "October", Nov: "November", Dec: "December",
-};
 
 /** Make numbers and finance shorthand sound right when read aloud. */
-export function speakable(text: string): string {
-  return text
-    .replace(/\$(\d+(?:\.\d+)?)M\+/g, "over $1 million dollars")
-    .replace(/\$(\d+(?:\.\d+)?)M\b/g, "$1 million dollars")
-    .replace(/\$(\d+(?:\.\d+)?)B\b/g, "$1 billion dollars")
-    .replace(/(\d)\s*%/g, "$1 percent")
-    .replace(/\bIRR\/MOIC\b/g, "IRR and MOIC")
-    .replace(/\bS&P\b/g, "S and P")
-    .replace(/\bSPGI\b/g, "S and P Global")
-    .replace(/\bDCF\b/g, "D C F")
-    .replace(/\bM\.S\./g, "Master of Science")
-    .replace(/\bB\.Com\b/g, "Bachelor of Commerce")
-    .replace(/\bReg D\b/g, "Reg D")
-    .replace(/\b(Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/g, (m) => MONTHS[m] ?? m)
-    .replace(/(\w)–(\w)/g, "$1 to $2")
-    .replace(/[—–]/g, ", ")
-    .replace(/[•▸→]/g, "")
-    .replace(/\[\d+\]/g, "")
-    .replace(/siddharthbagga29@gmail\.com/g, "siddharth bagga 29 at gmail dot com")
-    .replace(/linkedin\.com\/in\/[\w-]+/g, "LinkedIn");
-}
 
 export class Speaker {
   private queue = 0;
+  private audio: HTMLAudioElement | null = null;
   constructor(private onState: (speaking: boolean) => void) {
     if (canSpeak()) speechSynthesis.getVoices(); // warm the voice list (async on Chrome)
   }
 
   cancel() {
-    if (!canSpeak()) return;
     this.queue++;
-    speechSynthesis.cancel();
+    if (this.audio) {
+      this.audio.pause();
+      this.audio = null;
+    }
+    if (canSpeak()) speechSynthesis.cancel();
     this.onState(false);
+  }
+
+  /** Play a pre-recorded studio clip. Resolves true when it played to the end, false if it couldn't
+   * play (missing file, blocked autoplay), so the caller can fall back to the browser voice. */
+  playClip(url: string): Promise<boolean> {
+    this.cancel();
+    const ticket = ++this.queue;
+    const a = new Audio(url);
+    this.audio = a;
+    return new Promise((resolve) => {
+      const end = (ok: boolean) => {
+        if (ticket === this.queue) {
+          this.audio = null;
+          this.onState(false);
+        }
+        resolve(ok);
+      };
+      a.onended = () => end(true);
+      a.onerror = () => end(false);
+      a.play().then(
+        () => ticket === this.queue && this.onState(true),
+        () => end(false),
+      );
+    });
   }
 
   /** Speak sentence by sentence (Chrome cuts long utterances). Resolves when finished or cancelled. */
@@ -308,3 +313,5 @@ export class Speaker {
     });
   }
 }
+
+export { speakable };

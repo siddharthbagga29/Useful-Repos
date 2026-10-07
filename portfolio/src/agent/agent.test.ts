@@ -2,6 +2,7 @@
 // feed the Resilience & Security score.
 //   node --experimental-strip-types --test src/agent/agent.test.ts
 
+import { clipText, clipsFor, hashText, pickClip, ttsText } from "../jarvis/sales/clips.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -211,6 +212,17 @@ test("critic: tour narration may run on, but the tour's last stop must ask", () 
   const r = scoreConversation([narr, end], "Okay?", brief);
   assert.ok(!r.issues.some((i) => i.code === "NO_ASK" && i.where === "line:tour.x"));
   assert.ok(r.issues.some((i) => i.code === "NO_ASK" && i.where === "line:tour.end"));
+});
+
+test("voice clips: pauses become break tags, numbers are said aloud, stale clips are never played", () => {
+  assert.equal(ttsText("Very well. || He underwrote a $6M+ pipeline. | Promoted."), 'Very well. <break time="0.6s" /> He underwrote a 6-million-dollar-plus pipeline. Promoted.');
+  const line = { id: "open.first", stage: "open" as const, text: "{greet}. || I'm Jarvis.", chips: [] };
+  const keys = clipsFor([line]).map((c) => c.key);
+  assert.deepEqual(keys, ["open.first.morning", "open.first.afternoon", "open.first.evening"]);
+  const m = { version: 1 as const, voice: { name: "Daniel", id: "x" }, model: "m", credit: "Voice by ElevenLabs", clips: { "open.first.evening": { file: "a.mp3", hash: hashText(clipText(line, "Good evening")), chars: 1 } } };
+  assert.equal(pickClip(m, line, "Good evening")?.file, "a.mp3");
+  assert.equal(pickClip(m, line, "Good morning"), null, "no clip recorded for this greeting");
+  assert.equal(pickClip(m, { ...line, text: "{greet}. || I am Jarvis." }, "Good evening"), null, "text changed: old clip ignored");
 });
 
 test("loop: a clean candidate passes the critic, a broken build does not", () => {

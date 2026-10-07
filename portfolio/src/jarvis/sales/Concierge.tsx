@@ -5,6 +5,7 @@ import { track } from "../../lib/track.ts";
 import { bus } from "../bus.ts";
 import { useJarvis } from "../JarvisProvider.tsx";
 import { canSpeak } from "../speech.ts";
+import { pickClip, type VoiceManifest } from "./clips.ts";
 import { displayText, fill, parseScript } from "./markup.ts";
 import raw from "./playbook.json";
 import { DWELL_MS, Proactive } from "./proactive.ts";
@@ -36,6 +37,16 @@ const store = {
 };
 const session = typeof sessionStorage !== "undefined" ? sessionStorage : undefined;
 const local = typeof localStorage !== "undefined" ? localStorage : undefined;
+// Studio voice clips (ElevenLabs), if they've been recorded. Fetched once; absent means browser voice.
+let manifest: VoiceManifest | null = null;
+const manifestReady: Promise<VoiceManifest | null> =
+  typeof fetch === "undefined"
+    ? Promise.resolve(null)
+    : fetch(`${import.meta.env.BASE_URL}voice/manifest.json`)
+        .then((r) => (r.ok ? (r.json() as Promise<VoiceManifest>) : null))
+        .catch(() => null)
+        .then((m) => (manifest = m && m.version === 1 ? m : null));
+
 /** "Good morning" etc., by the visitor's own clock. */
 const greet = () => {
   const h = new Date().getHours();
@@ -84,14 +95,23 @@ export function Concierge({ station }: { station: string }) {
     return j.open || !!document.querySelector(".cx-back, .pal-back") || !!a?.closest("input, textarea, select, [contenteditable]");
   }, [j.open]);
 
+  const [studio, setStudio] = useState<VoiceManifest | null>(manifest);
+  useEffect(() => {
+    void manifestReady.then(setStudio);
+  }, []);
+
   const say = useCallback(
     (l: Line) => {
-      if (mutedRef.current || !canSpeak()) return;
+      const g = greet();
+      const clip = pickClip(manifest, l, g);
+      if (mutedRef.current || (!canSpeak() && !clip)) return;
       if (!unlocked.current) {
         pendingSpeech.current = l;
         return;
       }
-      j.speakScript(parseScript(fill(l.text, { name: j.visitor?.name, greet: greet() })));
+      const segs = parseScript(fill(l.text, { name: j.visitor?.name, greet: g }));
+      if (clip) j.playClip(`${BASE}voice/${clip.file}`, segs);
+      else j.speakScript(segs);
     },
     [j],
   );
@@ -196,8 +216,8 @@ export function Concierge({ station }: { station: string }) {
   useEffect(() => stopTour, [stopTour]);
 
   // the landing effect runs once; it reads the latest callbacks through this ref
-  const latest = useRef({ show, busy, j, runTour: runTour as (from?: number) => void, stopTour });
-  latest.current = { show, busy, j, runTour, stopTour };
+  const latest = useRef({ show, busy, j, runTour: runTour as (from?: number) => void, stopTour, say });
+  latest.current = { show, busy, j, runTour, stopTour, say };
 
   const choose = (c: Chip) => {
     engine.current?.setEngaged(true);
@@ -232,8 +252,7 @@ export function Concierge({ station }: { station: string }) {
       unlocked.current = true;
       const p = pendingSpeech.current;
       pendingSpeech.current = null;
-      const { j: jv } = latest.current;
-      if (p && !mutedRef.current && canSpeak()) jv.speakScript(parseScript(fill(p.text, { name: jv.visitor?.name, greet: greet() })));
+      if (p) latest.current.say(p);
     };
     addEventListener("pointerup", onGesture, true);
     addEventListener("keydown", onGesture, true);
@@ -338,10 +357,15 @@ export function Concierge({ station }: { station: string }) {
             ))}
           </div>
           <div className="greet-row">
-            {canSpeak() && (
+            {(canSpeak() || studio) && (
               <button type="button" className="greet-mute" onClick={toggleMute} aria-pressed={muted} data-testid="greet-mute">
                 {muted ? "🔇 Voice off" : "🔊 Voice on"}
               </button>
+            )}
+            {studio && (
+              <span className="greet-credit" data-testid="voice-credit">
+                {studio.credit}
+              </span>
             )}
             {tour !== null ? (
               <button type="button" className="greet-later" onClick={stopTour} data-testid="tour-stop">

@@ -517,3 +517,4 @@ a.chip { text-decoration: none; }
 .greet-who .greet-state { margin-left: 8px; color: var(--dim); letter-spacing: .14em; font-size: 9.5px; }
 .greet-proto { height: 2px; background: rgba(34,211,238,.15); border-radius: 2px; margin: 2px 0 10px; overflow: hidden; }
 .greet-proto i { display: block; height: 100%; background: #22d3ee; box-shadow: 0 0 8px #22d3ee; transition: width .6s ease; }
+.greet-row .greet-credit { font-family: var(--mono); font-size: 9.5px; color: var(--dim); letter-spacing: .06em; }

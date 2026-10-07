@@ -600,12 +600,53 @@ def jarvis_tour(p) -> None:
     browser.close()
 
 
+def studio_voice(p) -> None:
+    """With recorded ElevenLabs clips present, Jarvis plays the clip instead of the browser voice."""
+    import io, json, wave
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(8000); w.writeframes(b"\0\0" * 2400)
+    clip = buf.getvalue()
+    from datetime import datetime
+    h = datetime.now().hour  # the browser runs on this machine's clock
+    greet = "evening" if h < 5 else "morning" if h < 12 else "afternoon" if h < 18 else "evening"
+    # compute the hash in Node with the same code the site uses
+    import subprocess
+    out = subprocess.run(["node", "--experimental-strip-types", "--no-warnings", "-e",
+        "import('./src/jarvis/sales/clips.ts').then(async (c) => { const pb = (await import('./src/jarvis/sales/playbook.json', { with: { type: 'json' } })).default;"
+        " const line = pb.lines['open.first']; const g = 'Good " + greet + "';"
+        " console.log(JSON.stringify({ key: c.clipKey(line.id, g), hash: c.hashText(c.clipText(line, g)) })); })"],
+        capture_output=True, text=True, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    info = json.loads(out.stdout.strip())
+    manifest = {"version": 1, "voice": {"name": "Daniel", "id": "test"}, "model": "eleven_multilingual_v2", "credit": "Voice by ElevenLabs",
+                "clips": {info["key"]: {"file": "greet.wav", "hash": info["hash"], "chars": 1}}}
+    browser = p.chromium.launch(executable_path=CHROME, args=["--autoplay-policy=no-user-gesture-required"])
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    ctx.add_init_script(FAKE_VOICE)
+    ctx.add_init_script("window.__played = []; const _p = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { window.__played.push(this.src); return _p.call(this); };")
+    ctx.route("**/voice/manifest.json", lambda r: r.fulfill(status=200, content_type="application/json", body=json.dumps(manifest)))
+    ctx.route("**/voice/greet.wav", lambda r: r.fulfill(status=200, content_type="audio/wav", body=clip))
+    page = ctx.new_page()
+    page.goto(BASE)
+    expect(page.get_by_test_id("greeting")).to_be_visible(timeout=4000)
+    check("studio voice: ElevenLabs credit shown", page.get_by_test_id("voice-credit").inner_text() == "Voice by ElevenLabs")
+    page.mouse.move(500, 400)
+    page.keyboard.press("4")
+    page.wait_for_timeout(1200)
+    played = page.evaluate("window.__played")
+    spoken = page.evaluate("window.__spoken")
+    check("studio voice: the greeting plays the recorded clip", any(u.endswith("/voice/greet.wav") for u in played), str(played))
+    check("studio voice: browser voice stays quiet for a recorded line", not any("I'm Jarvis" in t for t in spoken), str(spoken)[:200])
+    browser.close()
+
+
 if __name__ == "__main__":
     os.makedirs(SHOTS, exist_ok=True)
     with sync_playwright() as p:
         desktop(p)
         concierge(p)
         jarvis_tour(p)
+        studio_voice(p)
         city_explorer(p)
         connect_and_links(p)
         research_and_lab(p)

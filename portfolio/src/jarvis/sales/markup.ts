@@ -51,3 +51,32 @@ export function fill(markup: string, vars: Record<string, string | undefined>): 
 export function sentences(markup: string): string[] {
   return parseScript(markup).map((s) => s.text);
 }
+
+const MONTHS: Record<string, string> = {
+  Jan: "January", Feb: "February", Mar: "March", Apr: "April", Jun: "June", Jul: "July",
+  Aug: "August", Sep: "September", Oct: "October", Nov: "November", Dec: "December",
+};
+
+/** Numbers and finance shorthand the way a person says them aloud (browser voice and studio clips). */
+export function speakable(text: string): string {
+  return text
+    .replace(/\ba \$(\d+(?:\.\d+)?)M\+/g, "a $1-million-dollar-plus")
+    .replace(/\$(\d+(?:\.\d+)?)M\+/g, "over $1 million dollars")
+    .replace(/\$(\d+(?:\.\d+)?)M\b/g, "$1 million dollars")
+    .replace(/\$(\d+(?:\.\d+)?)B\b/g, "$1 billion dollars")
+    .replace(/(\d)\s*%/g, "$1 percent")
+    .replace(/\bIRR\/MOIC\b/g, "IRR and MOIC")
+    .replace(/\bS&P\b/g, "S and P")
+    .replace(/\bSPGI\b/g, "S and P Global")
+    .replace(/\bDCF\b/g, "D C F")
+    .replace(/\bM\.S\./g, "Master of Science")
+    .replace(/\bB\.Com\b/g, "Bachelor of Commerce")
+    .replace(/\bReg D\b/g, "Reg D")
+    .replace(/\b(Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/g, (m) => MONTHS[m] ?? m)
+    .replace(/(\w)–(\w)/g, "$1 to $2")
+    .replace(/[—–]/g, ", ")
+    .replace(/[•▸→]/g, "")
+    .replace(/\[\d+\]/g, "")
+    .replace(/siddharthbagga29@gmail\.com/g, "siddharth bagga 29 at gmail dot com")
+    .replace(/linkedin\.com\/in\/[\w-]+/g, "LinkedIn");
+}

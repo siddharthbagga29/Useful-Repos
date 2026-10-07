@@ -60,6 +60,8 @@ interface JarvisApi {
   speak(text: string): void;
   /** speak a scripted line with natural pauses (sales/markup.ts) */
   speakScript(segments: { text: string; pauseAfterMs: number; question: boolean }[]): void;
+  /** Play a studio clip; if it can't play, speak `fallback` with the browser voice instead. */
+  playClip(url: string, fallback: { text: string; pauseAfterMs: number; question: boolean }[]): void;
   stopSpeaking(): void;
   pushToTalk(): void;
   stopListening(): void;
@@ -354,6 +356,13 @@ export function JarvisProvider({ children }: { children: ReactNode }) {
       if (!canSpeak()) return;
       listener.pause();
       void speaker.speakScript(segments).then(() => listener.resume());
+    },
+    playClip: (url, fallback) => {
+      listener.pause();
+      void speaker
+        .playClip(url)
+        .then((ok) => (ok || !canSpeak() ? undefined : speaker.speakScript(fallback)))
+        .then(() => listener.resume());
     },
     stopSpeaking: () => {
       digestTicket.current++;
