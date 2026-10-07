@@ -95,6 +95,7 @@ const STAGE_ASK: Record<string, string> = {
   objection: "Would 30 minutes help?",
   close: "Shall I open the calendar?",
   nudge: "Want the short version?",
+  tour: "Shall I open his calendar?",
 };
 
 /** Split a long sentence at the comma or conjunction nearest its middle. */

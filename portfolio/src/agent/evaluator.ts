@@ -112,7 +112,9 @@ export function scoreConversation(lines: Line[], briefingScript: string, brief: 
       pauseCost += 1;
       issues.push({ code: "NO_PAUSE", where: x.where, detail: "several sentences, no pause marks", cost: 1 });
     }
-    if (!ss.at(-1)?.trim().endsWith("?")) {
+    // a guided tour narrates between stops; only its closing line has to ask
+    const narrating = x.stage === "tour" && !x.where.endsWith(".end");
+    if (!narrating && !ss.at(-1)?.trim().endsWith("?")) {
       askCost += 1;
       issues.push({ code: "NO_ASK", where: x.where, detail: "turn ends without a question", cost: 1 });
     }

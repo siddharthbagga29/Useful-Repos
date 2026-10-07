@@ -1,7 +1,8 @@
 // The sales playbook Jarvis runs on the site. Produced by the actor (src/agent), approved by the
 // critic, and shipped as playbook.json. Browser-safe: no Node imports here.
 
-export type Stage = "open" | "pitch" | "proof" | "objection" | "close" | "nudge";
+/** "tour" lines narrate the self-running tour; only its last stop has to end on a question. */
+export type Stage = "open" | "pitch" | "proof" | "objection" | "close" | "nudge" | "tour";
 export type Audience = "recruiter" | "principal" | "founder" | "explorer";
 
 /** What a line or a chip does besides talking. `navigate:<station>` scrolls; `href:<path>` opens. */
@@ -10,6 +11,8 @@ export type Action =
   | "open_connect"
   | "open_resume"
   | "run_digest"
+  | "run_tour"
+  | `dcf:${number}`
   | "open_jarvis"
   | "snooze"
   | `navigate:${string}`

@@ -36,6 +36,32 @@ const store = {
 };
 const session = typeof sessionStorage !== "undefined" ? sessionStorage : undefined;
 const local = typeof localStorage !== "undefined" ? localStorage : undefined;
+/** "Good morning" etc., by the visitor's own clock. */
+const greet = () => {
+  const h = new Date().getHours();
+  return h < 5 ? "Good evening" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+};
+
+// The self-running tour: Jarvis drives the site himself, one stop at a time, and narrates. Any
+// scroll, key press or tap outside his card hands control straight back to the visitor.
+const TOUR: { id: string; station: StationId; act?: () => void }[] = [
+  { id: "tour.numbers", station: "numbers" },
+  { id: "tour.experience", station: "experience" },
+  { id: "tour.model", station: "model", act: () => bus.emit({ type: "set_dcf", wacc: 9.5 }) },
+  { id: "tour.dealroom", station: "dealroom" },
+  { id: "tour.research", station: "research" },
+  { id: "tour.end", station: "contact" },
+];
+const SETTLE_MS = 900; // let the film arrive before he speaks
+
+/** How long a line takes to say (or read), with its pauses. */
+function airtime(markup: string): number {
+  const segs = parseScript(markup);
+  const words = segs.reduce((a, s) => a + s.text.split(/\s+/).length, 0);
+  const pauses = segs.reduce((a, s) => a + s.pauseAfterMs, 0);
+  return Math.max(5000, (words / 2.6) * 1000 + pauses + 1200);
+}
+
 const CONNECT_INTENT: Record<Audience, "hiring" | "network" | "deal" | "other"> = { recruiter: "hiring", principal: "deal", founder: "deal", explorer: "network" };
 
 export function Concierge({ station }: { station: string }) {
@@ -47,6 +73,8 @@ export function Concierge({ station }: { station: string }) {
   const unlocked = useRef(false); // the browser allows speech after the first gesture
   const pendingSpeech = useRef<Line | null>(null);
   const audience = useRef<Audience | null>((store.get(local, "jv-audience") as Audience | null) ?? null);
+  const [tour, setTour] = useState<number | null>(null); // stop index while the tour runs
+  const tourTimers = useRef<number[]>([]);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
   engine.current ??= new Proactive();
@@ -63,10 +91,16 @@ export function Concierge({ station }: { station: string }) {
         pendingSpeech.current = l;
         return;
       }
-      j.speakScript(parseScript(fill(l.text, { name: j.visitor?.name })));
+      j.speakScript(parseScript(fill(l.text, { name: j.visitor?.name, greet: greet() })));
     },
     [j],
   );
+
+  const stopTour = useCallback(() => {
+    for (const t of tourTimers.current) clearTimeout(t);
+    tourTimers.current = [];
+    setTour(null);
+  }, []);
 
   const run = useCallback(
     (a: Action) => {
@@ -82,7 +116,11 @@ export function Concierge({ station }: { station: string }) {
       } else if (a === "open_jarvis") {
         setOpen(false);
         j.setOpen(true);
-      } else if (a === "snooze") {
+      } else if (a === "run_tour") {
+        latest.current.runTour();
+      } else if (a.startsWith("dcf:")) bus.emit({ type: "set_dcf", wacc: Number(a.slice(4)) });
+      else if (a === "snooze") {
+        latest.current.stopTour();
         engine.current?.snooze();
         j.stopSpeaking();
         setOpen(false);
@@ -104,9 +142,62 @@ export function Concierge({ station }: { station: string }) {
     [say, run],
   );
 
+  // Plan, act, report: navigate to the stop, act if the stop calls for it, narrate, move on.
+  const runTour = useCallback(
+    (from?: number) => {
+      stopTour();
+      engine.current?.setEngaged(true);
+      const saved = Number(store.get(local, "jv-tour") ?? "0");
+      let at = from ?? (saved > 0 && saved < TOUR.length ? saved : 0);
+      track("jarvis_ask", { sales: "tour", choice: at === 0 ? "start" : `resume ${at + 1}` });
+      const step = () => {
+        const stop = TOUR[at];
+        if (!stop) return;
+        setTour(at);
+        store.set(local, "jv-tour", String(at));
+        bus.emit({ type: "navigate", station: stop.station });
+        const t1 = window.setTimeout(() => {
+          show(stop.id);
+          stop.act?.();
+          if (at === TOUR.length - 1) {
+            store.set(local, "jv-tour", "done");
+            setTour(null); // the last stop asks; the visitor answers
+            return;
+          }
+          const l = PLAYBOOK.lines[stop.id];
+          const t2 = window.setTimeout(() => {
+            at += 1;
+            step();
+          }, airtime(l?.text ?? ""));
+          tourTimers.current.push(t2);
+        }, SETTLE_MS);
+        tourTimers.current.push(t1);
+      };
+      step();
+    },
+    [show, stopTour],
+  );
+
+  // hand control back the moment the visitor does anything outside the card
+  useEffect(() => {
+    if (tour === null) return;
+    const interrupt = (e: Event) => {
+      if ((e.target as HTMLElement | null)?.closest?.(".concierge")) return;
+      stopTour();
+      j.stopSpeaking();
+    };
+    const opts = { capture: true, passive: true } as const;
+    for (const ev of ["wheel", "touchstart", "keydown", "pointerdown"]) addEventListener(ev, interrupt, opts);
+    return () => {
+      for (const ev of ["wheel", "touchstart", "keydown", "pointerdown"]) removeEventListener(ev, interrupt, opts);
+    };
+  }, [tour, stopTour, j]);
+
+  useEffect(() => stopTour, [stopTour]);
+
   // the landing effect runs once; it reads the latest callbacks through this ref
-  const latest = useRef({ show, busy, j });
-  latest.current = { show, busy, j };
+  const latest = useRef({ show, busy, j, runTour: runTour as (from?: number) => void, stopTour });
+  latest.current = { show, busy, j, runTour, stopTour };
 
   const choose = (c: Chip) => {
     engine.current?.setEngaged(true);
@@ -142,7 +233,7 @@ export function Concierge({ station }: { station: string }) {
       const p = pendingSpeech.current;
       pendingSpeech.current = null;
       const { j: jv } = latest.current;
-      if (p && !mutedRef.current && canSpeak()) jv.speakScript(parseScript(fill(p.text, { name: jv.visitor?.name })));
+      if (p && !mutedRef.current && canSpeak()) jv.speakScript(parseScript(fill(p.text, { name: jv.visitor?.name, greet: greet() })));
     };
     addEventListener("pointerup", onGesture, true);
     addEventListener("keydown", onGesture, true);
@@ -178,6 +269,7 @@ export function Concierge({ station }: { station: string }) {
   }, [j.open]);
 
   const close = () => {
+    stopTour();
     setOpen(false);
     engine.current?.setEngaged(false);
     j.stopSpeaking();
@@ -193,7 +285,18 @@ export function Concierge({ station }: { station: string }) {
     }
   };
 
-  const text = line ? displayText(fill(line.text, { name: j.visitor?.name })) : "";
+  const text = line ? displayText(fill(line.text, { name: j.visitor?.name, greet: greet() })) : "";
+  // memory: an unfinished tour can be picked up again, this visit or the next
+  const savedStop = Number(store.get(local, "jv-tour") ?? "NaN");
+  const canResume = tour === null && savedStop > 0 && savedStop < TOUR.length;
+  const RESUME: Chip = { label: `Resume the tour (stop ${savedStop + 1})`, action: "run_tour" };
+  const chips: Chip[] =
+    line?.stage === "tour" && tour === null && line.chips.length === 0
+      ? [RESUME, { label: "Book 30 minutes", next: "close.call" }]
+      : line?.id === "open.return" && canResume
+        ? [RESUME, ...line.chips]
+        : (line?.chips ?? []);
+  const state = tour !== null ? `PROTOCOL · TOUR ${tour + 1}/${TOUR.length}` : j.status === "speaking" ? "SPEAKING" : "ONLINE";
   return (
     <AnimatePresence>
       {open && line && (
@@ -210,6 +313,9 @@ export function Concierge({ station }: { station: string }) {
         >
           <div className="greet-who">
             <i aria-hidden className={j.status === "speaking" ? "talking" : ""} /> JARVIS
+            <span className="greet-state" data-testid="jarvis-state">
+              {state}
+            </span>
             <button type="button" className="greet-x" aria-label="Close" onClick={close}>
               ✕
             </button>
@@ -219,8 +325,13 @@ export function Concierge({ station }: { station: string }) {
               {text}
             </motion.p>
           </AnimatePresence>
+          {tour !== null && (
+            <div className="greet-proto" aria-hidden>
+              <i style={{ width: `${((tour + 1) / TOUR.length) * 100}%` }} />
+            </div>
+          )}
           <div className="greet-chips">
-            {line.chips.map((c) => (
+            {chips.map((c) => (
               <button key={c.label} type="button" className={c.next === "close.call" ? "greet-go" : ""} onClick={() => choose(c)} data-testid={`chip-${c.label}`}>
                 {c.label}
               </button>
@@ -232,9 +343,15 @@ export function Concierge({ station }: { station: string }) {
                 {muted ? "🔇 Voice off" : "🔊 Voice on"}
               </button>
             )}
-            <button type="button" className="greet-later" onClick={() => run("snooze")}>
-              Not now
-            </button>
+            {tour !== null ? (
+              <button type="button" className="greet-later" onClick={stopTour} data-testid="tour-stop">
+                Stop the tour
+              </button>
+            ) : (
+              <button type="button" className="greet-later" onClick={() => run("snooze")}>
+                Not now
+              </button>
+            )}
           </div>
         </motion.section>
       )}

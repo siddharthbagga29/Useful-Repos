@@ -205,6 +205,14 @@ test("playbook: every chip leads to a line that exists, and every claim is in th
   assert.equal(r.honest, true, JSON.stringify(r.issues.filter((i) => i.cost >= 5)));
 });
 
+test("critic: tour narration may run on, but the tour's last stop must ask", () => {
+  const narr = { id: "tour.x", stage: "tour" as const, text: "Stop one. | The numbers.", chips: [] };
+  const end = { id: "tour.end", stage: "tour" as const, text: "That concludes the tour. | Thank you.", chips: [] };
+  const r = scoreConversation([narr, end], "Okay?", brief);
+  assert.ok(!r.issues.some((i) => i.code === "NO_ASK" && i.where === "line:tour.x"));
+  assert.ok(r.issues.some((i) => i.code === "NO_ASK" && i.where === "line:tour.end"));
+});
+
 test("loop: a clean candidate passes the critic, a broken build does not", () => {
   const f = file();
   const c = compose({ iteration: 1, file: f, prevState: null, now: NOW, critique: null });

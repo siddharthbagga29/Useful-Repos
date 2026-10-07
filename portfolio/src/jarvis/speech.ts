@@ -182,7 +182,8 @@ const PREFERRED = [/daniel/i, /google uk english male/i, /arthur/i, /oliver/i, /
 // Neural voices (Edge "… Online (Natural)", Apple "Premium"/"Enhanced") sound far more human than
 // the classic system voices; take one whenever the browser offers it.
 const NATURAL = /natural|neural|premium|enhanced/i;
-const NATURAL_PREF = [/ryan|thomas|guy|andrew|christopher|eric|brian|daniel|oliver|george|arthur/i, /en-gb/i, /en-us/i];
+// British first: Edge's Ryan and Thomas, Apple's Daniel, Oliver, George and Arthur are en-GB.
+const NATURAL_PREF = [/ryan|thomas|daniel|oliver|george|arthur/i, /en-gb/i, /guy|andrew|christopher|eric|brian/i, /en-us/i];
 
 export function pickVoice(): SpeechSynthesisVoice | null {
   if (!canSpeak()) return null;

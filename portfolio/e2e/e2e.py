@@ -74,7 +74,7 @@ def desktop(p) -> None:
     page.goto(BASE)
     expect(page.locator("h1.mega")).to_contain_text("Siddharth")
     expect(page.get_by_test_id("greeting")).to_be_visible(timeout=4000)
-    check("Jarvis greets on landing", "Siddharth's assistant" in page.get_by_test_id("greeting").inner_text())
+    check("Jarvis greets on landing", "I'm Jarvis" in page.get_by_test_id("greeting").inner_text() and any(g in page.get_by_test_id("greeting").inner_text() for g in ["Good morning", "Good afternoon", "Good evening"]))
     check("greeting opens with discovery, not a pitch", page.get_by_test_id("greeting").get_attribute("data-line") == "open.first" and page.get_by_test_id("chip-I'm hiring").count() == 1)
     check("greeting stays silent until the visitor interacts", page.evaluate("window.__spoken.length") == 0)
     check("character sheet: class and perks", "Valuation & Diligence Analyst" in page.locator(".hud").inner_text() and "Monte Carlo" in page.locator(".hud").inner_text())
@@ -101,7 +101,7 @@ def desktop(p) -> None:
         pass
     check("analyst activity follows the station", "pulling the tape" in page.locator(".desk-act").inner_text().lower(), page.locator(".desk-act").inner_text())
     page.wait_for_timeout(300)
-    check("first key press speaks the greeting once", sum("Siddharth's assistant" in t for t in page.evaluate("window.__spoken")) == 1, str(page.evaluate("window.__spoken"))[:200])
+    check("first key press speaks the greeting once", sum("I'm Jarvis" in t for t in page.evaluate("window.__spoken")) == 1, str(page.evaluate("window.__spoken"))[:200])
     page.get_by_label("Terminal command (F1–F6 run the shortcuts)").focus()
     page.keyboard.press("F3")
     page.wait_for_timeout(400)
@@ -568,11 +568,44 @@ def city_explorer(p) -> None:
     browser.close()
 
 
+def jarvis_tour(p) -> None:
+    browser = p.chromium.launch(executable_path=CHROME)
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    ctx.add_init_script(FAKE_VOICE)
+    page = ctx.new_page()
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(BASE)
+    g = page.get_by_test_id("greeting")
+    expect(g).to_be_visible(timeout=4000)
+    page.get_by_test_id("chip-Just looking").click()
+    page.wait_for_function("document.querySelector('[data-testid=greeting]')?.dataset.line === 'pitch.explorer'", timeout=3000)
+    page.get_by_test_id("chip-Begin the tour").click()
+    page.wait_for_function("document.querySelector('[data-testid=greeting]')?.dataset.line === 'tour.numbers'", timeout=4000)
+    check("tour: Jarvis drives the site himself", "TOUR 1/6" in page.get_by_test_id("jarvis-state").inner_text(), page.get_by_test_id("jarvis-state").inner_text())
+    check("tour: he navigated to the numbers", page.locator(".dots button[aria-current=true]").get_attribute("aria-label") == "The numbers")
+    page.wait_for_function("document.querySelector('[data-testid=greeting]')?.dataset.line === 'tour.experience'", timeout=20000)
+    check("tour: moves on by itself", page.locator(".dots button[aria-current=true]").get_attribute("aria-label") == "Track record")
+    page.mouse.move(500, 400)  # off Jarvis's card: scrolling over the card itself doesn't interrupt him
+    page.mouse.wheel(0, 300)
+    page.wait_for_timeout(400)
+    check("tour: any scroll hands control back", "ONLINE" in page.get_by_test_id("jarvis-state").inner_text() or "SPEAKING" in page.get_by_test_id("jarvis-state").inner_text())
+    check("tour: offers to resume where it stopped", page.get_by_test_id("chip-Resume the tour (stop 2)").count() == 1)
+    page.get_by_test_id("chip-Resume the tour (stop 2)").click()
+    page.wait_for_function("document.querySelector('[data-testid=jarvis-state]')?.innerText.includes('TOUR 2/6')", timeout=4000)
+    page.get_by_test_id("tour-stop").click()
+    check("tour: Stop ends it", "TOUR" not in page.get_by_test_id("jarvis-state").inner_text())
+    check("tour: spoken lines carry no pause marks", not any("|" in t for t in page.evaluate("window.__spoken")))
+    check("tour: no script errors", not errors, "; ".join(errors)[:300])
+    browser.close()
+
+
 if __name__ == "__main__":
     os.makedirs(SHOTS, exist_ok=True)
     with sync_playwright() as p:
         desktop(p)
         concierge(p)
+        jarvis_tour(p)
         city_explorer(p)
         connect_and_links(p)
         research_and_lab(p)

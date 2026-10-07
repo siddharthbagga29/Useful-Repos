@@ -88,8 +88,8 @@ export function JarvisProvider({ children }: { children: ReactNode }) {
     const m = memory.current;
     const restored: Msg[] = m.turns.slice(-12).map((t) => ({ id: nextId++, role: t.role, text: t.content }));
     const hello = m.visitor
-      ? `Welcome back, ${m.visitor.name}. Ask me anything about Siddharth's work — or say "brief me".`
-      : "Jarvis online. I'm Siddharth's personal AI assistant, running entirely in your browser. Ask about his deals, models and credentials — type, or hold the mic and talk.";
+      ? `Welcome back, ${m.visitor.name}. I kept your place. Ask me anything about Siddharth's work, or say "brief me".`
+      : "Jarvis online. All systems running, entirely in your browser. Ask about his deals, models and credentials; type, or hold the mic and talk.";
     return [...restored, { id: nextId++, role: "assistant", text: hello, intent: "greeting", engine: "instant" }];
   });
   const [status, setStatus] = useState<Status>("idle");

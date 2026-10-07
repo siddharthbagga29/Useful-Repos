@@ -1,4 +1,6 @@
-// The actor's raw material: Jarvis's sales lines, written the way a calm, senior closer talks.
+// The actor's raw material: Jarvis's sales lines. The register is JARVIS from the films: composed,
+// precise, dryly witty, a step ahead, and narrating what he's doing while he does it. The craft is a
+// calm, senior closer's.
 // Discovery before pitch, one specific proof at a time, a question at the end of every turn, and
 // the smallest possible next step. Every number here must appear in jarvis/knowledge/brief.md;
 // the critic rejects anything it can't find there. No invented scarcity, urgency or social proof.
@@ -14,7 +16,7 @@ export const DRAFTS: Line[] = [
   {
     id: "open.first",
     stage: "open",
-    text: "Hi. || I'm Jarvis, Siddharth's assistant. | Most analysts tell you what the model says. | Siddharth shows you where it breaks. || Quick question, so I don't waste your time. | What brings you here?",
+    text: "{greet}. || I'm Jarvis. | I run this place while Siddharth runs the numbers. || His work, in one line. | Most analysts tell you what the model says. | He shows you where it breaks. || Before I take you anywhere, | who am I speaking with?",
     chips: [
       { label: "I'm hiring", next: "pitch.recruiter", audience: "recruiter" },
       { label: "I invest family capital", next: "pitch.principal", audience: "principal" },
@@ -25,7 +27,7 @@ export const DRAFTS: Line[] = [
   {
     id: "open.return",
     stage: "open",
-    text: "Welcome back, {name}. || Good to see you again. | Want the short version, | or should I show you something you haven't seen?",
+    text: "Welcome back, {name}. || I kept your place. | Shall I give you the short version, | or show you something you haven't seen?",
     chips: [
       { label: "Short version", next: "pitch.return" },
       { label: "Show me something new", next: "nudge.research" },
@@ -35,7 +37,7 @@ export const DRAFTS: Line[] = [
   {
     id: "pitch.return",
     stage: "pitch",
-    text: "Here it is. || He underwrote a $6M+ acquisition pipeline. | He wrote the go/no-go memos that decided where the capital went. | And he was promoted after five months. || Shall we put 30 minutes on the calendar?",
+    text: "Very well. || He underwrote a $6M+ acquisition pipeline. | He wrote the go/no-go memos that decided where the capital went. | And he was promoted after five months. || Shall we put 30 minutes on the calendar?",
     chips: [BOOK, NOTE, CONCERN],
   },
 
@@ -44,7 +46,7 @@ export const DRAFTS: Line[] = [
     id: "pitch.recruiter",
     stage: "pitch",
     audience: "recruiter",
-    text: "Got it. | Then here's what matters. || In his last seat, he underwrote a $6M+ acquisition pipeline. | He wrote the go/no-go memos the Managing Partner used for every capital decision. | And he was promoted after five months. || What's the role you're filling?",
+    text: "Noted. | Then I'll skip to what matters. || In his last seat, he underwrote a $6M+ acquisition pipeline. | He wrote the go/no-go memos the Managing Partner used for every capital decision. | And he was promoted after five months. || What's the role you're filling?",
     chips: [
       { label: "Diligence or valuation", next: "proof.recruiter" },
       { label: "Investment analyst", next: "proof.recruiter" },
@@ -68,7 +70,7 @@ export const DRAFTS: Line[] = [
     id: "pitch.founder",
     stage: "pitch",
     audience: "founder",
-    text: "Good. || Then you'll like this. | He's sat on your side of the table. | He built a finance function from raw bank statements. | Then he wrote the capital-raise package, | and the Reg D offering materials. || Are you raising, | buying, | or selling?",
+    text: "Then you'll like this. || He's sat on your side of the table. | He built a finance function from raw bank statements. | Then he wrote the capital-raise package, | and the Reg D offering materials. || Are you raising, | buying, | or selling?",
     chips: [
       { label: "Raising", next: "proof.founder" },
       { label: "Buying", next: "proof.founder" },
@@ -80,9 +82,9 @@ export const DRAFTS: Line[] = [
     id: "pitch.explorer",
     stage: "pitch",
     audience: "explorer",
-    text: "Fair enough. || Then let me give you something useful, | no strings attached. || There's a live valuation model, | a strategy lab, | and a research city where bots build his projects in real time. || Want the 60-second tour?",
+    text: "Then allow me. || I can run the tour myself. | Five stops, | about a minute, | and you can stop me at any point. || Shall I begin?",
     chips: [
-      { label: "Yes, the tour", action: "run_digest" },
+      { label: "Begin the tour", action: "run_tour" },
       { label: "Actually, I'm hiring", next: "pitch.recruiter", audience: "recruiter" },
       { label: "Maybe later", action: "snooze" },
     ],
@@ -115,7 +117,7 @@ export const DRAFTS: Line[] = [
   {
     id: "objection.menu",
     stage: "objection",
-    text: "Good. | I'd rather hear it now than later. || What's on your mind?",
+    text: "Please. | I'd rather hear it now than later. || What's on your mind?",
     chips: [
       { label: "He's early in his career", next: "objection.junior" },
       { label: "No CFA?", next: "objection.cfa" },
@@ -126,7 +128,7 @@ export const DRAFTS: Line[] = [
   {
     id: "objection.junior",
     stage: "objection",
-    text: "Fair. | Fourteen months isn't twenty years. || But look at what those months held. | A promotion after five. | A $6M+ pipeline underwritten. | Memos that decided where capital went. || Most people get that responsibility later. | He got it early, | and kept it. || Would 30 minutes help you judge for yourself?",
+    text: "Fair. | Twenty-two months isn't twenty years. || But look at what those months held. | A promotion after five. | A $6M+ pipeline underwritten. | Memos that decided where capital went. || Most people get that responsibility later. | He got it early, | and kept it. || Would 30 minutes help you judge for yourself?",
     chips: [BOOK, NOTE],
   },
   {
@@ -150,7 +152,7 @@ export const DRAFTS: Line[] = [
   {
     id: "objection.timing",
     stage: "objection",
-    text: "Understood. || No pressure. | I'll stay quiet. || If it helps later, | his résumé and a pre-written note are one click away. | Want either?",
+    text: "Understood. || I'll stand down. | No pressure. || If it helps later, | his résumé and a pre-written note are one click away. | Want either?",
     chips: [
       { label: "Résumé", action: "open_resume" },
       NOTE,
@@ -162,14 +164,14 @@ export const DRAFTS: Line[] = [
   {
     id: "close.call",
     stage: "close",
-    text: "Good. || It's 30 minutes. | You'll leave with a clear read on whether he fits. || I'll open his calendar now. | Pick whatever slot suits you, okay?",
+    text: "Right away. || It's 30 minutes. | You'll leave with a clear read on whether he fits. || His calendar is opening now. | Any slot that suits you, | shall we?",
     chips: [NOTE],
     action: "open_schedule",
   },
   {
     id: "close.email",
     stage: "close",
-    text: "Easy. || I've drafted a short note for you. | Add your name, | change anything, | and send. || Or would you rather just book a time?",
+    text: "Already done. || I've drafted a short note for you. | Add your name, | change anything, | and send. || Or would you rather just book a time?",
     chips: [BOOK],
     action: "open_connect",
   },
@@ -178,7 +180,7 @@ export const DRAFTS: Line[] = [
   {
     id: "nudge.dealroom",
     stage: "nudge",
-    text: "You've been in the deal room a while. || There's one finding here most people miss. | It takes twenty seconds. || Want it?",
+    text: "You've been in the deal room a while. || I'd flag one finding most people miss. | It takes twenty seconds. || Want it?",
     chips: [{ label: "Go on", next: "proof.dealroom" }, BOOK],
   },
   {
@@ -202,7 +204,7 @@ export const DRAFTS: Line[] = [
   {
     id: "nudge.research",
     stage: "nudge",
-    text: "Those buildings aren't decoration. || Every bot is a real job. | Running tests, | or evolving strategies every six hours. || Want me to walk you through the one that matters most to you?",
+    text: "Those buildings aren't decoration. || Every bot down there is a real job. | Running tests, | or evolving strategies every six hours. || Want me to walk you through the one that matters most to you?",
     chips: [
       { label: "The strategy research", next: "proof.principal" },
       { label: "The deal audit", next: "proof.dealroom" },
@@ -218,7 +220,45 @@ export const DRAFTS: Line[] = [
   {
     id: "nudge.exit",
     stage: "nudge",
-    text: "Before you go. || If any of this was useful, | the fastest next step is a 30-minute call. | No prep needed on your side. || Shall I open the calendar?",
+    text: "Before you go. || For the record, | if any of this was useful, | the fastest next step is a 30-minute call. | No prep needed on your side. || Shall I open the calendar?",
+    chips: [BOOK, NOTE, { label: "Not now", action: "snooze" }],
+  },
+  // ---------------------------------------------------------------- the self-running tour
+  // Concierge.tsx drives the site between these: it navigates, runs the model, and narrates.
+  {
+    id: "tour.numbers",
+    stage: "tour",
+    text: "Stop one. | The numbers. || In his last seat, | he underwrote a $6M+ acquisition pipeline. | Operating expenses came down 6%.",
+    chips: [],
+  },
+  {
+    id: "tour.experience",
+    stage: "tour",
+    text: "Stop two. | The track record. || Fourteen months in the U.S., | eight in India before that. | Promoted to lead the finance function after five months.",
+    chips: [],
+  },
+  {
+    id: "tour.model",
+    stage: "tour",
+    text: "Stop three. | A live valuation model. || I'm raising the WACC a point, | so you can watch the value fall. | It's an illustration, | not his capstone result.",
+    chips: [],
+  },
+  {
+    id: "tour.dealroom",
+    stage: "tour",
+    text: "Stop four. | The deal room. || His own analyzer said GO on its example deal. | He audited it. | Fixed, | it works in about 29% of outcomes.",
+    chips: [],
+  },
+  {
+    id: "tour.research",
+    stage: "tour",
+    text: "Stop five. | The research city. || Every bot is a real automated job. | The Brain in the middle evolves strategies every six hours.",
+    chips: [],
+  },
+  {
+    id: "tour.end",
+    stage: "tour",
+    text: "That concludes the tour. || If any of it was useful, | the next step is 30 minutes with him. || Shall I open his calendar?",
     chips: [BOOK, NOTE, { label: "Not now", action: "snooze" }],
   },
 ];
