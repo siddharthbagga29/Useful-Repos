@@ -212,7 +212,7 @@ export const DRAFTS: Line[] = [
   {
     id: "nudge.experience",
     stage: "nudge",
-    text: "Quick context on that timeline. || Fourteen months, | eleven of them full-time, | and a promotion in the middle. || Want the one deal story that shows his judgment best?",
+    text: "Quick context on that timeline. || Twenty-two months, | fourteen in the U.S., | eight in India, | and a promotion in the middle. || Want the one deal story that shows his judgment best?",
     chips: [{ label: "Yes", next: "proof.recruiter" }, BOOK],
   },
   {

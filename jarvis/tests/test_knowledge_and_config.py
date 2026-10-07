@@ -17,7 +17,7 @@ def test_brief_loads_with_stable_version(brief: Brief) -> None:
 def test_brief_states_the_facts_jarvis_must_get_right(brief: Brief) -> None:
     text = brief.text
     assert "has NOT sat the exam" in text  # CFA
-    assert "14 months in total, 11 of them full-time" in text  # tenure
+    assert "22 months in total: 14 in the US, 11 of them full-time, and 8 in India" in text  # tenure
     assert "NOT the capstone's result" in text  # site demo model
     assert "within 10% of analyst consensus" in text
 

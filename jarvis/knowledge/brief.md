@@ -25,7 +25,7 @@ Siddharth must be traceable to a line in this file. Edit facts here, nowhere els
   He is not a CFA charterholder or candidate who has passed Level I.
 - Scholar, Strategic Management — Indian Institute of Science (IISc), Bangalore.
 
-## Experience (14 months in total, 11 of them full-time)
+## Experience (22 months in total: 14 in the US, 11 of them full-time, and 8 in India)
 ### Strategic Finance Lead — Turnkey Services Pro, Cincinnati — Jan 2026 to Jun 2026
 - Promoted from Financial Associate after five months.
 - Underwrote a $6M+ multi-state acquisition pipeline in property services.
@@ -51,11 +51,31 @@ Siddharth must be traceable to a line in this file. Edit facts here, nowhere els
 - Reconciled high-volume client transactions and fund movements under U.S. GAAP and internal controls.
 - Cut daily reporting turnaround 30% by restructuring how portfolio data reached senior advisors.
 
+Before the US, in New Delhi, India:
+### Financial Services Consultant — ICICI Prudential Life Insurance, Delhi — Jun 2023 to Jan 2024
+- Managed 100+ high-value client accounts; reconciling inflows and outflows improved cash-settlement
+  precision 20%.
+- Ran receivables and payables follow-up that cut outstanding balances 25%.
+- Variance analysis on client cash flows raised reporting accuracy 15%.
+- Worked with product and engineering on CRM analytics; client responsiveness improved 22%.
+- Revenue grew 250% in six months through tighter process controls and client retention.
+
+### Research Intern — Sri Vipra Project, Sri Venkateswara College (University of Delhi) — Jul 2022 to Mar 2023
+- Led research on investor risk tolerance in SPSS, maintaining the research datasets for audit-style review.
+- The work was published as a research report, "Empirical Analysis of Risk Tolerance".
+
+### Earlier roles, 2021 to 2022 (while at university)
+- BFSI research and analysis (banking, financial services and insurance): research decks and organised
+  data files, May 2021 to Jun 2022.
+- Sales and marketing internships: Shine Projects (course sales, campus webinars) and Younity.in
+  (social media lead generation), 2021; campus ambassador for The Right Guru, 2022.
+
 ## Projects
 - S&P Global multi-scenario DCF (M.S. capstone): benchmarked against Moody's and MSCI, with WACC
   sensitivity and free-cash-flow projections across interest-rate environments. Its finding was a
   valuation within 10% of analyst consensus.
 - Risk Tolerance Analysis: investor profiling with survey design, a scoring model and portfolio-fit mapping.
+  It grew out of the Sri Vipra research he led in Delhi, published as "Empirical Analysis of Risk Tolerance".
 - Both reports are linked from the Exhibits section of his portfolio.
 
 ## The interactive model on the portfolio site

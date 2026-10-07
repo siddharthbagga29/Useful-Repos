@@ -153,9 +153,9 @@ def desktop(p) -> None:
     page.get_by_label("Talk to Jarvis").last.click()
     page.wait_for_timeout(1200)
     last = jarvis_last(page)
-    check("voice question answered", "14 months" in last, last)
+    check("voice question answered", "22 months" in last, last)
     spoken = page.evaluate("window.__spoken.join(' ')")
-    check("answer is spoken aloud", "14 months" in spoken, spoken[:200])
+    check("answer is spoken aloud", "22 months" in spoken, spoken[:200])
 
     # voice: wake word, then a navigation skill
     page.get_by_role("switch", name="“Hey Jarvis”").last.click()

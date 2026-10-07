@@ -32,6 +32,30 @@ const ROLES = [
   },
 ];
 
+// Before the U.S.: client money and published research first, the groundwork for diligence.
+const INDIA = [
+  {
+    when: "Jun 2023 – Jan 2024",
+    title: "Financial Services Consultant",
+    org: "ICICI Prudential Life Insurance · New Delhi",
+    tag: "100+ high-value accounts",
+    points: [
+      "Ran 100+ high-value client accounts: reconciled every inflow and outflow, lifting cash-settlement precision 20%, and cut outstanding receivables 25%.",
+      "Variance analysis on client cash flows raised reporting accuracy 15%; worked with product and engineering on CRM analytics (client response +22%). Revenue up 250% in six months.",
+    ],
+  },
+  {
+    when: "Jul 2022 – Mar 2023",
+    title: "Research Intern",
+    org: "Sri Vipra Project, Sri Venkateswara College · University of Delhi",
+    tag: "Published research",
+    points: [
+      "Led an SPSS study of investor risk tolerance and kept its datasets audit-ready; published as \u201cEmpirical Analysis of Risk Tolerance.\u201d The same question now drives his investor-profiling work.",
+    ],
+  },
+];
+const EARLY = "2021 – 22, while at university: BFSI sector research analyst; sales and marketing internships at Shine Projects and Younity.in; campus ambassador for The Right Guru.";
+
 const EDU = [
   ["M.S. Financial Mathematics", "University of Cincinnati", "2024 – 2025"],
   ["Graduate Certificate, Quantitative Finance", "University of Cincinnati", "2025"],
@@ -45,6 +69,7 @@ export function Experience() {
       <motion.h2 className="sec" variants={rise}>
         Experience &amp; education
       </motion.h2>
+      <div className="exp-grid">
       <motion.ol className="tl" variants={rise}>
         {ROLES.map((r) => (
           <li key={r.title}>
@@ -63,6 +88,31 @@ export function Experience() {
           </li>
         ))}
       </motion.ol>
+      <div className="exp-side">
+      <motion.ol className="tl" variants={rise} aria-label="Before the U.S.">
+        <li className="tl-sep" aria-hidden>
+          <span>Before the U.S. · New Delhi</span>
+        </li>
+        {INDIA.map((r) => (
+          <li key={r.title}>
+            <div className="tl-when">{r.when}</div>
+            <div className="tl-body">
+              <h3>
+                {r.title} <span>— {r.org}</span>
+              </h3>
+              <span className="tl-tag">{r.tag}</span>
+              <ul>
+                {r.points.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </div>
+          </li>
+        ))}
+        <li className="tl-early">
+          <p>{EARLY}</p>
+        </li>
+      </motion.ol>
       <motion.dl className="edu" variants={rise}>
         {EDU.map(([d, s, y]) => (
           <div key={d}>
@@ -77,6 +127,8 @@ export function Experience() {
           <dd>Bloomberg Market Concepts · IISc Strategic Management Scholar · CFA L1 exam-fee scholarship (exam not yet taken)</dd>
         </div>
       </motion.dl>
+      </div>
+      </div>
     </Panel>
   );
 }

@@ -6,7 +6,7 @@ import { bus } from "../jarvis/bus.ts";
 const HUD: [string, string][] = [
   ["CLASS", "Valuation & Diligence Analyst"],
   ["LEVEL", "Associate"],
-  ["XP", "14 months · 11 full-time"],
+  ["XP", "22 months · US + India"],
   ["SPAWNED", "May 2025 · M.S. Fin. Math"],
   ["PERKS", "Financial Math · Monte Carlo · Valuation"],
 ];

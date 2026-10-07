@@ -279,7 +279,7 @@ const INTENTS: Intent[] = [
     test: [/\bfamily offices?\b|\bprivate wealth\b|\bu?hnw(i|is)?\b|\bhigh.net.worth\b|\bprincipals?\b/],
     respond: ({ index }) =>
       pinned(
-        "He's looking for a seat with a family office, a private wealth team or a lower-middle-market PE firm. The fit: he has already done the job a principal needs from an analyst — underwriting a $6M+ acquisition pipeline, normalizing EBITDA, testing seller forecasts against backlog, and writing the go/no-go memo the Managing Partner acted on. He's early in his career (14 months), and he says so.",
+        "He's looking for a seat with a family office, a private wealth team or a lower-middle-market PE firm. The fit: he has already done the job a principal needs from an analyst — underwriting a $6M+ acquisition pipeline, normalizing EBITDA, testing seller forecasts against backlog, and writing the go/no-go memo the Managing Partner acted on. He's early in his career (22 months, 14 of them in the US), and he says so.",
         citeText(index, "family office"),
         [{ name: "draft_email" }, { name: "run_digest" }],
       ),
@@ -344,7 +344,7 @@ const INTENTS: Intent[] = [
     ],
     respond: ({ index }) =>
       pinned(
-        "14 months in total, 11 of them full-time: Strategic Finance Lead at Turnkey Services Pro (Jan–Jun 2026), promoted after five months as Financial Associate (Aug 2025–Jan 2026), plus a Wealth Management internship at Cerity Partners (Jan–Mar 2025). He's an Associate-level candidate, not senior.",
+        "22 months in total. In the US, 14 months (11 full-time): Strategic Finance Lead at Turnkey Services Pro (Jan–Jun 2026), promoted after five months as Financial Associate (Aug 2025–Jan 2026), plus a Wealth Management internship at Cerity Partners (Jan–Mar 2025). Before that, 8 months in Delhi as a Financial Services Consultant at ICICI Prudential (Jun 2023–Jan 2024), running 100+ high-value client accounts. He's an Associate-level candidate, not senior.",
         cite(index, "Experience"),
       ),
   },
@@ -365,7 +365,7 @@ const INTENTS: Intent[] = [
     test: [/\bweakness|\bgaps?\b|\black(s|ing)?\b|\bdownside|\bred flags?\b|\bconcerns?\b|\bwhat (is|are) (he|his) (bad|not good|missing)\b|\brisks?\b.{0,10}\b(hir|him)/],
     respond: ({ index }) =>
       pinned(
-        "Stated plainly: he hasn't run expert-network or customer-interview programmes, he hasn't supervised junior colleagues, and with 14 months of experience he's an Associate-level candidate rather than senior. What offsets it: he built a finance function from raw bank statements and was promoted to lead it in five months.",
+        "Stated plainly: he hasn't run expert-network or customer-interview programmes, he hasn't supervised junior colleagues, and with 22 months of experience (14 in the US) he's an Associate-level candidate rather than senior. What offsets it: he built a finance function from raw bank statements and was promoted to lead it in five months.",
         index.bySection("Honest gaps").map((c) => ({ section: c.section, text: c.text })),
       ),
   },
@@ -423,7 +423,7 @@ const INTENTS: Intent[] = [
     test: [/\bexperience\b|\bwork history\b|\broles?\b|\bjobs?\b|\bcareer\b|\bbackground\b|\bresume\b|\bcv\b|\bworked\b/],
     respond: ({ index }) =>
       pinned(
-        "Three roles, 14 months in total. Strategic Finance Lead, Turnkey Services Pro (Jan–Jun 2026): $6M+ acquisition pipeline, investment memos, opex down 6%. Financial Associate there (Aug 2025–Jan 2026): built the finance function from scratch, decisions +75% in month one. Wealth Management Intern, Cerity Partners (Jan–Mar 2025): reporting turnaround down 30%.",
+        "22 months across the US and India. Strategic Finance Lead, Turnkey Services Pro (Jan–Jun 2026): $6M+ acquisition pipeline, investment memos, opex down 6%. Financial Associate there (Aug 2025–Jan 2026): built the finance function from scratch, decisions +75% in month one. Wealth Management Intern, Cerity Partners (Jan–Mar 2025): reporting turnaround down 30%. Before the US: Financial Services Consultant at ICICI Prudential in Delhi (Jun 2023–Jan 2024), 100+ high-value client accounts, receivables down 25%; and a research internship whose risk-tolerance study was published.",
         cite(index, "Experience"),
         [{ name: "navigate", station: "dealroom" }],
       ),
@@ -665,7 +665,7 @@ export function digest(): DigestSection[] {
     },
     {
       title: "Honest gaps",
-      text: "14 months of experience, 11 full-time; he hasn't managed a team or run expert-network calls; and he has not sat the CFA Level I exam — he won a scholarship for its fee.",
+      text: "22 months of experience, 14 of them in the US; he hasn't managed a team or run expert-network calls; and he has not sat the CFA Level I exam — he won a scholarship for its fee.",
     },
     {
       title: "Next step",

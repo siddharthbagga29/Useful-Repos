@@ -15,7 +15,7 @@ export function Numbers() {
     <Panel id="numbers" label="The numbers">
       <Kicker>The numbers</Kicker>
       <motion.h2 className="sec" variants={rise}>
-        What 14 months of work produced
+        What 14 months in the U.S. produced
       </motion.h2>
       <motion.div className="statrow" variants={rise}>
         {STATS.map((s) => (

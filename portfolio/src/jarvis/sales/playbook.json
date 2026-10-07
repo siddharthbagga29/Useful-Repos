@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-07T00:43:48.037Z",
+  "generatedAt": "2026-10-07T06:38:17.117Z",
   "approved": {
     "score": 10,
     "iteration": 1,
@@ -418,7 +418,7 @@
     "nudge.experience": {
       "id": "nudge.experience",
       "stage": "nudge",
-      "text": "Quick context on that timeline. || Fourteen months, | eleven of them full-time, | and a promotion in the middle. || Want the one deal story that shows his judgment best?",
+      "text": "Quick context on that timeline. || Twenty-two months, | fourteen in the U.S., | eight in India, | and a promotion in the middle. || Want the one deal story that shows his judgment best?",
       "chips": [
         {
           "label": "Yes",

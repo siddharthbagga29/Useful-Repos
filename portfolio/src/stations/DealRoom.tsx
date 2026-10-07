@@ -53,7 +53,7 @@ const DOCS: { id: string; n: string; group: string; title: string; body: ReactNo
         </ul>
         <p><b>Risks, disclosed not discovered.</b></p>
         <ul>
-          <li>Tenure is <Rd>14 months total, 11 of them full-time</Rd> — Associate-level, not senior.</li>
+          <li>Tenure is <Rd>22 months: 14 in the US (11 full-time) and 8 in India</Rd> — Associate-level, not senior.</li>
           <li>No expert-network or customer-interview programme run to date.</li>
           <li>Has not supervised junior colleagues.</li>
         </ul>
