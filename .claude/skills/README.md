@@ -52,3 +52,11 @@ Claude Code session:
 ```
 
 ...then delete this directory.
+
+## Research and Instagram
+
+| skill | source | what it does |
+| --- | --- | --- |
+| `last30days` | [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill) @ 7f582ad (MIT) | Research what people actually said about a topic in the last 30 days across Reddit, X, YouTube, TikTok, Instagram, HN, Polymarket, GitHub and the web. See `last30days/SOURCE.md` for the install review. |
+| `ig-*` (13) | [Jakeschincariol/instagram-agent-skill](https://github.com/Jakeschincariol/instagram-agent-skill) @ d03c56b (MIT) | Reels, captions, carousels, stories, profile, planning, humanizer, comments, replies, DMs, repurposing, viral research and audits. Writes only; nothing posts on its own. |
+| `instagram-autopilot` | this repo | The weekly loop over both: research, plan, draft, humanize, approve, optional official-API publish, audit. State lives in `../instagram/`. |
