@@ -9,9 +9,10 @@ PAGES_DIR=${PAGES_DIR:-../../siddharthbagga29.github.io}
 # Quality gate: the actor-critic loop runs typecheck, lint and tests, then scores Jarvis's lines.
 # Nothing ships unless it approves (S >= 9.5, gates clear); it also writes the approved playbook.
 npm run -s jarvis:loop
-# Studio voice: re-record only the approved lines that changed (needs ELEVENLABS_API_KEY; without it
-# the site keeps its current clips, and any line without a current clip uses the browser voice).
-if [ -n "${ELEVENLABS_API_KEY:-}" ]; then npm run -s voice:build; else echo "voice: no ELEVENLABS_API_KEY, keeping current clips"; fi
+# Studio voice: re-record only the approved lines that changed when VOICE_ENGINE is set (kokoro runs
+# on the Mac; elevenlabs needs ELEVENLABS_API_KEY). Otherwise the site keeps its current clips, and any
+# line without a current clip uses the browser voice.
+if [ -n "${VOICE_ENGINE:-}" ]; then npm run -s voice:build -- --engine "$VOICE_ENGINE"; else echo "voice: keeping current clips"; fi
 npm run -s eval
 node --experimental-strip-types --no-warnings scripts/lab-check.ts >/dev/null
 npm run -s build

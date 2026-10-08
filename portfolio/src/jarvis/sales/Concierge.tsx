@@ -362,7 +362,7 @@ export function Concierge({ station }: { station: string }) {
                 {muted ? "🔇 Voice off" : "🔊 Voice on"}
               </button>
             )}
-            {studio && (
+            {studio?.credit && (
               <span className="greet-credit" data-testid="voice-credit">
                 {studio.credit}
               </span>
