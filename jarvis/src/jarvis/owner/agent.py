@@ -60,6 +60,15 @@ class OwnerAgent:
         self._said = text
 
     def handle(self, text: str) -> str:
+        """One turn. Never raises: a model failure becomes a sentence saying what's wrong, and the
+        next turn starts a fresh session (the failed one may hold a half-finished exchange)."""
+        try:
+            return self._handle(text)
+        except Exception as exc:  # model/transport boundary; tool errors are handled per call
+            self._audit.record(tool="model", outcome="error", error=f"{type(exc).__name__}: {exc}")
+            return self._reset(f"I couldn't get an answer from my model. {exc}")
+
+    def _handle(self, text: str) -> str:
         session = self._session or self._new_session()
         self._session = session
         if self._said:

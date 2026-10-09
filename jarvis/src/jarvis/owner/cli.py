@@ -4,7 +4,10 @@
   jarvis-owner --voice              hands-free: say "Hey Jarvis", then just keep talking
   jarvis-owner --voice --serve      ...and let his website talk to the same Jarvis
   jarvis-owner --serve --headless   website link only, no terminal or microphone
-  jarvis-owner --doctor             check this Mac and recommend a local model
+  jarvis-owner --doctor             check every stage on this Mac and print exact fixes
+  jarvis-owner --voice-check        test speaker, microphone, transcription and wake word
+  jarvis-owner --pair               print the one-time link that pairs your browser
+  jarvis-owner --model qwen3:4b     use this local model for this run
   jarvis-owner --dry-run            every action is shown and declined
 
 He opens every session with where things stand (tasks, projects) and offers the next step; answer
@@ -17,14 +20,15 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
-from jarvis.config import load_owner
+from jarvis.config import ConfigError, load_owner, owner_env
 from jarvis.core.activity import feed
 from jarvis.core.memory import Journal
 from jarvis.core.notify import Notifier
-from jarvis.core.router import doctor
 from jarvis.core.tasks import TaskEngine
 from jarvis.knowledge import Brief
 from jarvis.llm.factory import agent_session
@@ -48,13 +52,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--headless", action="store_true", help="with --serve: no terminal or mic")
     parser.add_argument("--doctor", action="store_true", help="check this Mac and the local model")
     parser.add_argument("--dry-run", action="store_true", help="decline every action, report it")
+    parser.add_argument("--model", help="local Ollama model for this run, e.g. qwen3:4b")
+    parser.add_argument("--voice-check", action="store_true", help="test mic, speech, wake word")
+    parser.add_argument("--pair", action="store_true", help="print the browser pairing link")
     args = parser.parse_args(argv)
 
-    settings = load_owner()
     if args.doctor:
-        print(doctor(settings.llm.ollama_model))
-        return 0
+        from jarvis.owner.doctor import run_doctor
+
+        checks = run_doctor()
+        print(checks.text())
+        return 1 if checks.failed else 0
+    try:
+        layered = owner_env()
+        settings = load_owner(layered.values, model=args.model, origin=layered.origin)
+    except ConfigError as exc:
+        print(f"Configuration problem: {exc}", file=sys.stderr)
+        return 2
     settings.state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if args.pair:
+        from jarvis.owner.bridge import load_token
+
+        # Shown only on request, never in the normal startup log (which launchd may save).
+        print(f"Open this once in your browser: {SITE}#pair-{load_token(settings.state_dir)}")
+        print("Keep it private. To revoke every paired browser, delete ~/.jarvis/bridge_token.")
+        return 0
+    if args.voice_check:
+        from jarvis.owner.voicecheck import voice_check
+
+        return voice_check(settings)
 
     voice = None
     voice_name = "Daniel"
@@ -72,12 +98,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Voice mode unavailable: {exc}", file=sys.stderr)
             return 2
         voice_name = pick_voice(settings.voice_name)
+        ambient = voice.calibrate()
+        print(f"Microphone ready (room level {ambient:.0f}, speech above {voice.SILENCE_RMS}).")
 
     def say(text: str) -> None:
         if voice is not None:
-            from jarvis.owner.voice import speak
-
-            speak(text, voice_name)
+            voice.say(text, voice_name)  # mic paused while he speaks
 
     # core
     brief = Brief.load(settings.brief_path)
@@ -135,13 +161,28 @@ def main(argv: list[str] | None = None) -> int:
         )
     agent = make_agent(confirmer)
 
-    backend = (
-        settings.llm.model if settings.llm.backend == "anthropic" else settings.llm.ollama_model
-    )
+    if settings.llm.backend == "anthropic":
+        model_line = f"anthropic:{settings.llm.model} (paid API, set by JARVIS_LLM_BACKEND)"
+    else:
+        model_line = f"ollama:{settings.llm.ollama_model} (from {settings.llm.ollama_model_source})"
     print(
-        f"Jarvis (owner) on {settings.llm.backend}:{backend} · {len(site.entries)} site entries · "
+        f"Jarvis (owner) on {model_line} · {len(site.entries)} site entries · "
         f"autonomy {settings.autonomy}. Ctrl-C to quit."
     )
+    if settings.llm.backend == "ollama":
+        # Load the model now, so the first "Hey Jarvis" isn't a 30-second wait, and so a broken
+        # Ollama is reported at startup in plain words rather than after the wake word.
+        from jarvis.llm.ollama_backend import LocalModelError, warm_up
+
+        print(f"Loading {settings.llm.ollama_model}...", flush=True)
+        try:
+            print(f"Model ready in {warm_up(settings.llm):.1f}s.")
+        except LocalModelError as exc:
+            print(f"Model problem ({exc.kind}): {exc}", file=sys.stderr)
+            print("Run  jarvis-owner --doctor  for the exact fix.", file=sys.stderr)
+            if voice is not None:
+                voice.close()
+            return 3
 
     server = None
     web_agent: OwnerAgent | None = None
@@ -163,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
             settings.bridge_port,
         )
         print(f"Website link ready on 127.0.0.1:{settings.bridge_port}.")
-        print(f"Pair this Mac once by opening: {SITE}#pair-{token}")
+        print("To pair a browser (once):  jarvis-owner --pair")
 
     report = status_report(settings.repo_dir, ledger=ledger)
     opening = opening_line(report, datetime.now().hour)
@@ -185,26 +226,15 @@ def main(argv: list[str] | None = None) -> int:
                 if text:
                     print(f"jarvis> {agent.handle(text)}")
         else:
-
-            def converse(first: str) -> None:
-                """Answer, then keep listening for a reply without the wake word."""
-                heard = first
-                while heard:
-                    print(f"you> {heard}")
-                    reply = agent.handle(heard)
-                    print(f"jarvis> {reply}")
-                    say(reply)
-                    if settings.follow_up_seconds <= 0:
-                        return
-                    heard = voice.listen(start_timeout=settings.follow_up_seconds)
-
             print(f"jarvis> {opening}")
             say(opening)
-            converse(voice.listen(start_timeout=settings.follow_up_seconds or 4.0))
+            converse(agent, voice, say, settings.follow_up_seconds, first_wait=6.0)
+            print("(listening for 'Hey Jarvis')")
             while True:
                 voice.wait_for_wake_word()
                 say("Yes?")
-                converse(voice.listen())
+                converse(agent, voice, say, settings.follow_up_seconds, first_wait=6.0)
+                print("(listening for 'Hey Jarvis')")
     except (KeyboardInterrupt, EOFError):
         print()
     finally:
@@ -214,6 +244,37 @@ def main(argv: list[str] | None = None) -> int:
             server.shutdown()
         browser.close()
     return 0
+
+
+def converse(
+    agent: OwnerAgent,
+    voice: Any,
+    say: Callable[[str], None],
+    follow_up_seconds: float,
+    first_wait: float = 6.0,
+) -> None:
+    """One exchange: listen, answer, then keep listening for a reply without the wake word.
+    Never raises for a bad transcription or model error, so the wake-word loop always resumes."""
+    try:
+        heard = voice.listen(start_timeout=first_wait)
+    except Exception as exc:  # audio device hiccup: report it and go back to the wake word
+        print(f"(microphone error: {exc})", file=sys.stderr)
+        return
+    if not heard:
+        say("Sorry, I didn't catch that.")
+        return
+    while heard:
+        print(f"you> {heard}")
+        reply = agent.handle(heard)  # never raises; failures come back as a sentence
+        print(f"jarvis> {reply}")
+        say(reply)
+        if follow_up_seconds <= 0:
+            return
+        try:
+            heard = voice.listen(start_timeout=follow_up_seconds)
+        except Exception as exc:
+            print(f"(microphone error: {exc})", file=sys.stderr)
+            return
 
 
 def workflow_thread_resume(workflow: ResearchWorkflow, task_id: str) -> None:

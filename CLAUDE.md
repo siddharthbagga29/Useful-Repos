@@ -29,3 +29,17 @@ Permanent rules for anyone (human or agent) working in this repository. Missions
 - On the website, only the Terminal station and Jarvis may change unless he says otherwise.
 - Honest persuasion only: every number traceable to `jarvis/knowledge/brief.md`; no fake urgency.
 - Free by default: local models and free tiers; anything paid is opt-in and stated.
+
+## Invariants learned from incidents
+- Configuration is only real if the running program reads it. Every documented setting has a
+  test that loads it the way the CLI does, and the startup line prints the value in use and where
+  it came from. (Incident: `.env` said qwen3:4b, nothing read `.env`, Jarvis ran qwen3:8b.)
+- Defaults are chosen for the user's hardware, never a developer's: the local model is sized from
+  the Mac's memory.
+- Fail at startup, not at first use: load the model before listening, and name the cause
+  (not running, model missing, version mismatch, timeout) with the exact fix.
+- A conversational loop never dies on one bad turn: model, microphone and transcription errors
+  become a spoken sentence and the loop resumes.
+- Setup docs install each dependency exactly one way. (Incident: Homebrew and app installs of
+  Ollama mixed versions and broke the model runner.)
+- Secrets and pairing links are printed only on explicit request, never in startup logs.

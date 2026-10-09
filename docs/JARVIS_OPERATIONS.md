@@ -11,6 +11,21 @@
 | "Remember I prefer short briefings" | Stores a preference (asks first). Preferences never change security rules |
 | "What did we decide about the model?" | Recalls decisions and past episodes |
 
+## Start, stop, check
+
+| Do | Command (inside `~/Useful-Repos/jarvis` with `source .venv/bin/activate`) |
+|---|---|
+| Start, voice + website | `jarvis-owner --voice --serve` |
+| Stop | Ctrl-C in that window (closes the microphone and the website link cleanly) |
+| Stop one running in the background | `pkill -f jarvis-owner` |
+| Health check | `jarvis-owner --doctor` |
+| Voice test | `jarvis-owner --voice-check` |
+| Pair a browser | `jarvis-owner --pair` |
+
+If the model fails at startup he exits with `Model problem (<cause>)` instead of waiting for the
+wake word, so you find out immediately. A model error mid-conversation is spoken ("I couldn't get
+an answer from my model. Ollama isn't running...") and he goes back to listening.
+
 ## Where things live
 
 | Path | Contents |
@@ -65,11 +80,13 @@ elsewhere), then `launchctl load ~/Library/LaunchAgents/com.siddharth.jarvis.pli
   </array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
-  <key>StandardOutPath</key><string>/tmp/jarvis.log</string>
-  <key>StandardErrorPath</key><string>/tmp/jarvis.err</string>
+  <key>StandardOutPath</key><string>/Users/YOU/Library/Logs/jarvis.log</string>
+  <key>StandardErrorPath</key><string>/Users/YOU/Library/Logs/jarvis.err</string>
 </dict></plist>
 ```
 
+Replace `YOU` with your Mac username (`whoami`). Logs stay in your own Library, not the shared
+`/tmp`, and never contain the pairing link (that is only printed by `jarvis-owner --pair`).
 `KeepAlive` restarts him if he crashes; interrupted tasks resume as above. Stop with
 `launchctl unload …`.
 

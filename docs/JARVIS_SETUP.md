@@ -16,10 +16,18 @@ Keychain or a password manager.
 # Homebrew, the Mac package manager (skip if `brew --version` already works)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-brew install git python@3.12 portaudio ollama
+brew install git python@3.12 portaudio
 ```
 
+**Ollama: install it once, as the app.** Download it from https://ollama.com/download, drag it
+into Applications and open it (a llama icon appears in the menu bar). Do **not** also run
+`brew install ollama`: two copies of different versions is what causes
+`invalid argument: --no-map` and "client version" warnings. If you already have both, step 3's
+doctor tells you exactly how to remove one (your downloaded models are kept).
+
 ## 2. Get the code
+
+The repository is public, so no GitHub login is needed:
 
 ```bash
 cd ~
@@ -29,30 +37,59 @@ python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e '.[voice]'
 ```
 
-## 3. Pick and download the free local brain
+If `git clone` asks for a username or password, your Mac has an old GitHub login saved. Press
+Ctrl-C, clear it, and clone again:
 
 ```bash
-ollama serve >/dev/null 2>&1 &     # or open the Ollama app once
+printf "protocol=https\nhost=github.com\n\n" | git credential-osxkeychain erase
+```
+
+GitHub never accepts your account password in Terminal. If you ever need to push, use
+`brew install gh && gh auth login` (it signs you in through the browser). Never type a password at
+the `%` prompt itself: it isn't a password field, so it is saved in your shell history.
+
+## 3. Check everything and pick the model
+
+```bash
 jarvis-owner --doctor
 ```
 
-`--doctor` prints your Mac's memory and the model that fits it (Qwen 3, by Alibaba, open licence):
+It checks each stage in order and prints a ✓, or a ✗ with the exact fix:
+
+- **settings:** which model Jarvis will use, and where that choice came from.
+- **Ollama installs:** every copy on your Mac, and the server's version against them.
+- **model:** whether it is downloaded.
+- **a real answer:** the model actually loads and responds, timed.
+- **voice:** the packages and macOS speech.
+- **website link:** its port.
+
+Jarvis picks the model for your Mac's memory automatically (Qwen 3, open licence, free):
 
 | Mac memory | Model | Download |
 |---|---|---|
 | 8 GB | `qwen3:4b` | ~2.5 GB |
-| 16 GB | `qwen3:8b` (default) | ~5 GB |
+| 16 GB | `qwen3:8b` | ~5 GB |
 | 24-32 GB | `qwen3:14b` | ~9 GB |
 | 48 GB+ | `qwen3:30b` | ~18 GB |
 
-Then pull what it recommended, for example:
+Download the one the doctor names, for example `ollama pull qwen3:4b`, then run `--doctor` again
+until it says "All checks passed".
 
-```bash
-ollama pull qwen3:8b
-```
+To choose a different model, use either of these:
 
-If you chose something other than `qwen3:8b`, tell Jarvis by adding this line to
-`~/Useful-Repos/jarvis/.env` (copy `.env.example` first): `JARVIS_OLLAMA_MODEL=qwen3:14b`.
+- **for one run:** `jarvis-owner --model qwen3:8b`
+- **permanently:** add `OLLAMA_MODEL=qwen3:8b` to `~/Useful-Repos/jarvis/.env` (create the file
+  if it doesn't exist).
+
+Settings resolve in this order, highest first:
+
+1. the `--model` flag
+2. `JARVIS_...` variables in your shell
+3. `jarvis/.env`
+4. the automatic choice
+
+The startup line always shows the model in use and where it came from, for example
+`ollama:qwen3:4b (from auto: 8 GB memory)`.
 
 ## 4. First run (keyboard)
 
@@ -61,9 +98,18 @@ jarvis-owner --dry-run      # safe rehearsal: every action is shown and declined
 jarvis-owner                # the real thing
 ```
 
-He opens with where things stand and offers a next step. Type `yes` and he does it.
+It prints `Model ready in N s` (the model is loaded before you speak), opens with where things
+stand, and offers a next step. Type `yes` and he does it.
 
 ## 5. Voice (hands-free)
+
+First test the microphone, speech and wake word on their own (about a minute):
+
+```bash
+jarvis-owner --voice-check
+```
+
+Then:
 
 ```bash
 jarvis-owner --voice
@@ -84,8 +130,14 @@ his wake word continuously, on your Mac, with nothing sent to the cloud.
 jarvis-owner --voice --serve
 ```
 
-It prints a link like `https://siddharthbagga29.github.io/#pair-…`. Open it once in the browser you
-use. From then on, on that browser only:
+In a second Terminal window, print your private pairing link once:
+
+```bash
+cd ~/Useful-Repos/jarvis && source .venv/bin/activate && jarvis-owner --pair
+```
+
+Open that link once in the browser you use. Keep it private, like a password. Delete
+`~/.jarvis/bridge_token` to revoke it. From then on, on that browser only:
 
 - The site's **Terminal** (station 01) shows `OWNER · MAC LINKED` and your brief: what needs you,
   what's running, what's done, what's next.
@@ -112,11 +164,18 @@ Use `launchd` so he's always there after login. See [JARVIS_OPERATIONS.md](JARVI
 
 ## Troubleshooting
 
+Run `jarvis-owner --doctor` first; it names the cause. Common ones:
+
 | Symptom | Fix |
 |---|---|
+| Startup shows a model you didn't choose | The line says where it came from. Use `--model`, or `OLLAMA_MODEL=` in `jarvis/.env` (a plain `OLLAMA_MODEL=` in the shell is ignored: Ollama owns `OLLAMA_*` names there) |
+| `invalid argument: --no-map`, or `Warning: client version is ...` | Two Ollama installs. Quit Ollama, `pkill -f 'ollama serve'`, `brew uninstall ollama`, reopen the Ollama app. Models are kept |
+| `Model problem (not_running)` | Open the Ollama app and wait 5 seconds |
+| `Model problem (model_missing)` | `ollama pull <the model named>` |
+| `Model problem (timeout)` | First load after a restart is slow; if it persists, use the smaller model `--doctor` recommends |
 | `Voice mode unavailable` | `brew install portaudio && pip install -e '.[voice]'` |
-| He triggers on his own | `JARVIS_WAKE_THRESHOLD=0.7` in `.env` |
-| He never hears "Hey Jarvis" | Check Terminal has microphone access in System Settings → Privacy |
-| `Ollama: not running` | Open the Ollama app, or `ollama serve &` |
-| Answers are slow | Use the smaller model `--doctor` suggests, or set `JARVIS_FAST_MODEL=qwen3:4b` |
-| Website says it can't reach your Mac | Jarvis must be running with `--serve`; re-open the pairing link if you cleared site data |
+| Room level 0 in `--voice-check` | System Settings → Privacy & Security → Microphone → allow Terminal |
+| He triggers on his own | `WAKE_THRESHOLD=0.7` in `jarvis/.env` |
+| He never hears "Hey Jarvis" | `WAKE_THRESHOLD=0.35` in `jarvis/.env`, and check microphone access |
+| "Sorry, I didn't catch that" a lot | Speak a little closer; the threshold adapts to the room at startup |
+| Website says it can't reach your Mac | Jarvis must be running with `--serve`; run `jarvis-owner --pair` again if you cleared site data |

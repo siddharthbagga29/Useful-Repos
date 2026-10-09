@@ -107,26 +107,23 @@ using its built-in assistant.
 The full walk-through is in [`docs/JARVIS_SETUP.md`](../docs/JARVIS_SETUP.md). Short version:
 
 ```bash
-brew install ollama && ollama serve &      # or the Ollama app
-pip install -e .
-jarvis-owner --doctor                      # checks this Mac, recommends a Qwen model
-ollama pull qwen3:8b                       # or whatever --doctor recommended
-jarvis-owner                               # keyboard mode
-jarvis-owner --dry-run                     # every action is shown and declined
-```
-
-Voice mode (free and offline: openWakeWord "hey jarvis", faster-whisper, macOS `say`):
-
-```bash
+# Ollama: install the app from https://ollama.com/download (one install only, not also Homebrew)
 brew install portaudio
 pip install -e '.[voice]'
-jarvis-owner --voice                       # "Hey Jarvis", then just keep talking
-jarvis-owner --voice --serve               # ...and let the website talk to the same Jarvis
+jarvis-owner --doctor          # checks every stage, picks the model for this Mac, prints fixes
+ollama pull qwen3:4b           # or whatever --doctor names
+jarvis-owner --voice-check     # speaker, microphone, transcription, wake word
+jarvis-owner --voice --serve   # "Hey Jarvis", then just keep talking; website link on 127.0.0.1
 ```
 
-`--serve` prints a one-time pairing link (`…/#pair-<token>`). Open it in your browser and the
-site's Terminal becomes your command center (BRIEF, TASKS, ALERTS, YES). The gateway only listens
-on 127.0.0.1, so visitors can never reach your Mac.
+Settings, highest priority first: `--model` flag, `JARVIS_*` shell variables, `jarvis/.env` (the
+`JARVIS_` prefix is optional inside that file), then defaults. The local model defaults to the
+Qwen 3 size that fits the Mac's memory. The startup line shows the model in use and its source.
+Local inference never falls back to a paid API: if Ollama fails, Jarvis says why.
+
+`jarvis-owner --pair` prints the private link that pairs your browser with the site's Terminal
+command center (BRIEF, TASKS, ALERTS, YES). The gateway only listens on 127.0.0.1, so visitors
+can never reach your Mac.
 
 Optional browser agent (a visible Chromium window Jarvis can click through):
 `pip install -e '.[browser]' && playwright install chromium`.

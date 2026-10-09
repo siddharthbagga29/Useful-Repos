@@ -73,6 +73,9 @@ class _OpenWakeWord:
             return True
         return False
 
+    def reset(self) -> None:
+        self._model.reset()
+
     def close(self) -> None:
         pass
 
@@ -99,6 +102,9 @@ class _Porcupine:
     def heard(self, frame: Any) -> bool:
         return bool(self._p.process(frame) >= 0)
 
+    def reset(self) -> None:
+        pass  # Porcupine keeps no state between frames
+
     def close(self) -> None:
         self._p.delete()
 
@@ -106,7 +112,7 @@ class _Porcupine:
 class VoiceIO:
     """Wake word (openWakeWord or Porcupine), then faster-whisper for transcription."""
 
-    SILENCE_RMS = 500  # int16 RMS below this counts as silence; raise it in a noisy room
+    SILENCE_RMS = 500  # int16 RMS below this is silence; calibrate() adapts it to the room
 
     def __init__(
         self,
@@ -142,13 +148,49 @@ class VoiceIO:
         )
         self._model: Any = WhisperModel(whisper_model, device="cpu", compute_type="int8")
 
+    def calibrate(self, seconds: float = 1.0) -> float:
+        """Measure the room's background level and set the speech threshold just above it, so a
+        quiet room hears a soft voice and a noisy one doesn't mistake the fan for speech."""
+        frames = [
+            self._frame() for _ in range(max(1, int(seconds * self.SAMPLE_RATE / self.FRAME)))
+        ]
+        audio = self._np.concatenate(frames).astype(self._np.float32)
+        ambient = float(self._np.sqrt(self._np.mean(audio**2)))
+        self.SILENCE_RMS = int(min(1500.0, max(180.0, ambient * 3.0)))
+        return ambient
+
+    def pause(self) -> None:
+        """Stop capturing while Jarvis speaks, so he never hears (or wakes to) his own voice."""
+        if self._stream.is_active():
+            self._stream.stop_stream()
+
+    def resume(self) -> None:
+        """Start capturing again with an empty buffer and a fresh wake-word state."""
+        if not self._stream.is_active():
+            self._stream.start_stream()
+        self._wake.reset()
+
+    def say(self, text: str, voice_name: str) -> None:
+        """Speak with the microphone paused, then listen again from a clean buffer."""
+        self.pause()
+        try:
+            speak(text, voice_name)
+        finally:
+            self.resume()
+
     def _frame(self) -> Any:
         data = self._stream.read(self.FRAME, exception_on_overflow=False)
         return self._np.frombuffer(data, dtype=self._np.int16)
 
-    def wait_for_wake_word(self) -> None:
+    def wait_for_wake_word(self, timeout: float | None = None) -> bool:
+        """Block until "Hey Jarvis" (True), or until `timeout` seconds pass (False)."""
+        frame_seconds = self.FRAME / self.SAMPLE_RATE
+        waited = 0.0
         while not self._wake.heard(self._frame()):
-            pass
+            waited += frame_seconds
+            if timeout is not None and waited >= timeout:
+                return False
+        return True
 
     def record_utterance(
         self, max_seconds: float = 15.0, trailing_silence: float = 1.2, start_timeout: float = 4.0
@@ -177,7 +219,8 @@ class VoiceIO:
     def transcribe(self, audio: Any) -> str:
         if audio is None:
             return ""
-        segments, _info = self._model.transcribe(audio, language="en", beam_size=1)
+        # The VAD filter drops non-speech, which stops Whisper "hearing" words in silence.
+        segments, _info = self._model.transcribe(audio, language="en", beam_size=1, vad_filter=True)
         return " ".join(segment.text.strip() for segment in segments).strip()
 
     def listen(self, start_timeout: float = 4.0) -> str:
@@ -206,7 +249,7 @@ class VoiceConfirmer:
 
     def confirm(self, summary: str) -> bool:
         print(f"\nJarvis wants to: {summary}")
-        speak(f"Before I {summary}: shall I go ahead?", self._name)
+        self._voice.say(f"Before I {summary}: shall I go ahead?", self._name)
         heard = self._voice.listen(start_timeout=6.0)
         print(f"you> {heard}")
         return is_yes(heard)

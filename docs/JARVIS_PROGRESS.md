@@ -180,3 +180,38 @@ Jarvis loop approved at 10.0/10, build passes, browser e2e all passing.
 - The High Properties source.
 - Instagram handle and captions.
 - The HSBC consultant firm name (not shown until you confirm it).
+
+## Incident 2026-10-09: wrong model, Ollama runner error, voice stalls
+
+- **Root causes (confirmed in code):**
+  - `jarvis/.env` was never read.
+  - Only `JARVIS_`-prefixed variables were read.
+  - The default model was `qwen3:8b` regardless of memory.
+  - Qwen 3 "thinking" made every spoken reply slow.
+  - The mic recorded Jarvis's own voice.
+  - The silence threshold was fixed.
+  - One failed model call could end the voice loop.
+- **Root cause (on the Mac, from your report):** the `--no-map` runner error matches two Ollama
+  installs of different versions. `--doctor` now detects this and prints the removal steps.
+- **Fixed:**
+  - Layered config: `--model` > `JARVIS_*` environment > `jarvis/.env` > memory-based auto.
+  - The banner names the model's source.
+  - Model warm-up at startup.
+  - Plain-English model errors with no cloud fallback.
+  - Mic muted while Jarvis speaks.
+  - Room calibration.
+  - Whisper VAD (speech filter).
+  - Resilient conversation loop.
+  - `--doctor`, `--voice-check`, and `--pair` (the pairing link is no longer in the startup log).
+- **Tested:**
+  - `tests/test_local_first.py`, 26 cases, including the qwen3:4b-vs-8b regression.
+  - Full suite: 143 tests pass.
+- **Verified:**
+  - The real `jarvis-owner` against a stand-in Ollama server: model from `.env`, the banner
+    matches the request, `think:false` was sent, and a clear exit when Ollama is down.
+  - `--doctor` output.
+- **BLOCKED here:**
+  - Real Ollama/Qwen inference: the model download is blocked in the build container.
+  - Microphone and speaker: there is no audio hardware here.
+- **USER INPUT REQUIRED:** run `jarvis-owner --doctor`, then `jarvis-owner --voice-check`, on
+  the Mac.
