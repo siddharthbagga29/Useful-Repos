@@ -59,7 +59,7 @@ Each one is spoken (voice mode), shown as a macOS banner, and queued for the web
 ## Observability
 
 ```bash
-tail -f ~/.jarvis/audit.jsonl                          # every action, live
+tail -f ~/.jarvis/audit.jsonl
 sqlite3 ~/.jarvis/tasks.sqlite3 "select id,status,title from tasks order by created_at desc limit 10"
 sqlite3 ~/.jarvis/tasks.sqlite3 "select at,summary from actions where task_id='<id>'"
 ```
@@ -93,7 +93,7 @@ Replace `YOU` with your Mac username (`whoami`). Logs stay in your own Library, 
 ## Checks before changing code
 
 ```bash
-cd jarvis && make check                      # ruff, format, mypy strict, pytest
+cd jarvis && make check
 cd portfolio && npm test && npm run -s jarvis:loop && npm run build
 npx vite preview --port 4173 & python3 e2e/e2e.py
 ```

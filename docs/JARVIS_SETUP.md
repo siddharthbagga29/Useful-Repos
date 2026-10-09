@@ -12,8 +12,9 @@ Keychain or a password manager.
 
 ## 1. The tools Jarvis needs (once)
 
+Homebrew is the Mac package manager. Skip this first command if `brew --version` already works.
+
 ```bash
-# Homebrew, the Mac package manager (skip if `brew --version` already works)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 brew install git python@3.12 portaudio
@@ -93,9 +94,16 @@ The startup line always shows the model in use and where it came from, for examp
 
 ## 4. First run (keyboard)
 
+A safe rehearsal first, where every action is shown and declined:
+
 ```bash
-jarvis-owner --dry-run      # safe rehearsal: every action is shown and declined
-jarvis-owner                # the real thing
+jarvis-owner --dry-run
+```
+
+Then the real thing:
+
+```bash
+jarvis-owner
 ```
 
 It prints `Model ready in N s` (the model is loaded before you speak), opens with where things

@@ -55,7 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", help="local Ollama model for this run, e.g. qwen3:4b")
     parser.add_argument("--voice-check", action="store_true", help="test mic, speech, wake word")
     parser.add_argument("--pair", action="store_true", help="print the browser pairing link")
-    args = parser.parse_args(argv)
+    args = parser.parse_args(strip_comment(sys.argv[1:] if argv is None else argv))
 
     if args.doctor:
         from jarvis.owner.doctor import run_doctor
@@ -244,6 +244,15 @@ def main(argv: list[str] | None = None) -> int:
             server.shutdown()
         browser.close()
     return 0
+
+
+def strip_comment(argv: list[str]) -> list[str]:
+    """zsh doesn't treat a pasted `# note` as a comment unless `setopt interactivecomments` is on,
+    so `jarvis-owner --doctor   # check things` arrives as extra arguments. Drop them."""
+    for i, arg in enumerate(argv):
+        if arg.startswith("#"):
+            return argv[:i]
+    return argv
 
 
 def converse(

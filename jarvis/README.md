@@ -106,14 +106,19 @@ using its built-in assistant.
 
 The full walk-through is in [`docs/JARVIS_SETUP.md`](../docs/JARVIS_SETUP.md). Short version:
 
+Install Ollama once, as the app from https://ollama.com/download (not also with Homebrew).
+Then run these one at a time: `--doctor` checks every stage and prints fixes; pull the model it
+names; `--voice-check` tests speaker, microphone, transcription and wake word; the last line
+starts Jarvis ("Hey Jarvis", then keep talking). The command blocks for the Mac carry no `#`
+comments, because zsh passes a pasted `# ...` to the command as arguments.
+
 ```bash
-# Ollama: install the app from https://ollama.com/download (one install only, not also Homebrew)
 brew install portaudio
 pip install -e '.[voice]'
-jarvis-owner --doctor          # checks every stage, picks the model for this Mac, prints fixes
-ollama pull qwen3:4b           # or whatever --doctor names
-jarvis-owner --voice-check     # speaker, microphone, transcription, wake word
-jarvis-owner --voice --serve   # "Hey Jarvis", then just keep talking; website link on 127.0.0.1
+jarvis-owner --doctor
+ollama pull qwen3:4b
+jarvis-owner --voice-check
+jarvis-owner --voice --serve
 ```
 
 Settings, highest priority first: `--model` flag, `JARVIS_*` shell variables, `jarvis/.env` (the

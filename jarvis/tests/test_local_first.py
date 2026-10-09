@@ -334,3 +334,12 @@ def test_doctor_flags_unprefixed_shell_variable(tmp_path: Path) -> None:
     r = Report()
     check_config(r, {"OLLAMA_MODEL": "qwen3:4b", "JARVIS_ENV_FILE": str(tmp_path / "none")})
     assert "Jarvis reads JARVIS_OLLAMA_MODEL" in r.text()
+
+
+def test_pasted_shell_comment_is_ignored() -> None:
+    from jarvis.owner.cli import strip_comment
+
+    pasted = ["--doctor", "#", "fix", "any", "✗", "it", "prints"]
+    assert strip_comment(pasted) == ["--doctor"]
+    assert strip_comment(["--voice", "--serve", "#start", "talking"]) == ["--voice", "--serve"]
+    assert strip_comment(["--model", "qwen3:4b"]) == ["--model", "qwen3:4b"]
