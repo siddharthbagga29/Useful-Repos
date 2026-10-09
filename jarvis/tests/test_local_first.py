@@ -332,8 +332,17 @@ def test_doctor_flags_unprefixed_shell_variable(tmp_path: Path) -> None:
     from jarvis.owner.doctor import Report, check_config
 
     r = Report()
-    check_config(r, {"OLLAMA_MODEL": "qwen3:4b", "JARVIS_ENV_FILE": str(tmp_path / "none")})
-    assert "Jarvis reads JARVIS_OLLAMA_MODEL" in r.text()
+    check_config(
+        r, {"OLLAMA_MODEL": "qwen3:14b", "JARVIS_ENV_FILE": str(tmp_path / "none")}, ram_gb=8
+    )
+    assert "OLLAMA_MODEL=qwen3:14b in your shell is ignored" in r.text()
+    assert "using qwen3:4b" in r.text()
+
+    env_file = tmp_path / ".env"
+    env_file.write_text("OLLAMA_MODEL=qwen3:4b\n")
+    quiet = Report()  # shell and .env agree (Siddharth's Mac): nothing to warn about
+    check_config(quiet, {"OLLAMA_MODEL": "qwen3:4b", "JARVIS_ENV_FILE": str(env_file)}, ram_gb=8)
+    assert "!" not in quiet.text()
 
 
 def test_pasted_shell_comment_is_ignored() -> None:

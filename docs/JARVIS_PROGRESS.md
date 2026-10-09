@@ -215,3 +215,12 @@ Jarvis loop approved at 10.0/10, build passes, browser e2e all passing.
   - Microphone and speaker: there is no audio hardware here.
 - **USER INPUT REQUIRED:** run `jarvis-owner --doctor`, then `jarvis-owner --voice-check`, on
   the Mac.
+- **VERIFIED on the Mac (2026-10-09, `jarvis-owner --doctor`):**
+  - arm64, macOS (Darwin 25.5), 8 GB.
+  - Model `qwen3:4b`, read from `jarvis/.env`.
+  - One Ollama install (Homebrew, 0.40.1); the client and server match.
+  - Real inference through Jarvis's backend: 6.5 s on first load, 0.2 s warm.
+  - Voice packages and macOS speech are present.
+  - Port 8765 is free.
+- **Next:** `jarvis-owner --voice-check` (microphone, transcription, wake word), then a live
+  `--voice --serve` session.

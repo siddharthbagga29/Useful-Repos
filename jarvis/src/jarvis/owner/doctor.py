@@ -122,16 +122,20 @@ def check_config(r: Report, environ: dict[str, str], ram_gb: float = 0) -> Owner
         r.ok(f"read settings file {layered.file}")
     else:
         r.ok("no jarvis/.env file (defaults and environment only)")
-    if environ.get("OLLAMA_MODEL") and not environ.get("JARVIS_OLLAMA_MODEL"):
-        r.warn(
-            "OLLAMA_MODEL is set in your shell, but Jarvis reads JARVIS_OLLAMA_MODEL there",
-            "Use:  jarvis-owner --model qwen3:4b   or put OLLAMA_MODEL=qwen3:4b in jarvis/.env",
-        )
     try:
         s = load_owner(layered.values, origin=layered.origin, ram_gb=ram_gb)
     except ConfigError as exc:
         r.fail(f"invalid setting: {exc}", "Fix that line in jarvis/.env and run --doctor again.")
         return None
+    shell_model = environ.get("OLLAMA_MODEL", "")
+    if shell_model and not environ.get("JARVIS_OLLAMA_MODEL") and shell_model != s.llm.ollama_model:
+        # Only worth a word when it disagrees with what Jarvis will actually use.
+        r.warn(
+            f"OLLAMA_MODEL={shell_model} in your shell is ignored (Jarvis reads "
+            f"JARVIS_OLLAMA_MODEL there); using {s.llm.ollama_model}",
+            f"To use {shell_model}:  jarvis-owner --model {shell_model}   or put "
+            f"OLLAMA_MODEL={shell_model} in jarvis/.env",
+        )
     if s.llm.backend != "ollama":
         r.warn(
             "JARVIS_LLM_BACKEND=anthropic: answers use Claude, a paid API",
