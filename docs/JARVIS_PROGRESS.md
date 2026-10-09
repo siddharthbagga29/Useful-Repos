@@ -262,3 +262,24 @@ Jarvis loop approved at 10.0/10, build passes, browser e2e all passing.
   created, second run idempotent.
 - **USER INPUT REQUIRED:** one paste on the Mac (Ctrl-C the running Jarvis first):
   `cd ~/Useful-Repos/jarvis && git pull && bash scripts/start.sh`
+
+### Repair: false LinkedIn success, wake word per turn, model consistency (2026-10-09)
+
+The full investigation, with evidence for each claim, is in
+[JARVIS_INVESTIGATION.md](JARVIS_INVESTIGATION.md).
+
+- **IMPLEMENTED:**
+  - Truthful action reporting: an action ledger, a false-claim guard and self-verifying tools.
+  - The LinkedIn workflow: assisted by default, with verified automation as an opt-in.
+  - A conversation session state machine: one wake word for many turns, exit phrases, an idle
+    timeout, barge-in, microphone recovery, and no acting on unclear speech.
+  - Model capability checks.
+  - `--actions`.
+  - The event log.
+- **TESTED:** 207 Python tests, including LinkedIn failure injection in real Chromium.
+- **VERIFIED:** Bug A reproduced and corrected through the real CLI with a stand-in Ollama.
+- **BLOCKED here:** live Ollama, microphone and speaker, and linkedin.com.
+- **USER INPUT REQUIRED:**
+  - Run the start script on the Mac.
+  - Do one live voice session.
+  - Decide on LinkedIn automation.

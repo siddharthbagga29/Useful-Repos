@@ -21,6 +21,7 @@
 | Health check | `jarvis-owner --doctor` |
 | Voice test | `jarvis-owner --voice-check` |
 | Pair a browser | `jarvis-owner --pair` |
+| What did he actually do? | `jarvis-owner --actions` (each action and how it really ended) |
 
 If the model fails at startup he exits with `Model problem (<cause>)` instead of waiting for the
 wake word, so you find out immediately. A model error mid-conversation is spoken ("I couldn't get
@@ -33,7 +34,9 @@ an answer from my model. Ollama isn't running...") and he goes back to listening
 | `~/.jarvis/tasks.sqlite3` | Every task and every step it took |
 | `~/.jarvis/journal.sqlite3` | Episodes, project states, decisions, preferences |
 | `~/.jarvis/memory.sqlite3` | Notes he was asked to remember |
-| `~/.jarvis/audit.jsonl` | One line per tool call: tool, level, arguments, outcome |
+| `~/.jarvis/audit.jsonl` | One line per tool call, with turn ID, level, outcome and status; corrected false claims |
+| `~/.jarvis/events.jsonl` | Voice states and turn timings, with no transcripts |
+| `~/.jarvis/browser/` | Jarvis's own browser profile (LinkedIn automation only). Delete it to sign him out |
 | `~/.jarvis/bridge_token` | Website pairing token (mode 0600). Delete it to revoke every paired browser |
 | `~/Jarvis/research/<date>-<topic>/` | Research reports and PDFs |
 | `~/Downloads/Jarvis/` | Single papers he downloaded |

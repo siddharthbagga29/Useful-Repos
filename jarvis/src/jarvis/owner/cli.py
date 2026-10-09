@@ -7,6 +7,7 @@
   jarvis-owner --doctor             check every stage on this Mac and print exact fixes
   jarvis-owner --voice-check        test speaker, microphone, transcription and wake word
   jarvis-owner --pair               print the one-time link that pairs your browser
+  jarvis-owner --actions            what Jarvis actually did recently, and how each ended
   jarvis-owner --model qwen3:4b     use this local model for this run
   jarvis-owner --dry-run            every action is shown and declined
 
@@ -18,14 +19,11 @@ He opens every session with where things stand (tasks, projects) and offers the 
 from __future__ import annotations
 
 import argparse
-import re
 import subprocess
 import sys
 import time
-from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from jarvis.config import ConfigError, load_owner, owner_env
 from jarvis.core.activity import feed
@@ -37,6 +35,7 @@ from jarvis.llm.factory import agent_session
 from jarvis.owner.agent import OwnerAgent, build_owner_prompt
 from jarvis.owner.browser import Browser
 from jarvis.owner.confirm import Confirmer, DenyAll, DialogConfirmer, TerminalConfirmer
+from jarvis.owner.linkedin import LinkedIn
 from jarvis.owner.mac import MacActions
 from jarvis.owner.memory import AuditLog, Memory
 from jarvis.owner.research import Research, UrlLedger, _public_https
@@ -57,6 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", help="local Ollama model for this run, e.g. qwen3:4b")
     parser.add_argument("--voice-check", action="store_true", help="test mic, speech, wake word")
     parser.add_argument("--pair", action="store_true", help="print the browser pairing link")
+    parser.add_argument("--actions", action="store_true", help="what Jarvis actually did, recently")
     args = parser.parse_args(strip_comment(sys.argv[1:] if argv is None else argv))
 
     if args.doctor:
@@ -72,6 +72,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Configuration problem: {exc}", file=sys.stderr)
         return 2
     settings.state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if args.actions:
+        from jarvis.owner.memory import recent_actions_report
+
+        print(recent_actions_report(settings.state_dir / "audit.jsonl"))
+        return 0
     if args.pair:
         from jarvis.owner.bridge import load_token
 
@@ -103,9 +108,9 @@ def main(argv: list[str] | None = None) -> int:
         ambient = voice.calibrate()
         print(f"Microphone ready (room level {ambient:.0f}, speech above {voice.SILENCE_RMS}).")
 
-    def ack() -> None:
-        if sys.platform == "darwin":  # non-blocking; the mic isn't recording while he works
-            subprocess.Popen(["afplay", "/System/Library/Sounds/Tink.aiff"])
+    def chime(name: str) -> None:
+        if sys.platform == "darwin":  # non-blocking system sound (Tink: listening, Pop: got it)
+            subprocess.Popen(["afplay", f"/System/Library/Sounds/{name}.aiff"])
 
     def say(text: str) -> None:
         if voice is not None:
@@ -124,6 +129,16 @@ def main(argv: list[str] | None = None) -> int:
     workflow = ResearchWorkflow(tasks, research, journal, notifier)
     # The window only opens on first use; without Playwright the tools report a CAPABILITY GAP.
     browser = Browser(_public_https, ledger.trusted, ledger.add)
+    mac = MacActions()
+    linkedin = LinkedIn(
+        settings.linkedin_profile,
+        settings.portfolio_url,
+        automated=settings.linkedin_automation,
+        profile_dir=settings.state_dir / "browser",  # its own profile; you sign in yourself
+        open_url=mac.open_url,
+        copy=mac.copy_to_clipboard,
+        executable_path=settings.chromium_path or None,
+    )
     resumed = tasks.recover()
     for t in resumed:
         if t.kind == "research":  # research is safe to resume where it left off
@@ -131,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
 
     tools = build_registry(
         brief,
-        MacActions(),
+        mac,
         memory,
         settings.default_calendar,
         research=research,
@@ -143,6 +158,8 @@ def main(argv: list[str] | None = None) -> int:
         journal=journal,
         workflow=workflow,
         browser=browser,
+        linkedin=linkedin,
+        recent_actions=lambda: agent.recent_actions(),
     )
     prefs = journal.preferences()
     notes = memory.notes() + [f"Preference: {k} = {v}" for k, v in prefs.items()]
@@ -178,11 +195,12 @@ def main(argv: list[str] | None = None) -> int:
     if settings.llm.backend == "ollama":
         # Load the model now, so the first "Hey Jarvis" isn't a 30-second wait, and so a broken
         # Ollama is reported at startup in plain words rather than after the wake word.
-        from jarvis.llm.ollama_backend import LocalModelError, warm_up
+        from jarvis.llm.ollama_backend import LocalModelError, check_model, warm_up
 
         print(f"Loading {settings.llm.ollama_model}...", flush=True)
         try:
-            print(f"Model ready in {warm_up(settings.llm):.1f}s.")
+            note = check_model(settings.llm)
+            print(f"Model ready in {warm_up(settings.llm):.1f}s ({note}).")
         except LocalModelError as exc:
             print(f"Model problem ({exc.kind}): {exc}", file=sys.stderr)
             print("Run  jarvis-owner --doctor  for the exact fix.", file=sys.stderr)
@@ -221,6 +239,7 @@ def main(argv: list[str] | None = None) -> int:
     agent.said(opening)
     if web_agent is not None:  # so a YES typed on the website knows what it approves
         web_agent.said(opening)
+    code = 0
     try:
         if args.headless:
             while True:
@@ -232,15 +251,23 @@ def main(argv: list[str] | None = None) -> int:
                 if text:
                     print(f"jarvis> {agent.handle(text)}")
         else:
-            print(f"jarvis> {opening}")
-            say(opening)
-            converse(agent, voice, say, settings.follow_up_seconds, first_wait=6.0, ack=ack)
-            print("(listening for 'Hey Jarvis')")
-            while True:
-                voice.wait_for_wake_word()
-                say("Yes?")
-                converse(agent, voice, say, settings.follow_up_seconds, first_wait=6.0, ack=ack)
-                print("(listening for 'Hey Jarvis')")
+            from jarvis.owner.session import VoiceSession
+
+            print(
+                f"Conversation mode: one 'Hey Jarvis' starts a conversation; it stays open until "
+                f"{settings.session_idle_seconds:.0f}s of silence or 'go to sleep'."
+            )
+            conversation = VoiceSession(
+                agent,
+                voice,
+                voice_name,
+                AuditLog(settings.state_dir / "events.jsonl"),
+                idle_seconds=settings.session_idle_seconds,
+                barge_in=settings.barge_in,
+                chime=chime,
+                show=lambda line: print(line, flush=True),
+            )
+            code = conversation.run(opening)
     except (KeyboardInterrupt, EOFError):
         print()
     finally:
@@ -249,7 +276,8 @@ def main(argv: list[str] | None = None) -> int:
         if server is not None:
             server.shutdown()
         browser.close()
-    return 0
+        linkedin.close()
+    return code
 
 
 def strip_comment(argv: list[str]) -> list[str]:
@@ -259,56 +287,6 @@ def strip_comment(argv: list[str]) -> list[str]:
         if arg.startswith("#"):
             return argv[:i]
     return argv
-
-
-WAKE_PREFIX = re.compile(r"^\W*(?:(?:hey|hi|hello|okay|ok)\W+)?jarvis\b\W*", re.IGNORECASE)
-
-
-def without_wake_word(heard: str) -> str:
-    """'Hey Jarvis, what's next?' -> "what's next?"; a bare 'Hey Jarvis.' -> ''."""
-    return WAKE_PREFIX.sub("", heard, count=1).strip()
-
-
-def converse(
-    agent: OwnerAgent,
-    voice: Any,
-    say: Callable[[str], None],
-    follow_up_seconds: float,
-    first_wait: float = 6.0,
-    ack: Callable[[], None] = lambda: None,
-) -> None:
-    """One exchange: listen, answer, then keep listening for a reply without the wake word.
-    Never raises for a bad transcription or model error, so the wake-word loop always resumes."""
-
-    def listen(wait: float) -> str | None:
-        try:
-            return str(voice.listen(start_timeout=wait))
-        except Exception as exc:  # audio device hiccup: report it and go back to the wake word
-            print(f"(microphone error: {exc})", file=sys.stderr)
-            return None
-
-    heard = listen(first_wait)
-    if heard is None:
-        return
-    if heard and not without_wake_word(heard):  # he said only "Hey Jarvis": answer the call
-        say("Yes?")
-        heard = listen(first_wait)
-        if heard is None:
-            return
-    if not heard:
-        say("Sorry, I didn't catch that.")
-        return
-    while heard:
-        request = without_wake_word(heard) or heard
-        print(f"you> {request}")
-        ack()  # a soft tone: heard you, working on it
-        print("(thinking...)", flush=True)
-        reply = agent.handle(request)  # never raises; failures come back as a sentence
-        print(f"jarvis> {reply}")
-        say(reply)
-        if follow_up_seconds <= 0:
-            return
-        heard = listen(follow_up_seconds) or ""
 
 
 def workflow_thread_resume(workflow: ResearchWorkflow, task_id: str) -> None:

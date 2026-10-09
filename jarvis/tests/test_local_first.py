@@ -88,11 +88,16 @@ def test_banner_shows_the_model_actually_loaded(
         seen.append(settings.ollama_model)
         raise LocalModelError("not_running", "Ollama isn't running.")
 
+    def fake_check(settings: LLMSettings) -> str:
+        seen.append(settings.ollama_model)
+        return "tools"
+
+    monkeypatch.setattr(ollama_backend, "check_model", fake_check)
     monkeypatch.setattr(ollama_backend, "warm_up", fake_warm_up)
     assert cli.main([]) == 3  # a broken model is reported at startup, not after the wake word
     out = capsys.readouterr()
     assert f"ollama:qwen3:4b (from {env_file})" in out.out
-    assert seen == ["qwen3:4b"]  # the banner and the request use the same model
+    assert seen == ["qwen3:4b", "qwen3:4b"]  # banner, capability check and request agree
     assert "not_running" in out.err and "--doctor" in out.err
     assert "#pair-" not in out.out  # the pairing link is never in the startup log
 
@@ -212,31 +217,6 @@ def test_model_failure_is_spoken_and_the_next_turn_recovers(tmp_path: Path) -> N
     assert agent.handle("hello again") == "Here you are."
     assert factory.sessions == 2  # fresh local session; no other provider is tried
     assert "model" in (tmp_path / "a.jsonl").read_text()
-
-
-class FakeVoice:
-    def __init__(self, heard: list[Any]) -> None:
-        self.heard = heard
-
-    def listen(self, start_timeout: float = 4.0) -> str:
-        item = self.heard.pop(0) if self.heard else ""
-        if isinstance(item, Exception):
-            raise item
-        return str(item)
-
-
-def test_converse_recovers_from_silence_device_errors_and_model_errors(tmp_path: Path) -> None:
-    from jarvis.owner.cli import converse
-
-    said: list[str] = []
-    agent = make_agent(tmp_path, BrokenThenFine())
-    converse(agent, FakeVoice([""]), said.append, 6.0)
-    assert said == ["Sorry, I didn't catch that."]
-    said.clear()
-    converse(agent, FakeVoice([OSError("Input overflowed")]), said.append, 6.0)
-    assert said == []  # reported on stderr, back to the wake word
-    converse(agent, FakeVoice(["what's next?", "and then?", ""]), said.append, 6.0)
-    assert "Ollama isn't running" in said[0] and said[1] == "Here you are."
 
 
 def test_mic_is_paused_while_jarvis_speaks() -> None:
@@ -458,31 +438,9 @@ def test_context_note_is_not_a_bracketed_transcript(tmp_path: Path) -> None:
     ],
 )
 def test_without_wake_word(heard: str, expected: str) -> None:
-    from jarvis.owner.cli import without_wake_word
+    from jarvis.owner.session import without_wake_word
 
     assert without_wake_word(heard) == expected
-
-
-def test_bare_wake_word_gets_yes_then_the_real_question_is_answered(tmp_path: Path) -> None:
-    from jarvis.owner.cli import converse
-
-    asked: list[str] = []
-
-    class Session:
-        def send_user(self, text: str) -> AgentStep:
-            asked.append(text)
-            return AgentStep(text="Your next step is LinkedIn.", tool_calls=[])
-
-        def send_tool_results(self, results: Any) -> AgentStep:
-            raise AssertionError
-
-    said: list[str] = []
-    acks: list[int] = []
-    agent = make_agent(tmp_path, lambda: Session())
-    voice = FakeVoice(["Hey Jarvis.", "What's next?", ""])
-    converse(agent, voice, said.append, 6.0, ack=lambda: acks.append(1))
-    assert said == ["Yes?", "Your next step is LinkedIn."]
-    assert asked == ["What's next?"] and acks == [1]  # the wake word never reached the model
 
 
 def test_empty_model_reply_is_not_reported_as_done(tmp_path: Path) -> None:
@@ -495,3 +453,83 @@ def test_empty_model_reply_is_not_reported_as_done(tmp_path: Path) -> None:
 
     agent = make_agent(tmp_path, lambda: Session())
     assert agent.handle("hello") == "Sorry, I lost my thread. Say that again?"
+
+
+# --- model capabilities --------------------------------------------------------------------
+
+
+def show(caps: Any) -> httpx.Client:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/show"
+        body = {"capabilities": caps} if caps is not None else {"details": {}}
+        return httpx.Response(200, json=body)
+
+    return httpx.Client(base_url="http://127.0.0.1:11434", transport=httpx.MockTransport(handler))
+
+
+def test_model_without_tools_is_refused() -> None:
+    from jarvis.llm.ollama_backend import check_model
+
+    with pytest.raises(LocalModelError) as info:
+        check_model(llm(), http=show(["completion"]))
+    assert info.value.kind == "no_tools" and "qwen3:4b-instruct" in str(info.value)
+
+
+def test_capability_notes() -> None:
+    from jarvis.llm.ollama_backend import check_model
+
+    assert check_model(llm(), http=show(["completion", "tools"])) == "tools"
+    assert "reasons before answering" in check_model(
+        llm(), http=show(["completion", "tools", "thinking"])
+    )
+    assert "not reported" in check_model(llm(), http=show(None))
+
+
+def test_missing_model_reported_by_show() -> None:
+    from jarvis.llm.ollama_backend import check_model
+
+    with pytest.raises(LocalModelError) as info:
+        check_model(llm(), http=status(404, "model 'qwen3:4b' not found"))
+    assert info.value.kind == "model_missing"
+
+
+def test_malformed_tool_call_is_rejected_not_executed(tmp_path: Path) -> None:
+    """A model emitting unparseable arguments gets an error back; nothing runs."""
+    from jarvis.owner.agent import OwnerAgent
+    from jarvis.owner.confirm import DenyAll
+    from jarvis.owner.memory import AuditLog
+
+    replies = iter(
+        [
+            {"role": "assistant", "content": "", "tool_calls": [
+                {"function": {"name": "open_url", "arguments": "{not json"}}]},
+            {"role": "assistant", "content": "Sorry, I couldn't do that."},
+        ]
+    )  # fmt: skip
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"message": next(replies)})
+
+    from jarvis.config import DEFAULT_BRIEF
+    from jarvis.knowledge import Brief
+    from jarvis.owner.mac import MacActions
+    from jarvis.owner.memory import Memory
+    from jarvis.owner.tools import build_registry
+
+    ran: list[list[str]] = []
+    tools = build_registry(
+        Brief.load(DEFAULT_BRIEF), MacActions(runner=lambda a: ran.append(a) or ""),  # type: ignore[func-returns-value]
+        Memory(tmp_path / "m.sqlite3"), "Work",
+    )  # fmt: skip
+    s = llm()
+    http = httpx.Client(base_url=s.ollama_url, transport=httpx.MockTransport(handler))
+    agent = OwnerAgent(
+        lambda: OllamaAgentSession(s, "sys", [t.spec for t in tools.values()], http=http),
+        tools,
+        DenyAll(),
+        AuditLog(tmp_path / "a.jsonl"),
+    )
+    assert agent.handle("open something") == "Sorry, I couldn't do that."
+    assert ran == []
+    audit = (tmp_path / "a.jsonl").read_text()
+    assert '"decision": "invalid"' in audit

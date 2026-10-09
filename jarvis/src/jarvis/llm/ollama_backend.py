@@ -233,6 +233,35 @@ def probe(settings: LLMSettings, http: httpx.Client | None = None) -> tuple[floa
     return time.monotonic() - start, visible_reply(raw), thought
 
 
+def capabilities(settings: LLMSettings, http: httpx.Client | None = None) -> set[str] | None:
+    """What Ollama says the model can do ("completion", "tools", "thinking", ...), or None if
+    this Ollama doesn't report capabilities. Raises LocalModelError if the model isn't there."""
+    client = http or _http(settings)
+    try:
+        r = client.post("/api/show", json={"model": settings.ollama_model})
+        r.raise_for_status()
+        caps = r.json().get("capabilities")
+    except Exception as exc:
+        raise explain(exc, settings) from exc
+    return {str(c) for c in caps} if isinstance(caps, list) else None
+
+
+def check_model(settings: LLMSettings, http: httpx.Client | None = None) -> str:
+    """Refuse a model Jarvis can't work with; describe one he can. Returns a short note."""
+    caps = capabilities(settings, http)
+    if caps is None:
+        return "capabilities not reported by this Ollama"
+    if "tools" not in caps:
+        raise LocalModelError(
+            "no_tools",
+            f"{settings.ollama_model} can't call tools, so Jarvis couldn't act on anything. "
+            "Use qwen3:4b-instruct: OLLAMA_MODEL=qwen3:4b-instruct in jarvis/.env",
+        )
+    if "thinking" in caps and not never_thinks(settings.ollama_model):
+        return "tools; reasons before answering (slower for conversation)"
+    return "tools"
+
+
 def warm_up(settings: LLMSettings, http: httpx.Client | None = None) -> float:
     """Load the model into memory with a one-token request; returns seconds taken.
     Raises LocalModelError with the cause if it can't."""

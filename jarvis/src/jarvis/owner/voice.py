@@ -5,10 +5,15 @@ Optional: install with ``pip install -e '.[voice]'``. Without the extras, text m
 
 from __future__ import annotations
 
+import contextlib
+import math
 import re
 import subprocess
 import sys
+from collections import deque
 from typing import Any
+
+from jarvis.owner.session import Utterance
 
 
 class VoiceUnavailable(RuntimeError):
@@ -153,15 +158,29 @@ class VoiceIO:
         )
         self.SAMPLE_RATE = self._wake.sample_rate
         self.FRAME = self._wake.frame_length
-        self._audio: Any = pyaudio.PyAudio()
+        self._pyaudio: Any = pyaudio
+        self._open_stream()
+        self._model: Any = WhisperModel(whisper_model, device="cpu", compute_type="int8")
+
+    def _open_stream(self) -> None:
+        self._audio: Any = self._pyaudio.PyAudio()
         self._stream: Any = self._audio.open(
             rate=self.SAMPLE_RATE,
             channels=1,
-            format=pyaudio.paInt16,
+            format=self._pyaudio.paInt16,
             input=True,
             frames_per_buffer=self.FRAME,
         )
-        self._model: Any = WhisperModel(whisper_model, device="cpu", compute_type="int8")
+
+    def reopen(self) -> None:
+        """Recover from a microphone error (device unplugged, input overflow): new stream, same
+        models. The speech threshold is kept."""
+        with contextlib.suppress(Exception):
+            self._stream.close()
+        with contextlib.suppress(Exception):
+            self._audio.terminate()
+        self._open_stream()
+        self._wake.reset()
 
     def calibrate(self, seconds: float = 1.0) -> float:
         """Measure the room's background level and set the speech threshold just above it, so a
@@ -185,13 +204,38 @@ class VoiceIO:
             self._stream.start_stream()
         self._wake.reset()
 
-    def say(self, text: str, voice_name: str) -> None:
-        """Speak with the microphone paused, then listen again from a clean buffer."""
-        self.pause()
+    def say(self, text: str, voice_name: str, interruptible: bool = False) -> bool:
+        """Speak, then listen again from a clean buffer. Returns True if he was interrupted.
+
+        Not interruptible: the microphone is paused while he talks. Interruptible: it keeps
+        listening for the wake word only, and "Hey Jarvis" stops him mid-sentence. Speech isn't
+        transcribed while he talks (no echo cancellation), so only the wake word can cut in."""
+        if not interruptible or sys.platform != "darwin":
+            self.pause()
+            try:
+                speak(text, voice_name)
+            finally:
+                self.resume()
+            return False
+        line = for_speech(text)
+        if not line:
+            return False
+        self.resume()
+        proc = subprocess.Popen(["say", "-v", voice_name, line])
+        interrupted = False
         try:
-            speak(text, voice_name)
+            while proc.poll() is None:
+                if self._wake.heard(self._frame()):
+                    proc.terminate()
+                    interrupted = True
+                    break
         finally:
+            if proc.poll() is None:
+                proc.terminate()
+            proc.wait(timeout=5)
+            self.pause()  # drop everything recorded while he spoke
             self.resume()
+        return interrupted
 
     def _frame(self) -> Any:
         data = self._stream.read(self.FRAME, exception_on_overflow=False)
@@ -208,35 +252,67 @@ class VoiceIO:
         return True
 
     def record_utterance(
-        self, max_seconds: float = 15.0, trailing_silence: float = 1.2, start_timeout: float = 4.0
+        self,
+        max_seconds: float = 15.0,
+        trailing_silence: float = 1.2,
+        start_timeout: float = 4.0,
+        ignore_seconds: float = 0.0,
     ) -> Any:
+        """Audio from just before speech starts until a pause; None if nobody spoke within
+        `start_timeout`. Only 0.3 s of lead-in is kept, so a long wait doesn't mean a long
+        transcription. `ignore_seconds` skips a chime played as recording starts."""
         frame_seconds = self.FRAME / self.SAMPLE_RATE
+        preroll: deque[Any] = deque(maxlen=max(1, int(0.3 / frame_seconds)))
         frames: list[Any] = []
         heard_speech = False
         quiet = 0.0
-        elapsed = 0.0
-        while elapsed < max_seconds:
+        waited = 0.0
+        while True:
             frame = self._frame()
-            frames.append(frame)
-            elapsed += frame_seconds
+            waited += frame_seconds
+            if waited <= ignore_seconds:
+                continue
             rms = float(self._np.sqrt(self._np.mean(frame.astype(self._np.float32) ** 2)))
+            if not heard_speech:
+                preroll.append(frame)
+                if rms >= self.SILENCE_RMS:
+                    heard_speech, frames = True, list(preroll)
+                elif waited > start_timeout:
+                    return None  # nothing said
+                continue
+            frames.append(frame)
             if rms >= self.SILENCE_RMS:
-                heard_speech, quiet = True, 0.0
-            elif heard_speech:
+                quiet = 0.0
+            else:
                 quiet += frame_seconds
                 if quiet >= trailing_silence:
                     break
-            elif elapsed > start_timeout:
-                break  # nothing said
-        audio = self._np.concatenate(frames).astype(self._np.float32) / 32768.0
-        return audio if heard_speech else None
+            if len(frames) * frame_seconds >= max_seconds:
+                break
+        return self._np.concatenate(frames).astype(self._np.float32) / 32768.0
 
     def transcribe(self, audio: Any) -> str:
+        return self.transcribe_detailed(audio)[0]
+
+    def transcribe_detailed(self, audio: Any) -> tuple[str, float]:
+        """(text, confidence 0..1). Confidence is exp(mean log-probability) over segments."""
         if audio is None:
-            return ""
+            return "", 0.0
         # The VAD filter drops non-speech, which stops Whisper "hearing" words in silence.
         segments, _info = self._model.transcribe(audio, language="en", beam_size=1, vad_filter=True)
-        return " ".join(segment.text.strip() for segment in segments).strip()
+        parts = list(segments)
+        text = " ".join(seg.text.strip() for seg in parts).strip()
+        if not parts:
+            return "", 0.0
+        mean_logprob = sum(seg.avg_logprob for seg in parts) / len(parts)
+        return text, float(math.exp(mean_logprob))
+
+    def listen_detailed(self, start_timeout: float, ignore_seconds: float = 0.0) -> Utterance:
+        audio = self.record_utterance(start_timeout=start_timeout, ignore_seconds=ignore_seconds)
+        if audio is None:
+            return Utterance("", 0.0, heard_speech=False)
+        text, confidence = self.transcribe_detailed(audio)
+        return Utterance(text, confidence, heard_speech=True)
 
     def listen(self, start_timeout: float = 4.0) -> str:
         return self.transcribe(self.record_utterance(start_timeout=start_timeout))

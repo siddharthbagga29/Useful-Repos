@@ -130,6 +130,11 @@ class MacActions:
         self._run(["open", str(path)])
         return f"saved and opened {path.name}"
 
+    def copy_to_clipboard(self, text: str) -> str:
+        """Put text on the clipboard (pbcopy reads stdin, so the text is never a command)."""
+        subprocess.run(["pbcopy"], input=text, text=True, check=True, timeout=5)
+        return "copied"
+
     def open_url(self, url: str) -> str:
         if not re.fullmatch(r"https://[^\s]+", url):
             raise ValueError("Only https:// URLs can be opened.")

@@ -162,7 +162,10 @@ def test_every_decision_is_audited(parts, brief) -> None:  # type: ignore[no-unt
     )
     agent.handle("x")
     records = [json.loads(line) for line in audit_path.read_text().splitlines()]
-    assert records[0]["tool"] == "draft_email" and records[0]["decision"] == "declined"
+    assert records[0]["event"] == "REQUEST_RECEIVED"  # every turn opens with its turn ID
+    tool_records = [r for r in records if "tool" in r]
+    assert tool_records[0]["tool"] == "draft_email" and tool_records[0]["decision"] == "declined"
+    assert tool_records[0]["turn"] == records[0]["turn"]  # correlated to the request
 
 
 def test_untrusted_text_reaches_applescript_only_as_arguments() -> None:

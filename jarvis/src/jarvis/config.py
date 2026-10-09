@@ -15,6 +15,7 @@ The public service reads only the process environment (Docker's ``--env-file``).
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -24,6 +25,12 @@ DEFAULT_BRIEF = PACKAGE_ROOT / "knowledge" / "brief.md"
 REPO_ROOT = PACKAGE_ROOT.parent
 DEFAULT_SITE_INDEX = REPO_ROOT / "portfolio" / "public" / "jarvis" / "site-index.json"
 DEFAULT_ENV_FILE = PACKAGE_ROOT / ".env"
+# Settings that no longer do anything; --doctor names them so nobody tunes a dead knob.
+RETIRED = {
+    "JARVIS_FOLLOW_UP_SECONDS": "conversations now stay open; see JARVIS_SESSION_IDLE_SECONDS",
+    "JARVIS_FAST_MODEL": "every turn uses JARVIS_OLLAMA_MODEL",
+    "JARVIS_RESEARCH_BACKEND": "research runs locally; there is no cloud research path",
+}
 FALLBACK_OLLAMA_MODEL = "qwen3:8b"  # when the Mac's memory can't be read
 
 EFFORT_LEVELS = ("low", "medium", "high", "xhigh", "max")
@@ -144,16 +151,17 @@ class OwnerSettings:
     autonomy: str = (
         "standard"  # "standard": routine steps run on their own; "strict": everything asks
     )
-    follow_up_seconds: float = (
-        6.0  # after he replies, keep listening this long without the wake word
-    )
+    # A conversation stays open (no wake word needed) until this much silence, or "go to sleep".
+    session_idle_seconds: float = 30.0
+    barge_in: bool = True  # "Hey Jarvis" while he's speaking stops him and listens
     repo_dir: Path = REPO_ROOT
     site_index: Path = DEFAULT_SITE_INDEX
     bridge_port: int = 8765
-    fast_model: str = ""  # optional smaller local model for quick classification
-    research_backend: str = (
-        "ollama"  # "anthropic" sends research summaries to Claude (opt-in, paid)
-    )
+    # LinkedIn: assisted by default (LinkedIn's terms forbid automated tools); "on" is opt-in.
+    linkedin_automation: bool = False
+    linkedin_profile: str = "https://www.linkedin.com/in/siddharth-bagga-sid29/"
+    portfolio_url: str = "https://siddharthbagga29.github.io/"
+    chromium_path: str = ""  # only if Playwright's own Chromium can't be used
     quiet_hours: tuple[int, int] | None = None  # e.g. (22, 7): no speech or banners
     bridge_origins: tuple[str, ...] = ("https://siddharthbagga29.github.io",)
 
@@ -239,6 +247,15 @@ def load_public(env: Mapping[str, str] | None = None) -> PublicSettings:
     )
 
 
+def _linkedin(env: Mapping[str, str]) -> str:
+    value = _get(env, "LINKEDIN_PROFILE", "https://www.linkedin.com/in/siddharth-bagga-sid29/")
+    if not re.fullmatch(r"https://(www\.)?linkedin\.com/in/[A-Za-z0-9_-]+/?", value):
+        raise ConfigError(
+            "JARVIS_LINKEDIN_PROFILE must look like https://www.linkedin.com/in/name/"
+        )
+    return value
+
+
 def _https(env: Mapping[str, str], key: str) -> str:
     value = _get(env, key, "")
     if value and not value.startswith("https://"):
@@ -287,12 +304,15 @@ def load_owner(
         picovoice_access_key=_get(env, "PICOVOICE_ACCESS_KEY", ""),
         brief_path=Path(_get(env, "BRIEF_PATH", str(DEFAULT_BRIEF))),
         autonomy=_choice(env, "AUTONOMY", "standard", ("standard", "strict")),
-        follow_up_seconds=_float(env, "FOLLOW_UP_SECONDS", 6.0, 0.0, 30.0),
+        session_idle_seconds=_float(env, "SESSION_IDLE_SECONDS", 30.0, 5.0, 600.0),
+        barge_in=_bool(env, "BARGE_IN", True),
         repo_dir=Path(_get(env, "REPO_DIR", str(REPO_ROOT))).expanduser(),
         site_index=Path(_get(env, "SITE_INDEX", str(DEFAULT_SITE_INDEX))).expanduser(),
         bridge_port=_int(env, "BRIDGE_PORT", 8765, 1024, 65535),
-        fast_model=_get(env, "FAST_MODEL", ""),
-        research_backend=_choice(env, "RESEARCH_BACKEND", "ollama", ("ollama", "anthropic")),
+        linkedin_automation=_bool(env, "LINKEDIN_AUTOMATION", False),
+        linkedin_profile=_linkedin(env),
+        portfolio_url=_https(env, "PORTFOLIO_URL") or "https://siddharthbagga29.github.io/",
+        chromium_path=_get(env, "CHROMIUM_PATH", ""),
         quiet_hours=_hours(env, "QUIET_HOURS"),
         bridge_origins=_csv(env, "BRIDGE_ORIGINS") or ("https://siddharthbagga29.github.io",),
     )

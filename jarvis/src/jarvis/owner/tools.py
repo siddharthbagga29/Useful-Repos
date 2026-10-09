@@ -26,6 +26,7 @@ from jarvis.core.tasks import TaskEngine
 from jarvis.knowledge import Brief
 from jarvis.llm.base import ToolSpec
 from jarvis.owner.browser import Browser
+from jarvis.owner.linkedin import LinkedIn
 from jarvis.owner.mac import MacActions
 from jarvis.owner.memory import Memory
 from jarvis.owner.research import Research, UrlLedger, search_url
@@ -44,6 +45,9 @@ class Tool:
     describe: Callable[[Args], str]
     gate: Callable[[Args], bool]  # True = Siddharth must say yes before this call runs
     level: int = 0  # policy level 0-3 (jarvis.core.policy)
+    # A self-verifying tool: its output's first line is the spoken outcome and it includes a
+    # "STATUS: X" line. The agent reports that, not the model's paraphrase.
+    speaks: bool = False
 
 
 def _object(properties: dict[str, Any]) -> dict[str, Any]:
@@ -122,6 +126,8 @@ def build_registry(
     journal: Journal | None = None,
     workflow: ResearchWorkflow | None = None,
     browser: Browser | None = None,
+    linkedin: LinkedIn | None = None,
+    recent_actions: Callable[[], str] | None = None,
 ) -> dict[str, Tool]:
     policy = Policy(autonomy)
 
@@ -411,6 +417,50 @@ def build_registry(
             ),
         ]
 
+    if linkedin is not None:
+        mode = "in my browser window" if linkedin.automated else "by opening it for you to save"
+        tools += [
+            replace(
+                _tool(
+                    "linkedin_add_portfolio",
+                    "Add Siddharth's portfolio link to the Website section of his LinkedIn "
+                    "contact info. Use this (not open_url) whenever he asks to add or put his "
+                    "portfolio or website on LinkedIn. It reports what really happened.",
+                    _object({}),
+                    side_effect=True,
+                    run=lambda a: linkedin.add_portfolio().report(),
+                    describe=lambda a: (
+                        f"add {linkedin.portfolio_url} to your LinkedIn contact info, {mode}"
+                    ),
+                ),
+                speaks=True,
+            ),
+            replace(
+                _tool(
+                    "linkedin_check_portfolio",
+                    "Look at Siddharth's LinkedIn contact info and say whether, and where, his "
+                    "portfolio link is listed. Use for 'is it there?' or 'where did you put it?'.",
+                    _object({}),
+                    side_effect=False,
+                    run=lambda a: linkedin.check_portfolio().report(),
+                    describe=lambda a: "check your LinkedIn contact info for the portfolio link",
+                ),
+                speaks=True,
+            ),
+        ]
+    if recent_actions is not None:
+        tools.append(
+            _tool(
+                "recent_actions",
+                "What Jarvis actually did this session (each action and its real outcome). Use "
+                "before answering 'what did you do' or 'did that work'.",
+                _object({}),
+                side_effect=False,
+                run=lambda a: recent_actions(),
+                describe=lambda a: "list recent actions",
+            )
+        )
+
     # The policy engine decides every gate from the tool's level (docs/JARVIS_ARCHITECTURE.md §5).
     levels: dict[str, Level] = {
         "search_brief": Level.AUTO,
@@ -435,6 +485,9 @@ def build_registry(
         "browser_open": Level.SCOPED,
         "browser_click": Level.SCOPED,
         "browser_type": Level.CONFIRM,
+        "linkedin_add_portfolio": Level.CONFIRM,
+        "linkedin_check_portfolio": Level.SCOPED,
+        "recent_actions": Level.AUTO,
     }
     escalations: dict[str, Callable[[Args], str]] = {"open_url": untrusted_link}
     if browser is not None:

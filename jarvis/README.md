@@ -143,9 +143,9 @@ on its own, level 1 runs on its own unless `JARVIS_AUTONOMY=strict`, level 2 wai
 
 | Level | Tools |
 |---|---|
-| 0 auto | `search_brief`, `list_calendar_events`, `site_lookup`, `status_report`, `task_status`, `search_papers`, `web_search`, `read_webpage`, `recall`, `browser_snapshot` |
-| 1 scoped | `open_url`*, `download_paper`, `show_web_results`, `start_research`, `record_decision`, `browser_open`*, `browser_click`* |
-| 2 confirm | `create_calendar_event`, `draft_email` (no send tool exists), `remember`, `set_preference`, `browser_type` |
+| 0 auto | `recent_actions`, `search_brief`, `list_calendar_events`, `site_lookup`, `status_report`, `task_status`, `search_papers`, `web_search`, `read_webpage`, `recall`, `browser_snapshot` |
+| 1 scoped | `linkedin_check_portfolio`, `open_url`*, `download_paper`, `show_web_results`, `start_research`, `record_decision`, `browser_open`*, `browser_click`* |
+| 2 confirm | `create_calendar_event`, `draft_email` (no send tool exists), `remember`, `set_preference`, `browser_type`, `linkedin_add_portfolio` (reports its own verified result) |
 
 \* Escalates to a yes when the link came from somewhere Jarvis didn't find it himself, or when the
 click submits a form. Password and payment fields are refused outright. Details:

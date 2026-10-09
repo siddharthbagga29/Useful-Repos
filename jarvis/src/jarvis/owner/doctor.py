@@ -20,9 +20,9 @@ from pathlib import Path
 
 import httpx
 
-from jarvis.config import ConfigError, OwnerSettings, load_owner, owner_env
+from jarvis.config import RETIRED, ConfigError, OwnerSettings, load_owner, owner_env
 from jarvis.core.router import mac_ram_gb, recommend_model
-from jarvis.llm.ollama_backend import LocalModelError, probe, warm_up
+from jarvis.llm.ollama_backend import LocalModelError, check_model, probe, warm_up
 
 APP_BINARY = Path("/Applications/Ollama.app/Contents/Resources/ollama")
 Run = Callable[[list[str]], tuple[int, str]]
@@ -226,6 +226,11 @@ def check_inference(r: Report, s: OwnerSettings) -> None:
         fix = _mismatch_fix([]) if exc.kind == "runner_mismatch" else ""
         r.fail(f"{exc.kind}: {exc}", fix)
         return
+    try:
+        r.ok(f"capabilities: {check_model(s.llm)}")
+    except LocalModelError as exc:
+        r.fail(str(exc))
+        return
     r.ok(f"model loaded and answered in {first:.1f}s (first load)")
     r.ok(f"second answer in {again:.1f}s (kept in memory for {s.llm.ollama_keep_alive})")
     try:
@@ -269,6 +274,38 @@ def check_voice(r: Report, s: OwnerSettings, run: Run) -> None:
     r.ok("to test the microphone, wake word and speech end to end:  jarvis-owner --voice-check")
 
 
+def check_retired(r: Report, values: dict[str, str]) -> None:
+    for key, why in RETIRED.items():
+        if values.get(key):
+            r.warn(f"{key} no longer does anything: {why}", f"Remove {key} from jarvis/.env")
+
+
+def check_linkedin(r: Report, s: OwnerSettings) -> None:
+    r.head("LinkedIn")
+    r.ok(f"profile {s.linkedin_profile}; portfolio {s.portfolio_url}")
+    if not s.linkedin_automation:
+        r.ok(
+            "assisted mode: Jarvis opens the editor and copies the link; you save it "
+            "(LINKEDIN_AUTOMATION=on lets him do it, at your account's risk)"
+        )
+        return
+    try:
+        __import__("playwright.sync_api")
+    except ImportError:
+        r.fail(
+            "LINKEDIN_AUTOMATION is on but Playwright isn't installed",
+            "pip install -e '.[browser]' && playwright install chromium",
+        )
+        return
+    signed_in = (s.state_dir / "browser").exists()
+    r.ok("automated mode: Playwright installed")
+    r.ok(
+        "Jarvis's browser profile exists"
+        if signed_in
+        else "first use opens Jarvis's browser on LinkedIn's sign-in page; sign in there once"
+    )
+
+
 def check_bridge(r: Report, s: OwnerSettings, run: Run) -> None:
     r.head("Website link")
     _, out = run(["lsof", "-nP", f"-iTCP:{s.bridge_port}", "-sTCP:LISTEN"])
@@ -309,5 +346,7 @@ def run_doctor(
     if check_ollama(r, s, run, path_env, ram, client) and live:
         check_inference(r, s)
     check_voice(r, s, run)
+    check_retired(r, owner_env(environ).values)
+    check_linkedin(r, s)
     check_bridge(r, s, run)
     return r

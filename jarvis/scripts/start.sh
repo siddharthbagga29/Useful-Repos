@@ -42,6 +42,14 @@ else
   echo "Already installed."
 fi
 
+if grep -qiE '^(JARVIS_)?LINKEDIN_AUTOMATION=(on|true|1|yes)' .env 2>/dev/null; then
+  if ! python -c "import playwright" 2>/dev/null; then
+    echo "LinkedIn automation is on: installing Jarvis's browser (one time)..."
+    pip install -q -e '.[voice,browser]' && python -m playwright install chromium \
+      || { echo "Browser install failed (see above)."; exit 1; }
+  fi
+fi
+
 say_step "3/5 Ollama (the free local AI)"
 if ! curl -s --max-time 2 http://127.0.0.1:11434/api/version >/dev/null; then
   echo "Starting Ollama..."

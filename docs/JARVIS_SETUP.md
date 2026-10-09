@@ -138,11 +138,14 @@ Then:
 jarvis-owner --voice
 ```
 
-- Say **"Hey Jarvis"**, then talk. After he answers he keeps listening for 6 seconds, so you can
-  just reply ("yes", "and the next one?") without the wake word.
-- macOS asks for microphone access the first time; allow it for Terminal.
-- Best voice: System Settings → Accessibility → Spoken Content → System Voice → Manage Voices →
-  English (UK) → download **Jamie (Premium)**. Jarvis picks it automatically.
+- Say **"Hey Jarvis"**: you hear a soft *tink*. Then just talk, in the same breath if you like
+  ("Hey Jarvis, what's next on my list?").
+- The conversation stays open: keep talking, follow up ("where did you put it?") and pause
+  naturally. It closes after 30 seconds of silence, or when you say "go to sleep" or "that's all".
+  Then say "Hey Jarvis" again.
+- You hear a *pop* when he's caught your request and is working on it.
+- To cut him off mid-sentence, say "Hey Jarvis".
+- If he isn't sure what he heard, he asks again rather than guessing.
 
 This is not macOS Dictation. Dictation needs a key press and stops after a pause; Jarvis listens for
 his wake word continuously, on your Mac, with nothing sent to the cloud.

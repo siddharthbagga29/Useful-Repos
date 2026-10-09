@@ -15,6 +15,8 @@ for anything consequential, and no route from the public internet to the Mac.
 | Jarvis → network | Public HTTPS only. Localhost, private ranges, link-local and local-only names refused, including after redirects | `research._public_https`, `browser.open` | `test_browser_refuses_private_hosts_redirects_and_secret_fields`, SSRF tests |
 | Jarvis → filesystem | Downloads only under `~/Downloads/Jarvis` and `~/Jarvis/research`; `open_file` only opens files under `~/Downloads/Jarvis`; slugged filenames | `mac.py`, `workflows.py` | `test_open_file_stays_inside_jarvis_folders` |
 | Jarvis → AppleScript | User text passed as `argv`, never interpolated into script source | `mac.py`, `notify.py`, `confirm.py` | `test_notifier_quiet_hours_and_argv_safety` |
+| Claims about actions | A reply claiming a change is corrected unless a state-changing action actually succeeded; self-verifying tools report their own outcome | `owner/agent.py` | `tests/test_truthful.py` |
+| LinkedIn | Assisted by default (LinkedIn's terms forbid automation). Opt-in automation uses Jarvis's own browser profile, which you sign into yourself; it never types passwords, stops at sign-in or security checks, saves once, and claims success only after a reload shows the link | `owner/linkedin.py` | `tests/test_linkedin.py` |
 | Memory | Credential-looking text (keys, tokens, passwords, private keys) is refused, never stored | `core/memory.py` | `test_journal_refuses_secrets` |
 
 ## Risk levels
