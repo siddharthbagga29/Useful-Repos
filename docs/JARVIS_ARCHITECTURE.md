@@ -62,9 +62,10 @@ Public visitors never reach the core: the public site ships no token, and the co
 jarvis/src/jarvis/
   core/        tasks.py (task engine) · policy.py (risk levels) · memory.py (episodic, project,
                decisions, preferences) · activity.py (feed) · router.py (model routing) ·
-               notify.py (speech, macOS notifications)
+               notify.py (speech, macOS notifications) · retry.py (bounded backoff)
   owner/       agent.py (operating loop) · tools.py (registry) · research.py · site.py ·
-               browser.py · bridge.py (127.0.0.1 gateway) · voice.py · mac.py · cli.py
+               workflows.py (persistent research task) · browser.py · bridge.py (127.0.0.1
+               gateway) · voice.py · mac.py · cli.py
   llm/         provider abstraction (Anthropic, Ollama, fakes)
   public/      public API (unchanged)
 portfolio/src/jarvis/

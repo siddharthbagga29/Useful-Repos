@@ -418,3 +418,21 @@ def test_browser_without_playwright_reports_a_capability_gap(
     monkeypatch.setattr(builtins, "__import__", no_playwright)
     with pytest.raises(BrowserUnavailable, match="CAPABILITY GAP"):
         PlaywrightDriver()
+
+
+def test_open_file_stays_inside_jarvis_folders(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from jarvis.owner.mac import MacActions
+
+    monkeypatch.setenv("HOME", str(tmp_path))
+    calls: list[list[str]] = []
+    mac = MacActions(runner=lambda argv: calls.append(argv) or "")  # type: ignore[func-returns-value]
+    inside = tmp_path / "Downloads" / "Jarvis" / "paper.pdf"
+    inside.parent.mkdir(parents=True)
+    inside.write_bytes(b"%PDF")
+    assert mac.open_file(inside) == "saved and opened paper.pdf"
+    for bad in (tmp_path / ".ssh" / "id_rsa", inside.parent / ".." / ".." / "secrets.txt"):
+        with pytest.raises(ValueError):
+            mac.open_file(bad)
+    assert calls == [["open", str(inside)]]

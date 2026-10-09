@@ -104,40 +104,50 @@ using its built-in assistant.
 
 ### Owner Jarvis (on the Mac)
 
+The full walk-through is in [`docs/JARVIS_SETUP.md`](../docs/JARVIS_SETUP.md). Short version:
+
 ```bash
 brew install ollama && ollama serve &      # or the Ollama app
-ollama pull llama3.1:8b                    # tool-capable; plain llama3 cannot call tools
 pip install -e .
+jarvis-owner --doctor                      # checks this Mac, recommends a Qwen model
+ollama pull qwen3:8b                       # or whatever --doctor recommended
 jarvis-owner                               # keyboard mode
 jarvis-owner --dry-run                     # every action is shown and declined
 ```
 
-Voice mode adds the wake word and local speech recognition. Everything is free and offline:
-openWakeWord's "hey jarvis" model (downloaded once, no key), faster-whisper, and macOS `say`.
-Prefer Picovoice? `pip install -e '.[voice,porcupine]'`, then `JARVIS_WAKE_ENGINE=porcupine` and
-`JARVIS_PICOVOICE_ACCESS_KEY=…` (free key at console.picovoice.ai).
+Voice mode (free and offline: openWakeWord "hey jarvis", faster-whisper, macOS `say`):
 
 ```bash
 brew install portaudio
 pip install -e '.[voice]'
-jarvis-owner --voice                       # say "Hey Jarvis", then your request
+jarvis-owner --voice                       # "Hey Jarvis", then just keep talking
+jarvis-owner --voice --serve               # ...and let the website talk to the same Jarvis
 ```
 
-macOS asks the first time Jarvis controls Mail or Calendar and the first time it uses the
-microphone; allow it for your terminal app. Notes, the audit log and memory live in `~/.jarvis/`.
+`--serve` prints a one-time pairing link (`…/#pair-<token>`). Open it in your browser and the
+site's Terminal becomes your command center (BRIEF, TASKS, ALERTS, YES). The gateway only listens
+on 127.0.0.1, so visitors can never reach your Mac.
 
-To use Claude instead of a local model: `JARVIS_LLM_BACKEND=anthropic jarvis-owner`.
+Optional browser agent (a visible Chromium window Jarvis can click through):
+`pip install -e '.[browser]' && playwright install chromium`.
+
+Tasks, memory, the audit log and notifications live in `~/.jarvis/`; research reports and PDFs
+go to `~/Jarvis/research/<date>-<topic>/`.
 
 ## Tools (owner only)
 
-| Tool | Changes anything? | Notes |
-|---|---|---|
-| `search_brief` | no | Line lookup in the brief |
-| `list_calendar_events` | no | Next 1–14 days |
-| `create_calendar_event` | **yes — confirm** | Date, time and duration validated locally |
-| `draft_email` | **yes — confirm** | Opens a draft in Mail. There is no send tool |
-| `open_url` | **yes — confirm** | `https://` only |
-| `remember` | **yes — confirm** | Notes feed future prompts, so they are gated too |
+Every tool is allow-listed, schema-validated, risk-levelled, timed out and audited. Level 0 runs
+on its own, level 1 runs on its own unless `JARVIS_AUTONOMY=strict`, level 2 waits for a yes.
+
+| Level | Tools |
+|---|---|
+| 0 auto | `search_brief`, `list_calendar_events`, `site_lookup`, `status_report`, `task_status`, `search_papers`, `web_search`, `read_webpage`, `recall`, `browser_snapshot` |
+| 1 scoped | `open_url`*, `download_paper`, `show_web_results`, `start_research`, `record_decision`, `browser_open`*, `browser_click`* |
+| 2 confirm | `create_calendar_event`, `draft_email` (no send tool exists), `remember`, `set_preference`, `browser_type` |
+
+\* Escalates to a yes when the link came from somewhere Jarvis didn't find it himself, or when the
+click submits a form. Password and payment fields are refused outright. Details:
+[`docs/JARVIS_SECURITY.md`](../docs/JARVIS_SECURITY.md).
 
 ## Evaluation
 
