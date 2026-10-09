@@ -140,3 +140,34 @@ Date: 2026-10-09.
 - **Real Ollama, microphone, speaker and live LinkedIn:** blocked from this container. Each is
   covered by a test you run on the Mac (`--doctor`, `--voice-check`, a live session, and one
   authorised LinkedIn run).
+
+## Follow-up: findings from the read-only audit (2026-10-09), fixed
+
+1. **False-claim guard missed 5 of 8 realistic claims.** Phrase matching alone, and any earlier
+   success in the session excused later claims.
+   - Fix (`owner/agent.py`): a request to change something with no successful change this turn
+     gets its reply corrected unless the reply is hedged ("can't", "nothing was changed", a
+     question back), whatever the wording.
+   - Success wording is broader ("is now on", "successfully", "went ahead and", "I'll add it
+     now").
+   - Only the previous turn's success counts ("where did you put it?").
+   - Self-verifying tool reports bypass the check.
+   - Tests: 13 new; all 8 audit phrasings are now corrected.
+   - Real CLI: "Your portfolio is now on LinkedIn." is corrected.
+2. **Long dictation was cut off:** 15 s maximum, and recording ended after a 1.2 s pause.
+   - Fix: `JARVIS_MAX_UTTERANCE_SECONDS` (default 90) and `JARVIS_END_OF_SPEECH_SECONDS`
+     (default 1.5).
+   - Tests: a 40 s thought with 1.2 s pauses stays one request.
+3. **Background speech used the audio device from another thread:** a research task's
+   completion notice.
+   - Fix: spoken notifications are queued and said by the conversation loop, between turns or
+     during standby (checked every second). Banners are still immediate.
+   - Tests: an announcement from another thread is spoken only on the loop thread.
+4. **Audio captured while he was thinking could interrupt his reply.**
+   - Fix: `VoiceIO.resume()` now drains captured-but-unread audio before he speaks or listens.
+   - Tests: the stale buffer is drained first.
+
+Suite in this container: 225 tests, ruff and mypy all pass.
+
+Still unverified on a real Mac: microphone and recognition quality, barge-in self-triggering, and
+the live LinkedIn page labels.

@@ -16,6 +16,7 @@ def fake_voiceio(levels: list[int]) -> Any:
     v = VoiceIO.__new__(VoiceIO)
     v._np = np  # type: ignore[attr-defined]
     v.SAMPLE_RATE, v.FRAME, v.SILENCE_RMS = 16000, 1280, 300  # type: ignore[attr-defined]
+    v.max_utterance_seconds, v.end_of_speech_seconds = 90.0, 1.5
     feed = iter(levels)
     v._frame = lambda: np.full(1280, next(feed, 0), dtype=np.int16)  # type: ignore[method-assign]
     return v
@@ -85,3 +86,80 @@ def test_barge_in_stops_speech_on_the_wake_word(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(voice_mod.subprocess, "Popen", lambda argv: Proc())
     assert v.say("A long answer.", "Daniel", interruptible=True) is True
     assert "speech stopped" in events and events[-2:] == ["mic off", "wake reset"]
+
+
+def test_a_long_dictated_thought_is_not_cut_off() -> None:
+    # 40 s of speech with natural 1.2 s pauses every 8 s, then a real stop
+    speech: list[int] = []
+    for _ in range(5):
+        speech += [1000] * 100 + [0] * 15  # 8 s talking, 1.2 s pause
+    v = fake_voiceio([0] * 5 + speech + [0] * 30)
+    audio = v.record_utterance(start_timeout=5.0)
+    assert len(audio) / 16000 > 40  # the old 15 s cap and 1.2 s cut-off would have split this
+
+
+def test_end_of_speech_pause_is_configurable() -> None:
+    v = fake_voiceio([1000] * 20 + [0] * 25 + [1000] * 20 + [0] * 40)
+    v.end_of_speech_seconds = 1.0  # a 2 s pause ends it
+    short = v.record_utterance(start_timeout=5.0)
+    assert len(short) / 16000 < 3
+
+
+def test_audio_captured_while_thinking_is_discarded_before_he_speaks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A "Hey Jarvis" buffered during the thinking pause must not cut off his reply."""
+    import jarvis.owner.voice as voice_mod
+
+    v = fake_voiceio([0] * 50)
+    reads: list[int] = []
+
+    class Stream:
+        buffered = 4 * 1280  # 0.3 s recorded while he thought
+
+        def is_active(self) -> bool:
+            return True
+
+        def get_read_available(self) -> int:
+            return self.buffered
+
+        def read(self, n: int, exception_on_overflow: bool = False) -> bytes:
+            reads.append(n)
+            self.buffered = 0
+            return b"\0" * (2 * n)
+
+        def stop_stream(self) -> None:
+            pass
+
+        def start_stream(self) -> None:
+            pass
+
+    heard_stale: list[bool] = []
+
+    class Wake:
+        def heard(self, frame: Any) -> bool:
+            heard_stale.append(True)
+            return False
+
+        def reset(self) -> None:
+            pass
+
+    class Proc:
+        def __init__(self) -> None:
+            self.polls = 0
+
+        def poll(self) -> int | None:
+            self.polls += 1
+            return None if self.polls < 3 else 0
+
+        def terminate(self) -> None:
+            pass
+
+        def wait(self, timeout: float) -> int:
+            return 0
+
+    v._stream, v._wake = Stream(), Wake()
+    monkeypatch.setattr(voice_mod.sys, "platform", "darwin")
+    monkeypatch.setattr(voice_mod.subprocess, "Popen", lambda argv: Proc())
+    assert v.say("Here is your answer.", "Daniel", interruptible=True) is False
+    assert reads and reads[0] == 4 * 1280  # the stale audio was drained first

@@ -17,6 +17,7 @@ voice, not arbitrary speech. Every transition is written to an event log (no tra
 
 from __future__ import annotations
 
+import queue
 import re
 import time
 import uuid
@@ -91,7 +92,12 @@ class VoiceSession:
         show: Callable[[str], None] = print,
         clock: Callable[[], float] = time.monotonic,
         sleep: Callable[[float], None] = time.sleep,
+        announcements: queue.Queue[str] | None = None,
     ) -> None:
+        # Background work (a finished research task) never speaks on its own thread: it queues a
+        # line here, and the conversation loop says it between turns or while in standby. Only
+        # this loop touches the microphone and speaker.
+        self.announcements: queue.Queue[str] = announcements or queue.Queue()
         self._agent = agent
         self._voice = voice
         self._name = voice_name
@@ -117,6 +123,17 @@ class VoiceSession:
         """Speak; True if he was interrupted by the wake word."""
         self._to(State.SPEAKING)
         return self._voice.say(text, self._name, interruptible=self._barge_in)
+
+    def _drain(self) -> None:
+        """Say anything background work queued, one at a time, on this thread."""
+        while True:
+            try:
+                line = self.announcements.get_nowait()
+            except queue.Empty:
+                return
+            self._show(f"jarvis> {line}")
+            self._events.record(session=self.session, event="ANNOUNCEMENT", chars=len(line))
+            self._say(line)
 
     def _listen(self, wait: float, ignore: float = 0.0) -> Utterance | None:
         """None means the microphone failed and couldn't be recovered."""
@@ -162,6 +179,8 @@ class VoiceSession:
     def _converse(self, ignore: float) -> bool:
         misses = 0
         while True:
+            if not ignore:  # never between the wake chime and his first word
+                self._drain()
             heard = self._listen(self._idle, ignore)
             ignore = 0.0
             if heard is None:
@@ -233,8 +252,11 @@ class VoiceSession:
         if not self.start(opening):
             return 2
         while True:
+            self._drain()
             try:
-                self._voice.wait_for_wake_word()
+                # Short waits, so queued announcements are spoken within a second or so.
+                if not self._voice.wait_for_wake_word(timeout=1.0):
+                    continue
             except Exception as exc:
                 self._to(State.RECOVERING, error=type(exc).__name__)
                 self._show(f"(microphone problem: {exc}; reconnecting)")

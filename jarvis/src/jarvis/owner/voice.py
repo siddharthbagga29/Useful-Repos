@@ -141,7 +141,12 @@ class VoiceIO:
         *,
         engine: str = "openwakeword",
         picovoice_access_key: str = "",
+        max_utterance_seconds: float = 90.0,
+        end_of_speech_seconds: float = 1.5,
     ) -> None:
+        # Long enough to say a whole thought; a natural pause doesn't end it mid-sentence.
+        self.max_utterance_seconds = max_utterance_seconds
+        self.end_of_speech_seconds = end_of_speech_seconds
         try:
             import numpy as np
             import pyaudio
@@ -202,7 +207,19 @@ class VoiceIO:
         """Start capturing again with an empty buffer and a fresh wake-word state."""
         if not self._stream.is_active():
             self._stream.start_stream()
+        self._flush()
         self._wake.reset()
+
+    def _flush(self) -> None:
+        """Discard audio already captured but not yet read (e.g. while he was thinking), so it
+        can't be mistaken for something said now. Explicit, rather than relying on the audio
+        driver to clear its buffer on restart."""
+        available = getattr(self._stream, "get_read_available", None)
+        if available is None:
+            return
+        pending = int(available())
+        if pending > 0:
+            self._stream.read(pending, exception_on_overflow=False)
 
     def say(self, text: str, voice_name: str, interruptible: bool = False) -> bool:
         """Speak, then listen again from a clean buffer. Returns True if he was interrupted.
@@ -253,14 +270,18 @@ class VoiceIO:
 
     def record_utterance(
         self,
-        max_seconds: float = 15.0,
-        trailing_silence: float = 1.2,
+        max_seconds: float | None = None,
+        trailing_silence: float | None = None,
         start_timeout: float = 4.0,
         ignore_seconds: float = 0.0,
     ) -> Any:
         """Audio from just before speech starts until a pause; None if nobody spoke within
         `start_timeout`. Only 0.3 s of lead-in is kept, so a long wait doesn't mean a long
         transcription. `ignore_seconds` skips a chime played as recording starts."""
+        max_seconds = self.max_utterance_seconds if max_seconds is None else max_seconds
+        trailing_silence = (
+            self.end_of_speech_seconds if trailing_silence is None else trailing_silence
+        )
         frame_seconds = self.FRAME / self.SAMPLE_RATE
         preroll: deque[Any] = deque(maxlen=max(1, int(0.3 / frame_seconds)))
         frames: list[Any] = []

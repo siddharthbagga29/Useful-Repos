@@ -19,6 +19,7 @@ He opens every session with where things stand (tasks, projects) and offers the 
 from __future__ import annotations
 
 import argparse
+import queue
 import subprocess
 import sys
 import time
@@ -100,6 +101,8 @@ def main(argv: list[str] | None = None) -> int:
                 settings.wake_threshold,
                 engine=settings.wake_engine,
                 picovoice_access_key=settings.picovoice_access_key,
+                max_utterance_seconds=settings.max_utterance_seconds,
+                end_of_speech_seconds=settings.end_of_speech_seconds,
             )
         except VoiceUnavailable as exc:
             print(f"Voice mode unavailable: {exc}", file=sys.stderr)
@@ -112,17 +115,16 @@ def main(argv: list[str] | None = None) -> int:
         if sys.platform == "darwin":  # non-blocking system sound (Tink: listening, Pop: got it)
             subprocess.Popen(["afplay", f"/System/Library/Sounds/{name}.aiff"])
 
-    def say(text: str) -> None:
-        if voice is not None:
-            voice.say(text, voice_name)  # mic paused while he speaks
-
     # core
     brief = Brief.load(settings.brief_path)
     memory = Memory(settings.state_dir / "memory.sqlite3")
     audit = AuditLog(settings.state_dir / "audit.jsonl")
     tasks = TaskEngine(settings.state_dir / "tasks.sqlite3")
     journal = Journal(settings.state_dir / "journal.sqlite3")
-    notifier = Notifier(say if voice else None, quiet_hours=settings.quiet_hours)
+    # Spoken notifications are queued and said by the conversation loop (never from a background
+    # thread straight to the audio device); banners still appear immediately.
+    announcements: queue.Queue[str] = queue.Queue()
+    notifier = Notifier(announcements.put if voice else None, quiet_hours=settings.quiet_hours)
     ledger = UrlLedger()
     site = SiteIndex.load(settings.site_index, ledger)
     research = Research(ledger, Path.home() / "Downloads" / "Jarvis")
@@ -266,6 +268,7 @@ def main(argv: list[str] | None = None) -> int:
                 barge_in=settings.barge_in,
                 chime=chime,
                 show=lambda line: print(line, flush=True),
+                announcements=announcements,
             )
             code = conversation.run(opening)
     except (KeyboardInterrupt, EOFError):

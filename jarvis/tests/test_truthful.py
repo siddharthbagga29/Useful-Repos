@@ -274,3 +274,82 @@ def test_linkedin_profile_setting_is_validated() -> None:
         load_owner({"JARVIS_LINKEDIN_PROFILE": "https://evil.example/in/x"}, ram_gb=8)
     s = load_owner({"JARVIS_LINKEDIN_AUTOMATION": "on"}, ram_gb=8)
     assert s.linkedin_automation and s.session_idle_seconds == 30.0 and s.barge_in
+
+
+# --- audit 2026-10-09: the phrase-matching guard missed 5 of 8 realistic false claims ----------
+
+MISSED_BEFORE = [
+    "Your portfolio is now on LinkedIn.",
+    "Successfully added the link to your contact info.",
+    "I went ahead and updated your LinkedIn.",
+    "Added! It's on your profile now.",
+    "Your LinkedIn now shows the portfolio under Website.",
+    "Sure, adding it to your LinkedIn now.",
+    "I'll add it to your contact info right away.",
+]
+
+
+@pytest.mark.parametrize("claim", MISSED_BEFORE)
+def test_any_unhedged_reply_to_a_change_request_without_a_change_is_corrected(
+    tmp_path: Path, claim: str
+) -> None:
+    agent, _, _ = agent_with(
+        tmp_path,
+        [
+            call("open_url", url="https://www.linkedin.com/in/siddharth-bagga-sid29/"),
+            AgentStep(text=claim),
+        ],
+    )
+    reply = agent.handle("Open my LinkedIn and add my portfolio URL to my contact info")
+    assert reply.startswith("To be accurate: I haven't done that"), reply
+
+
+@pytest.mark.parametrize(
+    "hedged",
+    [
+        "I can't edit LinkedIn myself. Shall I open the editor for you?",
+        "I couldn't find the Website field, so nothing was changed.",
+        "Which URL should I add, the portfolio or the research page?",
+    ],
+)
+def test_honest_or_questioning_replies_to_change_requests_pass(tmp_path: Path, hedged: str) -> None:
+    agent, _, _ = agent_with(tmp_path, [AgentStep(text=hedged)])
+    assert agent.handle("add my portfolio to LinkedIn") == hedged
+
+
+def test_questions_are_not_change_requests(tmp_path: Path) -> None:
+    agent, _, _ = agent_with(tmp_path, [AgentStep(text="Your next step is the LinkedIn link.")])
+    assert agent.handle("what should I add next?") == "Your next step is the LinkedIn link."
+
+
+def test_an_old_success_does_not_cover_later_claims(tmp_path: Path) -> None:
+    li = FakeLinkedIn(tmp_path, Outcome("VERIFIED", "Done: it's under Website."))
+    agent, _, _ = agent_with(
+        tmp_path,
+        [
+            call("linkedin_add_portfolio"),
+            AgentStep(text="ok"),
+            AgentStep(text="It's under Website, where I added it."),  # next turn: fine
+            AgentStep(text="Noted."),
+            AgentStep(text="Noted."),
+            AgentStep(text="I've updated your calendar too."),  # three turns later: false
+        ],
+        linkedin=li,
+    )
+    agent.handle("add my portfolio to LinkedIn")
+    assert agent.handle("where did you put it?") == "It's under Website, where I added it."
+    agent.handle("thanks")
+    agent.handle("ok")
+    assert "nothing was changed" in agent.handle("did you update my calendar?")
+
+
+def test_verified_reports_are_never_second_guessed(tmp_path: Path) -> None:
+    li = FakeLinkedIn(
+        tmp_path, Outcome("BLOCKED", "I couldn't find the Website field, so nothing changed.")
+    )
+    agent, _, _ = agent_with(
+        tmp_path, [call("linkedin_add_portfolio"), AgentStep(text="x")], linkedin=li
+    )
+    assert agent.handle("add my portfolio") == (
+        "I couldn't find the Website field, so nothing changed."
+    )
