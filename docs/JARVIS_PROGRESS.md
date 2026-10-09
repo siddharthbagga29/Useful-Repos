@@ -283,3 +283,17 @@ The full investigation, with evidence for each claim, is in
   - Run the start script on the Mac.
   - Do one live voice session.
   - Decide on LinkedIn automation.
+
+### Audit fixes (2026-10-09)
+
+- **IMPLEMENTED:**
+  - A structural false-claim guard.
+  - Configurable dictation length and end-of-speech pause.
+  - Spoken notifications serialised on the conversation loop.
+  - Stale audio drained before speaking or listening.
+- **TESTED:** 225 tests.
+- **VERIFIED:** the CLI reproduction corrects a phrasing that previously slipped through.
+- **REMAINING (Mac only):**
+  - `--voice-check`.
+  - A live multi-turn session.
+  - `--actions` after a LinkedIn request.

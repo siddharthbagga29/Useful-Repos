@@ -204,5 +204,6 @@ Run `jarvis-owner --doctor` first; it names the cause. Common ones:
 | Room level 0 in `--voice-check` | System Settings → Privacy & Security → Microphone → allow Terminal |
 | He triggers on his own | `WAKE_THRESHOLD=0.7` in `jarvis/.env` |
 | He never hears "Hey Jarvis" | `WAKE_THRESHOLD=0.35` in `jarvis/.env`, and check microphone access |
+| He cuts you off mid-thought | `END_OF_SPEECH_SECONDS=2.5` in `jarvis/.env` (default 1.5); one request can run 90 s (`MAX_UTTERANCE_SECONDS`) |
 | "Sorry, I didn't catch that" a lot | Speak a little closer; the threshold adapts to the room at startup |
 | Website says it can't reach your Mac | Jarvis must be running with `--serve`; run `jarvis-owner --pair` again if you cleared site data |

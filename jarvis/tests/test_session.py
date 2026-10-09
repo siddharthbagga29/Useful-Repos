@@ -201,3 +201,50 @@ def test_wake_word_stripping() -> None:
     assert without_wake_word("Hey Jarvis, what's next?") == "what's next?"
     assert without_wake_word("Hey, Jarvis.") == ""
     assert without_wake_word("Tell Jarvis's story") == "Tell Jarvis's story"
+
+
+# --- audit 2026-10-09: background speech used the microphone stream from another thread ---------
+
+
+def test_background_announcements_are_spoken_on_the_conversation_thread() -> None:
+    import threading
+
+    threads: list[int] = []
+
+    class Recording(ScriptedVoice):
+        def say(self, text: str, voice_name: str, interruptible: bool = False) -> bool:
+            threads.append(threading.get_ident())
+            return super().say(text, voice_name, interruptible)
+
+        def listen_detailed(self, start_timeout: float, ignore_seconds: float = 0.0) -> Utterance:
+            if len(self.script) == 1:  # while he listens, a research task finishes elsewhere
+                worker = threading.Thread(target=s.announcements.put, args=("Research is done.",))
+                worker.start()
+                worker.join()
+            return super().listen_detailed(start_timeout, ignore_seconds)
+
+    voice = Recording(["first", "second"])
+    s, _, events, _ = make(voice)
+    s.start()
+    assert "Research is done." in voice.said
+    assert voice.said.index("Research is done.") > voice.said.index("Answer 1.")
+    assert set(threads) == {threading.get_ident()}  # only the conversation loop spoke
+    assert len(events.of("ANNOUNCEMENT")) == 1
+
+
+def test_announcements_in_standby_are_spoken_without_a_wake_word() -> None:
+    class Standby(ScriptedVoice):
+        polls = 0
+
+        def wait_for_wake_word(self, timeout: float | None = None) -> bool:
+            self.polls += 1
+            if self.polls == 1:
+                s.announcements.put("Your research on agentic memory is done.")
+                return False  # nobody said "Hey Jarvis" in that second
+            raise KeyboardInterrupt
+
+    voice = Standby([])
+    s, _, _, _ = make(voice)
+    with pytest.raises(KeyboardInterrupt):
+        s.run()
+    assert voice.said == ["Your research on agentic memory is done."]

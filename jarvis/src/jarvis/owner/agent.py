@@ -39,6 +39,31 @@ CHANGE_CLAIM = re.compile(
 OPEN_CLAIM = re.compile(
     r"\bI(?:'ve| have)?(?: just| now)? (?:opened|launched|navigated to|pulled up)\b", re.IGNORECASE
 )
+# A request to change something (not a question about it).
+CHANGE_REQUEST = re.compile(
+    r"\b(?:add|put|update|change|edit|send|email|create|schedule|book|post|delete|remove|save|"
+    r"set|fill|upload|publish|submit|link|remember|draft|write)\b",
+    re.IGNORECASE,
+)
+QUESTION = re.compile(
+    r"^\s*(?:what|where|when|which|who|why|how|did|do|does|is|are|was|were|can|could|should|"
+    r"have|has)\b|\?\s*$",
+    re.IGNORECASE,
+)
+# Replies that don't assert success: refusals, limits, failures, questions back.
+HEDGED = re.compile(
+    r"\b(?:can'?t|cannot|couldn'?t|unable|not able|haven'?t|hasn'?t|didn'?t|won'?t|isn'?t|"
+    r"wasn'?t|failed|nothing (?:was |has been )?changed|not (?:yet|done))\b|\?",
+    re.IGNORECASE,
+)
+# Broader success wording, for replies to anything.
+SUCCESS_WORDING = re.compile(
+    r"\bsuccessfully\b|\bwent ahead and\b|\b(?:is|are) now (?:on|in|listed|live|there|added|"
+    r"saved|updated|showing)\b|\bnow (?:shows|lists|has|includes|contains)\b|"
+    r"^\W*(?:added|saved|updated|done|sent|posted|booked|scheduled|created)\b|"
+    r"\b(?:I'?ll|I will|I'?m|I am|adding|updating|saving)\b.{0,25}\b(?:now|right away)\b",
+    re.IGNORECASE,
+)
 STATUS_LINE = re.compile(r"^STATUS: (\w+)", re.MULTILINE)
 SUCCESS_STATUSES = {"VERIFIED", "ALREADY_PRESENT"}
 
@@ -64,14 +89,31 @@ class ActionRecord:
         return f"{self.at[11:16]} {self.summary}: {state}"
 
 
-def honest(reply: str, this_turn: list[ActionRecord], earlier: list[ActionRecord]) -> str | None:
-    """A correction if `reply` claims an action the records don't support, else None."""
-    ran_ok = [a for a in this_turn if a.outcome == "ok"]
-    if CHANGE_CLAIM.search(reply):
-        if any(a.changed_something for a in this_turn + earlier):
+def honest(
+    reply: str,
+    this_turn: list[ActionRecord],
+    earlier: list[ActionRecord],
+    request: str = "",
+) -> str | None:
+    """A correction if `reply` claims an action the records don't support, else None.
+
+    Two rules, so it doesn't depend on guessing every phrasing:
+    1. Siddharth asked for a change, nothing that changes anything succeeded this turn, and the
+       reply isn't hedged (no "can't", no question back): whatever it says, it implies done.
+    2. Any reply that uses success wording ("I've added", "is now on", "successfully") needs a
+       successful change this turn, or in the previous turn ("where did you put it?").
+    `earlier` should be the previous turn's records only; older successes don't count."""
+    changed_now = any(a.changed_something for a in this_turn)
+    changed_before = any(a.changed_something for a in earlier)
+    hedged = bool(HEDGED.search(reply))
+    asked_for_change = bool(CHANGE_REQUEST.search(request)) and not QUESTION.search(request)
+    if asked_for_change and not changed_now and not hedged:
+        pass  # rule 1: a correction follows
+    elif CHANGE_CLAIM.search(reply) or (SUCCESS_WORDING.search(reply) and not hedged):
+        if changed_now or changed_before:
             return None
     elif OPEN_CLAIM.search(reply):
-        if ran_ok:
+        if any(a.outcome == "ok" for a in this_turn):
             return None
     else:
         return None
@@ -130,6 +172,8 @@ class OwnerAgent:
         self.ledger: deque[ActionRecord] = deque(maxlen=50)
         self._turn = ""
         self._this_turn: list[ActionRecord] = []
+        self._last_turn = ""  # the turn before this one, whether or not it ran anything
+        self._reported = False
 
     def said(self, text: str) -> None:
         """Jarvis spoke first (the opening briefing); his next reply knows what was offered."""
@@ -140,6 +184,8 @@ class OwnerAgent:
         next turn starts a fresh session (the failed one may hold a half-finished exchange)."""
         self._turn = turn_id or uuid.uuid4().hex[:8]
         earlier = list(self.ledger)
+        previous_turn = [a for a in earlier if a.turn == self._last_turn]
+        self._reported = False
         self._this_turn = []
         self._audit.record(turn=self._turn, event="REQUEST_RECEIVED", chars=len(text))
         try:
@@ -149,10 +195,12 @@ class OwnerAgent:
                 turn=self._turn, tool="model", outcome="error", error=f"{type(exc).__name__}: {exc}"
             )
             reply = self._reset(f"I couldn't get an answer from my model. {exc}")
-        correction = honest(reply, self._this_turn, earlier)
+        # A self-verifying tool's report is already the truth; everything else is checked.
+        correction = None if self._reported else honest(reply, self._this_turn, previous_turn, text)
         if correction:
             self._audit.record(turn=self._turn, event="FALSE_CLAIM_CORRECTED", claimed=reply[:300])
             reply = correction
+        self._last_turn = self._turn
         return reply
 
     def recent_actions(self, limit: int = 10) -> str:
@@ -195,6 +243,7 @@ class OwnerAgent:
             spoken = self._self_reported(step.tool_calls, results)
             step = session.send_tool_results(results)
             if spoken:
+                self._reported = True
                 # A self-verifying tool's own report is the reply. The model saw the result (so
                 # the conversation stays coherent) but doesn't get to rephrase the outcome.
                 if step.tool_calls:

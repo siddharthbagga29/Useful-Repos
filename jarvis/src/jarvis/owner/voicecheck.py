@@ -25,6 +25,8 @@ def voice_check(settings: OwnerSettings) -> int:
             settings.wake_threshold,
             engine=settings.wake_engine,
             picovoice_access_key=settings.picovoice_access_key,
+            max_utterance_seconds=settings.max_utterance_seconds,
+            end_of_speech_seconds=settings.end_of_speech_seconds,
         )
     except VoiceUnavailable as exc:
         print(f"   ✗ {exc}")

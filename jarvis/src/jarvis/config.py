@@ -153,6 +153,9 @@ class OwnerSettings:
     )
     # A conversation stays open (no wake word needed) until this much silence, or "go to sleep".
     session_idle_seconds: float = 30.0
+    # One request can run this long; it ends after this much silence (raise it if he cuts you off).
+    max_utterance_seconds: float = 90.0
+    end_of_speech_seconds: float = 1.5
     barge_in: bool = True  # "Hey Jarvis" while he's speaking stops him and listens
     repo_dir: Path = REPO_ROOT
     site_index: Path = DEFAULT_SITE_INDEX
@@ -305,6 +308,8 @@ def load_owner(
         brief_path=Path(_get(env, "BRIEF_PATH", str(DEFAULT_BRIEF))),
         autonomy=_choice(env, "AUTONOMY", "standard", ("standard", "strict")),
         session_idle_seconds=_float(env, "SESSION_IDLE_SECONDS", 30.0, 5.0, 600.0),
+        max_utterance_seconds=_float(env, "MAX_UTTERANCE_SECONDS", 90.0, 5.0, 300.0),
+        end_of_speech_seconds=_float(env, "END_OF_SPEECH_SECONDS", 1.5, 0.6, 5.0),
         barge_in=_bool(env, "BARGE_IN", True),
         repo_dir=Path(_get(env, "REPO_DIR", str(REPO_ROOT))).expanduser(),
         site_index=Path(_get(env, "SITE_INDEX", str(DEFAULT_SITE_INDEX))).expanduser(),
