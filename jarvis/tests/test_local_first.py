@@ -441,3 +441,57 @@ def test_context_note_is_not_a_bracketed_transcript(tmp_path: Path) -> None:
         sent[0]
         == '(Your last words to Siddharth were: "Shall I open it?")\n\nSiddharth: Can you hear me?'
     )
+
+
+# --- the wake word is never sent to the model as a question ------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("heard", "expected"),
+    [
+        ("Hey Jarvis", ""),
+        ("Hey, Jarvis.", ""),
+        ("jarvis", ""),
+        ("Hey Jarvis, what's next on my list?", "what's next on my list?"),
+        ("OK Jarvis open LinkedIn", "open LinkedIn"),
+        ("Tell Jarvis's story", "Tell Jarvis's story"),
+    ],
+)
+def test_without_wake_word(heard: str, expected: str) -> None:
+    from jarvis.owner.cli import without_wake_word
+
+    assert without_wake_word(heard) == expected
+
+
+def test_bare_wake_word_gets_yes_then_the_real_question_is_answered(tmp_path: Path) -> None:
+    from jarvis.owner.cli import converse
+
+    asked: list[str] = []
+
+    class Session:
+        def send_user(self, text: str) -> AgentStep:
+            asked.append(text)
+            return AgentStep(text="Your next step is LinkedIn.", tool_calls=[])
+
+        def send_tool_results(self, results: Any) -> AgentStep:
+            raise AssertionError
+
+    said: list[str] = []
+    acks: list[int] = []
+    agent = make_agent(tmp_path, lambda: Session())
+    voice = FakeVoice(["Hey Jarvis.", "What's next?", ""])
+    converse(agent, voice, said.append, 6.0, ack=lambda: acks.append(1))
+    assert said == ["Yes?", "Your next step is LinkedIn."]
+    assert asked == ["What's next?"] and acks == [1]  # the wake word never reached the model
+
+
+def test_empty_model_reply_is_not_reported_as_done(tmp_path: Path) -> None:
+    class Session:
+        def send_user(self, text: str) -> AgentStep:
+            return AgentStep(text="", tool_calls=[])
+
+        def send_tool_results(self, results: Any) -> AgentStep:
+            raise AssertionError
+
+    agent = make_agent(tmp_path, lambda: Session())
+    assert agent.handle("hello") == "Sorry, I lost my thread. Say that again?"

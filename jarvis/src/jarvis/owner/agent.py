@@ -78,14 +78,20 @@ class OwnerAgent:
             text = f'(Your last words to Siddharth were: "{self._said}")\n\nSiddharth: {text}'
             self._said = ""
         step: AgentStep = session.send_user(text)
+        acted = False
         for _ in range(self._max_steps):
             if step.refused:
                 return self._reset("I can't help with that request.")
             if step.truncated:
                 return self._reset("That ran too long and was cut off. Try a narrower request.")
             if not step.tool_calls:
-                return step.text.strip() or "Done."
+                if step.text.strip():
+                    return step.text.strip()
+                # An empty reply after tools ran means the work is done; with no tools it means
+                # the model produced nothing usable (e.g. it spent its answer reasoning).
+                return "Done." if acted else self._reset("Sorry, I lost my thread. Say that again?")
             step = session.send_tool_results([self._execute(call) for call in step.tool_calls])
+            acted = True
         return self._reset(
             f"I stopped after {self._max_steps} steps without finishing. Try breaking it up."
         )

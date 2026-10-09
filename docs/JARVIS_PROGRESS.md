@@ -243,3 +243,22 @@ Jarvis loop approved at 10.0/10, build passes, browser e2e all passing.
   - `--doctor` asks a real one-sentence question and flags a thinking model, with the fix.
 - **Verified:** the real `jarvis-owner` against a stand-in Ollama returning the exact leaked
   reply prints and speaks only "Yes, Siddharth. I can hear you."
+
+### Follow-up: no response after "Hey Jarvis" (2026-10-09)
+
+- **Root cause (from the Mac log):**
+  - "Hey Jarvis", spoken inside the follow-up window after his greeting, was transcribed and
+    sent to the model as the request.
+  - The thinking model (`qwen3:4b`, 12.5 s for one sentence in `--doctor`) then reasoned for a
+    long time with no feedback.
+- **Fixed:**
+  - A bare wake phrase gets "Yes?" and a fresh listen; a leading "Hey Jarvis," is removed from
+    requests.
+  - A soft tone plus "(thinking...)" when a request is captured.
+  - An empty model reply is no longer reported as "Done."
+  - `scripts/start.sh`: one-paste update and model switch, plus a Desktop launcher.
+- **Tested:** wake-phrase cases, bare wake then question, and the empty reply. The start script
+  ran in a dry run with fake Ollama and macOS shims: model switched, `.env` backed up, launcher
+  created, second run idempotent.
+- **USER INPUT REQUIRED:** one paste on the Mac (Ctrl-C the running Jarvis first):
+  `cd ~/Useful-Repos/jarvis && git pull && bash scripts/start.sh`

@@ -10,6 +10,21 @@ appears while you type it. That's normal.
 Never paste an API key, token or password into a chat, a note or a screenshot. Keys belong in
 Keychain or a password manager.
 
+## Quickest start (once everything below is installed)
+
+```bash
+bash ~/Useful-Repos/jarvis/scripts/start.sh
+```
+
+It runs five steps, then starts Jarvis:
+
+1. Updates the code.
+2. Installs any new Python packages.
+3. Starts Ollama.
+4. Switches a slow "thinking" model to `qwen3:4b-instruct`, downloading it once. Your old `.env`
+   is kept as `.env.bak`.
+5. Puts a **Jarvis** icon on your Desktop. After that, double-click it to start him; no typing.
+
 ## 1. The tools Jarvis needs (once)
 
 Homebrew is the Mac package manager. Skip this first command if `brew --version` already works.

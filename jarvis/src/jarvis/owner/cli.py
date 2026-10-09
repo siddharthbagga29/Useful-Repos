@@ -18,6 +18,8 @@ He opens every session with where things stand (tasks, projects) and offers the 
 from __future__ import annotations
 
 import argparse
+import re
+import subprocess
 import sys
 import time
 from collections.abc import Callable
@@ -100,6 +102,10 @@ def main(argv: list[str] | None = None) -> int:
         voice_name = pick_voice(settings.voice_name)
         ambient = voice.calibrate()
         print(f"Microphone ready (room level {ambient:.0f}, speech above {voice.SILENCE_RMS}).")
+
+    def ack() -> None:
+        if sys.platform == "darwin":  # non-blocking; the mic isn't recording while he works
+            subprocess.Popen(["afplay", "/System/Library/Sounds/Tink.aiff"])
 
     def say(text: str) -> None:
         if voice is not None:
@@ -228,12 +234,12 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"jarvis> {opening}")
             say(opening)
-            converse(agent, voice, say, settings.follow_up_seconds, first_wait=6.0)
+            converse(agent, voice, say, settings.follow_up_seconds, first_wait=6.0, ack=ack)
             print("(listening for 'Hey Jarvis')")
             while True:
                 voice.wait_for_wake_word()
                 say("Yes?")
-                converse(agent, voice, say, settings.follow_up_seconds, first_wait=6.0)
+                converse(agent, voice, say, settings.follow_up_seconds, first_wait=6.0, ack=ack)
                 print("(listening for 'Hey Jarvis')")
     except (KeyboardInterrupt, EOFError):
         print()
@@ -255,35 +261,54 @@ def strip_comment(argv: list[str]) -> list[str]:
     return argv
 
 
+WAKE_PREFIX = re.compile(r"^\W*(?:(?:hey|hi|hello|okay|ok)\W+)?jarvis\b\W*", re.IGNORECASE)
+
+
+def without_wake_word(heard: str) -> str:
+    """'Hey Jarvis, what's next?' -> "what's next?"; a bare 'Hey Jarvis.' -> ''."""
+    return WAKE_PREFIX.sub("", heard, count=1).strip()
+
+
 def converse(
     agent: OwnerAgent,
     voice: Any,
     say: Callable[[str], None],
     follow_up_seconds: float,
     first_wait: float = 6.0,
+    ack: Callable[[], None] = lambda: None,
 ) -> None:
     """One exchange: listen, answer, then keep listening for a reply without the wake word.
     Never raises for a bad transcription or model error, so the wake-word loop always resumes."""
-    try:
-        heard = voice.listen(start_timeout=first_wait)
-    except Exception as exc:  # audio device hiccup: report it and go back to the wake word
-        print(f"(microphone error: {exc})", file=sys.stderr)
+
+    def listen(wait: float) -> str | None:
+        try:
+            return str(voice.listen(start_timeout=wait))
+        except Exception as exc:  # audio device hiccup: report it and go back to the wake word
+            print(f"(microphone error: {exc})", file=sys.stderr)
+            return None
+
+    heard = listen(first_wait)
+    if heard is None:
         return
+    if heard and not without_wake_word(heard):  # he said only "Hey Jarvis": answer the call
+        say("Yes?")
+        heard = listen(first_wait)
+        if heard is None:
+            return
     if not heard:
         say("Sorry, I didn't catch that.")
         return
     while heard:
-        print(f"you> {heard}")
-        reply = agent.handle(heard)  # never raises; failures come back as a sentence
+        request = without_wake_word(heard) or heard
+        print(f"you> {request}")
+        ack()  # a soft tone: heard you, working on it
+        print("(thinking...)", flush=True)
+        reply = agent.handle(request)  # never raises; failures come back as a sentence
         print(f"jarvis> {reply}")
         say(reply)
         if follow_up_seconds <= 0:
             return
-        try:
-            heard = voice.listen(start_timeout=follow_up_seconds)
-        except Exception as exc:
-            print(f"(microphone error: {exc})", file=sys.stderr)
-            return
+        heard = listen(follow_up_seconds) or ""
 
 
 def workflow_thread_resume(workflow: ResearchWorkflow, task_id: str) -> None:
