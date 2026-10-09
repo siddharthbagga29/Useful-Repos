@@ -67,7 +67,7 @@ export function JarvisConsole({ variant }: { variant: "station" | "full" }) {
         <Orb status={j.status} size={variant === "full" ? 46 : 38} />
         <div className="jx-title">
           <strong>JARVIS</strong>
-          <span>Siddharth's personal AI · runs on your device</span>
+          <span>{j.owner === "online" ? "Linked to your Mac · full access" : "Siddharth's personal AI · runs on your device"}</span>
         </div>
         <motion.span key={j.status} className={`jx-status s-${j.status}`} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} role="status">
           {STATUS_TEXT[j.status]}

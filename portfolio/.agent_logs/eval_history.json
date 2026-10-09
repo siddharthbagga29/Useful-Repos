@@ -408,5 +408,66 @@
     },
     "issues": [],
     "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-08T16:18:04.045Z",
+    "iteration": 1,
+    "score": 10,
+    "passed": true,
+    "points": {
+      "code": 40,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": true,
+      "honesty": true
+    },
+    "issues": [
+      {
+        "code": "NO_ASK",
+        "where": "line:help.rage",
+        "detail": "turn ends without a question",
+        "cost": 1
+      }
+    ],
+    "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-08T16:18:14.868Z",
+    "iteration": 1,
+    "score": 10,
+    "passed": true,
+    "points": {
+      "code": 40,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": true,
+      "honesty": true
+    },
+    "issues": [],
+    "critic": "deterministic"
+  },
+  {
+    "at": "2026-10-09T00:07:23.970Z",
+    "iteration": 1,
+    "score": 10,
+    "passed": true,
+    "points": {
+      "code": 40,
+      "conversation": 25,
+      "state": 20,
+      "resilience": 15
+    },
+    "gates": {
+      "structural": true,
+      "honesty": true
+    },
+    "issues": [],
+    "critic": "deterministic"
   }
 ]

@@ -261,4 +261,46 @@ export const DRAFTS: Line[] = [
     text: "That concludes the tour. || If any of it was useful, | the next step is 30 minutes with him. || Shall I open his calendar?",
     chips: [BOOK, NOTE, { label: "Not now", action: "snooze" }],
   },
+  // ---------------------------------------------------------------- reading the room (signals.ts)
+  {
+    id: "help.rage",
+    stage: "nudge",
+    text: "That didn't respond the way you expected, | did it? || I'll take you straight there. | Where were you trying to go?",
+    chips: [
+      { label: "The live model", action: "navigate:model" },
+      { label: "His experience", action: "navigate:experience" },
+      { label: "Ask Jarvis", action: "open_jarvis" },
+    ],
+  },
+  {
+    id: "help.dead",
+    stage: "nudge",
+    text: "That part isn't clickable, | I'm afraid. || Shall I show you what is?",
+    chips: [
+      { label: "Begin the tour", action: "run_tour" },
+      { label: "Ask Jarvis", action: "open_jarvis" },
+      { label: "Not now", action: "snooze" },
+    ],
+  },
+  {
+    id: "help.hunting",
+    stage: "nudge",
+    text: "Looking for something specific? || I know where everything is on this site. | What do you need?",
+    chips: [
+      { label: "Experience", action: "navigate:experience" },
+      { label: "The deal audit", action: "navigate:dealroom" },
+      { label: "Research", action: "navigate:research" },
+      { label: "Contact", action: "navigate:contact" },
+    ],
+  },
+  {
+    id: "help.stall",
+    stage: "nudge",
+    text: "Still with me? || I can run the one-minute tour, | or answer whatever's on your mind. || Which would you prefer?",
+    chips: [
+      { label: "Begin the tour", action: "run_tour" },
+      { label: "Ask Jarvis", action: "open_jarvis" },
+      { label: "Not now", action: "snooze" },
+    ],
+  },
 ];

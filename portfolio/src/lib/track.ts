@@ -15,7 +15,8 @@ export type EventName =
   | "calendly_view"
   | "calendly_booked"
   | "lab_run"
-  | "resume_open";
+  | "resume_open"
+  | "visitor_signal";
 
 export interface Lead {
   name: string;

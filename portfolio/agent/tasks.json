@@ -11,7 +11,8 @@
       "blockedOn": "the HTML verification tag",
       "impact": 5,
       "due": "2026-10-09",
-      "short": "Search Console"
+      "short": "Search Console",
+      "link": "https://search.google.com/search-console"
     },
     {
       "id": "linkedin-link",
@@ -20,7 +21,8 @@
       "status": "todo",
       "impact": 5,
       "due": "2026-10-08",
-      "short": "the LinkedIn link"
+      "short": "the LinkedIn link",
+      "link": "https://www.linkedin.com/in/siddharth-bagga-sid29/"
     },
     {
       "id": "github-website",
@@ -29,7 +31,8 @@
       "status": "todo",
       "impact": 3,
       "due": "2026-10-08",
-      "short": "the GitHub website field"
+      "short": "the GitHub website field",
+      "link": "https://github.com/settings/profile"
     },
     {
       "id": "high-properties-audit",
@@ -48,7 +51,8 @@
       "status": "todo",
       "impact": 2,
       "due": "2026-10-20",
-      "short": "the domain"
+      "short": "the domain",
+      "link": "https://dash.cloudflare.com/"
     },
     {
       "id": "cloudflare-mirror",
@@ -57,7 +61,8 @@
       "status": "todo",
       "impact": 1,
       "due": "2026-10-31",
-      "short": "the Cloudflare mirror"
+      "short": "the Cloudflare mirror",
+      "link": "https://dash.cloudflare.com/"
     },
     {
       "id": "webhook",

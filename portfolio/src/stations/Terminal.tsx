@@ -4,8 +4,10 @@ import { Panel, Kicker, rise } from "../ui/Panel.tsx";
 import { exhibit } from "../data/site.ts";
 import { useJarvis } from "../jarvis/JarvisProvider.tsx";
 import { bus } from "../jarvis/bus.ts";
+import { jarvis, unpair } from "../jarvis/owner.ts";
+import type { Activity, Notice, Status } from "../jarvis/sdk.ts";
 
-type Line = { k: "sys" | "hd" | "ok" | "txt" | "kv" | "a" | "jv"; a?: string; b?: string; href?: string };
+type Line = { k: "sys" | "hd" | "ok" | "txt" | "kv" | "a" | "jv" | "warn"; a?: string; b?: string; href?: string };
 
 const L = (k: Line["k"], a = "", b?: string): Line => ({ k, a, b });
 const A = (label: string, href: string): Line => ({ k: "a", a: label, href });
@@ -70,6 +72,45 @@ const SCREENS: Record<string, Line[]> = {
 
 const FKEYS = ["DES", "EXP", "VAL", "CERT", "HELP", "CLR"];
 
+// Owner command center: only when this browser is paired with Jarvis on Siddharth's Mac and it's
+// running. Everything shown comes from the Mac's stored task and project state; visitors never see it.
+const OWNER_HELP: Line[] = [
+  L("hd", "OWNER COMMANDS · LINKED TO YOUR MAC"),
+  L("kv", "BRIEF", "Where things stand: needs you, running, done, next"),
+  L("kv", "TASKS", "Jarvis's task feed"),
+  L("kv", "ALERTS", "Recent notifications"),
+  L("kv", "YES", "Approve the step Jarvis just offered"),
+  L("kv", "UNPAIR", "Forget this Mac in this browser"),
+  L("kv", "anything else", "Sent to Jarvis on your Mac, with this page as context"),
+];
+
+const due = (d: number | null) => (d == null ? "NO DATE" : d < 0 ? `${-d}D OVERDUE` : d === 0 ? "TODAY" : `IN ${d}D`);
+
+function activityLines(a: Activity): Line[] {
+  const out: Line[] = [L("txt", a.summary)];
+  if (a.needs_you.length) out.push(L("hd", "NEEDS YOU"), ...a.needs_you.map((t) => L("warn", `⚠ ${t.title}${t.detail ? ` · ${t.detail}` : ""}`)));
+  if (a.running.length) out.push(L("hd", "RUNNING"), ...a.running.map((t) => L("txt", `→ ${t.title}${t.detail ? ` · ${t.detail}` : ""}`)));
+  if (a.done.length) out.push(L("hd", "DONE"), ...a.done.slice(0, 5).map((t) => L("ok", `✓ ${t.title}`)));
+  if (a.failed.length) out.push(L("hd", "FAILED"), ...a.failed.map((t) => L("warn", `✗ ${t.title} · ${t.detail}`)));
+  return out;
+}
+
+function statusLines(s: Status): Line[] {
+  const out: Line[] = [];
+  if (s.in_progress.length) out.push(L("hd", "IN PROGRESS"), ...s.in_progress.map((t) => L("txt", `→ ${t}`)));
+  if (s.recently_done.length) out.push(L("hd", "RECENTLY DONE"), ...s.recently_done.slice(0, 4).map((t) => L("ok", `✓ ${t}`)));
+  if (s.next.length) {
+    out.push(L("hd", "NEXT"));
+    for (const n of s.next.slice(0, 5)) {
+      out.push(L("kv", due(n.due_in_days), n.title + (n.blocked_on ? ` (waiting on ${n.blocked_on})` : "")));
+      if (n.link) out.push(A("  OPEN", n.link));
+    }
+  }
+  return out;
+}
+
+const noticeLine = (n: Notice): Line => L(n.kind === "error" || n.kind === "user_input_required" ? "warn" : "ok", `◆ ${n.at.slice(11, 16)} ${n.title}: ${n.text}`);
+
 export function Terminal() {
   const j = useJarvis();
   const [lines, setLines] = useState<Line[]>([L("sys", "SB TERMINAL v5.0 · AUTH OK · FIGURES CANDIDATE-SUPPLIED"), L("sys", "TYPE HELP <GO> FOR COMMANDS, OR JUST ASK A QUESTION"), L("txt")]);
@@ -77,6 +118,8 @@ export function Terminal() {
   const pumping = useRef(false);
   const log = useRef<HTMLDivElement>(null);
   const [cmd, setCmd] = useState("");
+  const owner = j.owner === "online";
+  const seen = useRef("");
 
   useEffect(() => {
     log.current?.scrollTo({ top: log.current.scrollHeight });
@@ -98,12 +141,42 @@ export function Terminal() {
     next();
   };
 
+  const fail = () => push([L("warn", "CAN'T REACH JARVIS ON YOUR MAC. START IT WITH: jarvis-owner --serve")]);
+
+  const brief = () =>
+    void Promise.all([jarvis.activity(), jarvis.status()])
+      .then(([a, s]) => push([L("hd", "WHERE THINGS STAND"), ...activityLines(a), ...statusLines(s), L("sys", "SAY YES TO TAKE THE NEXT STEP, OR ASK ANYTHING.")]))
+      .catch(fail);
+
+  const runOwner = (up: string, c: string): boolean => {
+    if (up === "BRIEF") return brief(), true;
+    if (up === "TASKS") return void jarvis.activity().then((a) => push([L("hd", "TASKS"), ...activityLines(a)])).catch(fail), true;
+    if (up === "ALERTS")
+      return (
+        void jarvis
+          .notifications()
+          .then((ns) => push([L("hd", "ALERTS"), ...(ns.length ? ns.slice(-8).map(noticeLine) : [L("txt", "Nothing new.")])]))
+          .catch(fail),
+        true
+      );
+    if (up === "UNPAIR") return unpair(), push([L("ok", "UNPAIRED. THIS BROWSER NO LONGER TALKS TO YOUR MAC.")]), true;
+    if (up === "HELP") return push([...SCREENS.HELP!, L("txt"), ...OWNER_HELP]), true;
+    if (SCREENS[up] || up === "JARVIS" || /^DCF\s/.test(up)) return false;
+    push([L("sys", "JARVIS (MAC) ▸ working…")]);
+    void jarvis
+      .ask(c)
+      .then((reply) => push([{ k: "jv", a: "JARVIS (MAC) ▸ ", b: reply }]))
+      .catch(fail);
+    return true;
+  };
+
   const run = (raw: string) => {
     const c = raw.trim();
     if (!c) return;
     const up = c.toUpperCase();
     setLines((ls) => [...ls, L("sys", `> ${up} <GO>`)]);
     if (up === "CLR") return setLines([]);
+    if (owner && runOwner(up, c)) return;
     if (up === "JARVIS") return bus.emit({ type: "open_jarvis" });
     const dcf = up.match(/^DCF\s+(\d+(?:\.\d+)?)\s*(\d+(?:\.\d+)?)?$/);
     if (dcf) {
@@ -129,6 +202,31 @@ export function Terminal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // When the Mac link comes up: announce it, brief once, then surface new notifications as they land.
+  useEffect(() => {
+    if (!owner) return;
+    push([L("txt"), L("ok", "LINKED TO JARVIS ON YOUR MAC · OWNER MODE")]);
+    brief();
+    let alive = true;
+    const poll = () =>
+      void jarvis
+        .notifications(seen.current)
+        .then((ns) => {
+          if (!alive || !ns.length) return;
+          const first = seen.current === "";
+          seen.current = ns[ns.length - 1]!.at;
+          if (!first) push(ns.map(noticeLine));
+        })
+        .catch(() => {});
+    poll();
+    const id = setInterval(poll, 20_000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [owner]);
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
     run(cmd);
@@ -143,7 +241,7 @@ export function Terminal() {
       </motion.h2>
       <motion.div className="term" variants={rise}>
         <div className="th">
-          <span>SB TERMINAL · CONSOLE</span>
+          <span>{owner ? "SB TERMINAL · OWNER · MAC LINKED" : "SB TERMINAL · CONSOLE"}</span>
           <span>COMMAND OR QUESTION, PRESS &lt;GO&gt;</span>
         </div>
         <div className="tb" ref={log} data-testid="term-log">

@@ -75,6 +75,7 @@ button { font: inherit; color: inherit; }
 .term .sys { color: #8a6118; }
 .term .ok { color: var(--grn); }
 .term .ok .jvt { color: var(--bone); }
+.term .warn { color: var(--amber); }
 .term .hd { color: var(--amber); font-weight: 600; margin-top: 7px; }
 .term .kv { display: flex; gap: 9px; }
 .term .kv b { color: #5e6b76; font-weight: 400; min-width: 112px; flex: none; }

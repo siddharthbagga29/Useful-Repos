@@ -6,11 +6,13 @@
 // silences him for the rest of the visit.
 
 import { RateLimiter } from "../../agent/ratelimit.ts";
+import { HELP_FOR, type Signal } from "./signals.ts";
 
 export type ProactiveEvent =
   | { type: "landing"; returning: boolean }
   | { type: "dwell"; station: string }
-  | { type: "exit" };
+  | { type: "exit" }
+  | { type: "signal"; signal: Signal };
 
 export const DWELL_MS = 12_000;
 export const NUDGE_FOR: Record<string, string> = {
@@ -48,6 +50,7 @@ export class Proactive {
     else if (this.engaged) return null;
     else if (e.type === "dwell") id = NUDGE_FOR[e.station] ?? null;
     else if (e.type === "exit") id = "nudge.exit";
+    else if (e.type === "signal") id = HELP_FOR[e.signal];
     if (!id || this.used.has(id)) return null;
     if (!this.limiter.take()) return null;
     this.used.add(id);

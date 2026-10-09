@@ -9,6 +9,7 @@ import { pickClip, type VoiceManifest } from "./clips.ts";
 import { displayText, fill, parseScript } from "./markup.ts";
 import raw from "./playbook.json";
 import { DWELL_MS, Proactive } from "./proactive.ts";
+import { Signals, type Signal } from "./signals.ts";
 import type { Action, Audience, Chip, Line, Playbook } from "./types.ts";
 
 // Jarvis as the site's concierge. He opens the conversation, finds out who he's talking to, makes
@@ -140,6 +141,7 @@ export function Concierge({ station }: { station: string }) {
         latest.current.runTour();
       } else if (a.startsWith("dcf:")) bus.emit({ type: "set_dcf", wacc: Number(a.slice(4)) });
       else if (a === "snooze") {
+        store.set(local, "jv-help-dismissed", "1"); // next visit, he gives them more room
         latest.current.stopTour();
         engine.current?.snooze();
         j.stopSpeaking();
@@ -271,6 +273,55 @@ export function Concierge({ station }: { station: string }) {
     }, DWELL_MS);
     return () => clearTimeout(t);
   }, [station, busy, open, show]);
+
+  // reading the room: rage clicks, dead clicks, scrolling back and forth, a long stall
+  useEffect(() => {
+    const patience = store.get(local, "jv-help-dismissed") === "1" ? 2 : 1;
+    const sig = new Signals(() => Date.now(), patience);
+    let lastInput = Date.now();
+    let lastY = scrollY;
+    const fire = (s: Signal | null) => {
+      if (!s || document.visibilityState !== "visible") return;
+      const id = engine.current?.decide({ type: "signal", signal: s }, latest.current.busy());
+      if (!id) return;
+      track("visitor_signal", { signal: s });
+      latest.current.show(id);
+    };
+    const outside = (t: EventTarget | null) => !(t as HTMLElement | null)?.closest?.(".concierge, .overlay, .cx-back, .pal-back, .city-x");
+    const onClick = (e: MouseEvent) => {
+      lastInput = Date.now();
+      if (!outside(e.target)) return;
+      const interactive = !!(e.target as HTMLElement | null)?.closest?.("a, button, input, select, textarea, label, summary, [role=button], [tabindex], svg .bld, svg .bot");
+      fire(sig.click(e.clientX, e.clientY, interactive));
+    };
+    const onWheel = (e: WheelEvent) => {
+      lastInput = Date.now();
+      if (outside(e.target)) fire(sig.scroll(e.deltaY || e.deltaX));
+    };
+    const onScroll = () => {
+      const d = scrollY - lastY;
+      lastY = scrollY;
+      fire(sig.scroll(d));
+    };
+    const onInput = () => {
+      lastInput = Date.now();
+    };
+    const t = setInterval(() => {
+      if (document.querySelector(".concierge")) lastInput = Date.now(); // he's already talking to them
+      fire(sig.idle(Date.now() - lastInput));
+    }, 5000);
+    addEventListener("click", onClick, true);
+    addEventListener("wheel", onWheel, { passive: true });
+    addEventListener("scroll", onScroll, { passive: true });
+    for (const ev of ["keydown", "pointermove", "touchstart"]) addEventListener(ev, onInput, { passive: true });
+    return () => {
+      clearInterval(t);
+      removeEventListener("click", onClick, true);
+      removeEventListener("wheel", onWheel);
+      removeEventListener("scroll", onScroll);
+      for (const ev of ["keydown", "pointermove", "touchstart"]) removeEventListener(ev, onInput);
+    };
+  }, []);
 
   // moving to leave (desktop)
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { askOwner, ownerOnline, ownerToken } from "./owner.ts";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import briefText from "../../../jarvis/knowledge/brief.md?raw";
 import { Engine, digest, research, type Answer, type Citation, type DigestSection, type Skill, type TraceStep } from "./engine.ts";
@@ -14,7 +15,7 @@ export interface Msg {
   role: "user" | "assistant";
   text: string;
   agent?: AgentId;
-  engine?: "instant" | "neural" | "guard-fallback";
+  engine?: "instant" | "neural" | "guard-fallback" | "mac";
   intent?: string;
   citations?: Citation[];
   skills?: Skill[];
@@ -68,6 +69,8 @@ interface JarvisApi {
   clear(): void;
   open: boolean;
   setOpen(o: boolean): void;
+  /** Siddharth's own Mac Jarvis, when this browser is paired and it's running (owner.ts). */
+  owner: "none" | "offline" | "online";
 }
 
 const Ctx = createContext<JarvisApi | null>(null);
@@ -214,6 +217,22 @@ export function JarvisProvider({ children }: { children: ReactNode }) {
 
   const stopRef = useRef(0);
 
+  // the owner link: checked on load and whenever the console opens
+  const [owner, setOwner] = useState<"none" | "offline" | "online">(() => (ownerToken() ? "offline" : "none"));
+  const ownerRef = useRef(owner);
+  ownerRef.current = owner;
+  useEffect(() => {
+    if (!ownerToken()) return;
+    let alive = true;
+    const check = () => void ownerOnline().then((ok) => alive && setOwner(ok ? "online" : "offline"));
+    check();
+    const t = setInterval(check, 30_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+
   const ask = useCallback(
     (raw: string, opts: { agent?: AgentId; viaVoice?: boolean } = {}) => {
       const text = raw.trim().slice(0, 600);
@@ -235,6 +254,27 @@ export function JarvisProvider({ children }: { children: ReactNode }) {
 
       if (mode === "digest") {
         runDigest();
+        return;
+      }
+
+      // Paired with his Mac: the Mac's Jarvis (tools, research, status, memory) answers instead.
+      if (ownerRef.current === "online") {
+        busy.current = true;
+        setStatus("thinking");
+        const t0 = performance.now();
+        void askOwner(text)
+          .then((reply) => {
+            add({ role: "assistant", text: reply, engine: "mac", intent: "owner.mac", trace: [{ kind: "tool", label: "mac.jarvis", detail: "127.0.0.1" }], ms: performance.now() - t0 });
+            if (settingsRef.current.autoSpeak || opts.viaVoice) void say(reply);
+          })
+          .catch(() => {
+            setOwner("offline");
+            add({ role: "assistant", text: "I can't reach Jarvis on your Mac right now, so this is the website's answer. Start it with jarvis-owner --serve.", engine: "instant", intent: "owner.offline" });
+          })
+          .finally(() => {
+            busy.current = false;
+            setStatus("idle");
+          });
         return;
       }
 
@@ -364,6 +404,7 @@ export function JarvisProvider({ children }: { children: ReactNode }) {
         .then((ok) => (ok || !canSpeak() ? undefined : speaker.speakScript(fallback)))
         .then(() => listener.resume());
     },
+    owner,
     stopSpeaking: () => {
       digestTicket.current++;
       speaker.cancel();

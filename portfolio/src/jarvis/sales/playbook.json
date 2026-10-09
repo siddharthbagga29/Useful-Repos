@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-08T16:00:14.594Z",
+  "generatedAt": "2026-10-09T00:07:23.970Z",
   "approved": {
     "score": 10,
     "iteration": 1,
@@ -491,6 +491,86 @@
         {
           "label": "Send a note",
           "next": "close.email"
+        },
+        {
+          "label": "Not now",
+          "action": "snooze"
+        }
+      ]
+    },
+    "help.rage": {
+      "id": "help.rage",
+      "stage": "nudge",
+      "text": "That didn't respond the way you expected, | did it? || I'll take you straight there. | Where were you trying to go?",
+      "chips": [
+        {
+          "label": "The live model",
+          "action": "navigate:model"
+        },
+        {
+          "label": "His experience",
+          "action": "navigate:experience"
+        },
+        {
+          "label": "Ask Jarvis",
+          "action": "open_jarvis"
+        }
+      ]
+    },
+    "help.dead": {
+      "id": "help.dead",
+      "stage": "nudge",
+      "text": "That part isn't clickable, | I'm afraid. || Shall I show you what is?",
+      "chips": [
+        {
+          "label": "Begin the tour",
+          "action": "run_tour"
+        },
+        {
+          "label": "Ask Jarvis",
+          "action": "open_jarvis"
+        },
+        {
+          "label": "Not now",
+          "action": "snooze"
+        }
+      ]
+    },
+    "help.hunting": {
+      "id": "help.hunting",
+      "stage": "nudge",
+      "text": "Looking for something specific? || I know where everything is on this site. | What do you need?",
+      "chips": [
+        {
+          "label": "Experience",
+          "action": "navigate:experience"
+        },
+        {
+          "label": "The deal audit",
+          "action": "navigate:dealroom"
+        },
+        {
+          "label": "Research",
+          "action": "navigate:research"
+        },
+        {
+          "label": "Contact",
+          "action": "navigate:contact"
+        }
+      ]
+    },
+    "help.stall": {
+      "id": "help.stall",
+      "stage": "nudge",
+      "text": "Still with me? || I can run the one-minute tour, | or answer whatever's on your mind. || Which would you prefer?",
+      "chips": [
+        {
+          "label": "Begin the tour",
+          "action": "run_tour"
+        },
+        {
+          "label": "Ask Jarvis",
+          "action": "open_jarvis"
         },
         {
           "label": "Not now",

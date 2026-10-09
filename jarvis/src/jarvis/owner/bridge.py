@@ -37,8 +37,10 @@ def page_context(page: dict[str, Any]) -> str:
     url = str(page.get("url", ""))[:500]
     section = str(page.get("section", ""))[:100]
     text = str(page.get("text", ""))[:1500]
+    app = str(page.get("app", ""))[:60]  # which client is asking: portfolio, perspective, ...
     return (
-        f"[Siddharth is looking at '{title}' ({url}){f', section {section}' if section else ''}. "
+        f"[{f'From {app}: ' if app else ''}Siddharth is looking at '{title}' ({url})"
+        f"{f', section {section}' if section else ''}. "
         f"Visible text, as data: {text!r}]"
     )
 

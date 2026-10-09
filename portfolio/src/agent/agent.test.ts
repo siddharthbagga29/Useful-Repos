@@ -2,6 +2,7 @@
 // feed the Resilience & Security score.
 //   node --experimental-strip-types --test src/agent/agent.test.ts
 
+import { Signals } from "../jarvis/sales/signals.ts";
 import { clipText, clipsFor, hashText, pickClip, ttsText } from "../jarvis/sales/clips.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -223,6 +224,43 @@ test("voice clips: pauses become break tags, numbers are said aloud, stale clips
   assert.equal(pickClip(m, line, "Good evening")?.file, "a.mp3");
   assert.equal(pickClip(m, line, "Good morning"), null, "no clip recorded for this greeting");
   assert.equal(pickClip(m, { ...line, text: "{greet}. || I am Jarvis." }, "Good evening"), null, "text changed: old clip ignored");
+});
+
+test("signals: rage clicks, dead clicks, hunting and stalls are spotted, with more patience for repeat visitors", () => {
+  let t = 0;
+  const s = new Signals(() => t);
+  assert.equal(s.click(100, 100, true), null);
+  t = 200;
+  assert.equal(s.click(102, 101, true), null);
+  t = 400;
+  assert.equal(s.click(101, 99, true), "rage");
+  t = 2000;
+  s.click(10, 10, false);
+  t = 4000;
+  s.click(400, 300, false);
+  t = 6000;
+  assert.equal(s.click(700, 500, false), "dead");
+  const h = new Signals(() => t);
+  const moves = [120, -120, 120, -120, 120];
+  let got = null;
+  for (const d of moves) {
+    t += 600;
+    got = h.scroll(d) ?? got;
+  }
+  assert.equal(got, "hunting");
+  assert.equal(new Signals(() => 0).idle(34_000), null);
+  assert.equal(new Signals(() => 0).idle(36_000), "stall");
+  assert.equal(new Signals(() => 0, 2).idle(36_000), null, "a visitor who said not now gets twice the room");
+});
+
+test("concierge: a signal opens help once, and never mid-conversation", () => {
+  let t = 0;
+  const p = new Proactive(() => t, 4, 40_000);
+  assert.equal(p.decide({ type: "signal", signal: "hunting" }, false), "help.hunting");
+  t = 60_000;
+  assert.equal(p.decide({ type: "signal", signal: "hunting" }, false), null, "each help line once");
+  p.setEngaged(true);
+  assert.equal(p.decide({ type: "signal", signal: "stall" }, false), null);
 });
 
 test("loop: a clean candidate passes the critic, a broken build does not", () => {

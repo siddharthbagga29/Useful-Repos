@@ -5,7 +5,8 @@
       "src/agent/**",
       "src/jarvis/sales/**",
       "scripts/jarvis-loop.ts",
-      "scripts/voice-build.ts"
+      "scripts/voice-build.ts",
+      "scripts/site-index.ts"
     ]
   },
   "formatter": {

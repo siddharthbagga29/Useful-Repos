@@ -640,6 +640,71 @@ def studio_voice(p) -> None:
     browser.close()
 
 
+def owner_terminal(p) -> None:
+    """Paired with a (faked) Mac bridge: the Terminal becomes the owner command center.
+    A visitor with no pairing token never calls the bridge at all."""
+    import json
+    browser = p.chromium.launch(executable_path=CHROME)
+    calls: list[tuple[str, str, str]] = []
+    activity = {"summary": "Three things are complete, one is running, and I need your decision on one item.",
+                "needs_you": [{"icon": "⚠", "status": "waiting_for_user", "task_id": "a1", "title": "Research: agentic memory", "detail": "Allow older papers?", "at": "2026-10-08"}],
+                "running": [{"icon": "→", "status": "running", "task_id": "b2", "title": "Research: LLM evals", "detail": "found 12 candidates", "at": "2026-10-08"}],
+                "done": [{"icon": "✓", "status": "completed", "task_id": "c3", "title": "Research: RAG", "detail": "", "at": "2026-10-08"}], "failed": []}
+    status = {"recently_done": ["Turn on Calendly booking"], "in_progress": [],
+              "next": [{"id": "linkedin-link", "title": "Add the portfolio link to LinkedIn", "due_in_days": -1, "blocked_on": None, "link": "https://www.linkedin.com/in/siddharth-bagga-sid29/"}]}
+
+    def bridge(route):
+        req = route.request
+        calls.append((req.method, req.url, req.headers.get("authorization", "")))
+        path = req.url.split("8765", 1)[1]
+        body: object = {"ok": True}
+        if path == "/activity": body = {"data": activity}
+        elif path == "/status": body = {"data": status}
+        elif path == "/notifications": body = {"data": [{"at": "2026-10-08T10:00:00", "kind": "task_complete", "title": "Research: RAG", "text": "Done.", "spoken": False, "banner": True}]}
+        elif path == "/ask": body = {"reply": "Opening the LinkedIn settings now, sir. " + json.loads(req.post_data or "{}").get("page", {}).get("app", "")}
+        route.fulfill(status=200, content_type="application/json", headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Allow-Private-Network": "true"}, body=json.dumps(body))
+
+    # visitor: no token, no bridge traffic, ordinary terminal
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    ctx.route("http://127.0.0.1:8765/**", bridge)
+    page = ctx.new_page()
+    page.goto(BASE)
+    page.wait_for_timeout(1500)
+    check("visitor: never calls the Mac bridge", not calls, str(calls)[:200])
+    check("visitor: terminal header unchanged", "OWNER" not in page.locator(".term .th").inner_text())
+    ctx.close()
+
+    # owner: pairing link stores the token, scrubs it from the URL, and lights up the command center
+    token = "t" * 32
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    ctx.route("http://127.0.0.1:8765/**", bridge)
+    page = ctx.new_page()
+    page.goto(BASE + "#pair-" + token)
+    check("owner: pairing token scrubbed from the address bar", "pair-" not in page.url, page.url)
+    page.mouse.move(500, 400)
+    page.keyboard.press("4")
+    page.wait_for_function("document.querySelector('[data-testid=term-log]')?.innerText.includes('SAY YES')", timeout=8000)
+    log = page.get_by_test_id("term-log").inner_text()
+    check("owner: header shows the Mac link", "MAC LINKED" in page.locator(".term .th").inner_text())
+    check("owner: brief shows needs-you, running, done and next", all(s in log for s in ["Allow older papers?", "found 12 candidates", "✓ Research: RAG", "1D OVERDUE", "SAY YES"]), log[-400:])
+    check("owner: every bridge call carries the token", calls and all(a == f"Bearer {token}" for _, _, a in calls))
+    box = page.get_by_label("Terminal command (F1–F6 run the shortcuts)")
+    box.fill("yes")
+    box.press("Enter")
+    page.wait_for_function("document.querySelector('[data-testid=term-log]')?.innerText.includes('JARVIS (MAC) ▸ Opening')", timeout=8000)
+    check("owner: YES goes to the Mac Jarvis with the app name as context", "sir. portfolio" in page.get_by_test_id("term-log").inner_text())
+    box.fill("DES")
+    box.press("Enter")
+    page.wait_for_timeout(600)
+    check("owner: site commands still run locally", "SIDDHARTH BAGGA" in page.get_by_test_id("term-log").inner_text())
+    page.screenshot(path=f"{SHOTS}/owner-terminal.png")
+    box.fill("unpair")
+    box.press("Enter")
+    page.wait_for_timeout(300)
+    check("owner: UNPAIR forgets the token", page.evaluate("localStorage.getItem('jv-owner-token')") is None)
+    browser.close()
+
+
 if __name__ == "__main__":
     os.makedirs(SHOTS, exist_ok=True)
     with sync_playwright() as p:
@@ -647,6 +712,7 @@ if __name__ == "__main__":
         concierge(p)
         jarvis_tour(p)
         studio_voice(p)
+        owner_terminal(p)
         city_explorer(p)
         connect_and_links(p)
         research_and_lab(p)

@@ -19,6 +19,8 @@ export interface Task {
   /** what the owner has to provide when blocked */
   blockedOn?: string;
   completedAt?: string;
+  /** where the owner does the task; Jarvis on the Mac opens it when he says go */
+  link?: string;
 }
 
 export interface TaskFile {

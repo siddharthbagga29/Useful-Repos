@@ -144,6 +144,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     server = None
+    web_agent: OwnerAgent | None = None
     if args.serve:
         from jarvis.owner.bridge import load_token, serve
 
@@ -171,6 +172,8 @@ def main(argv: list[str] | None = None) -> int:
     if resumed:
         opening += f" I resumed {len(resumed)} interrupted task{'s' if len(resumed) > 1 else ''}."
     agent.said(opening)
+    if web_agent is not None:  # so a YES typed on the website knows what it approves
+        web_agent.said(opening)
     try:
         if args.headless:
             while True:
