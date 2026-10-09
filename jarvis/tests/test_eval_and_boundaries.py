@@ -64,17 +64,19 @@ def test_public_never_imports_owner() -> None:
 
 
 def test_owner_opens_no_network_listener() -> None:
-    forbidden = (
-        "fastapi",
-        "uvicorn",
-        "starlette",
-        "socket",
-        "socketserver",
-        "http.server",
-        "jarvis.public",
-    )
+    """The only listener is the website bridge: 127.0.0.1, pairing token, origin check."""
+    forbidden = ("fastapi", "uvicorn", "starlette", "socket", "socketserver", "jarvis.public")
     leaks = {name for name in _imports("owner") if name.startswith(forbidden)}
     assert leaks == set()
+    listeners = {
+        path.name
+        for path in (SRC / "owner").rglob("*.py")
+        if "http.server" in path.read_text(encoding="utf-8")
+    }
+    assert listeners == {"bridge.py"}
+    bridge = (SRC / "owner" / "bridge.py").read_text(encoding="utf-8")
+    assert '("127.0.0.1", port)' in bridge
+    assert "compare_digest" in bridge and "_origin_ok" in bridge
 
 
 def test_answer_backends_cannot_accept_tools() -> None:

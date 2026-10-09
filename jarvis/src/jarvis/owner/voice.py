@@ -14,6 +14,26 @@ class VoiceUnavailable(RuntimeError):
     """A voice dependency or credential is missing."""
 
 
+# British first, most natural first. Premium/Enhanced voices are free downloads in System Settings →
+# Accessibility → Spoken Content → System voice → Manage Voices.
+PREFERRED_VOICES = ("Jamie (Premium)", "Daniel (Enhanced)", "Oliver (Enhanced)", "Jamie", "Daniel")
+
+
+def pick_voice(requested: str, installed: str | None = None) -> str:
+    """The `say` voice: the requested one, or with "auto" the best installed British voice."""
+    if requested != "auto":
+        return requested
+    if installed is None:
+        try:
+            installed = subprocess.run(
+                ["say", "-v", "?"], capture_output=True, text=True, timeout=10
+            ).stdout
+        except (OSError, subprocess.SubprocessError):
+            installed = ""
+    names = {line.split("  ")[0].strip() for line in installed.splitlines() if line.strip()}
+    return next((v for v in PREFERRED_VOICES if v in names), "Daniel")
+
+
 def speak(text: str, voice: str) -> None:
     text = text.strip()[:1000]
     if not text:
@@ -130,7 +150,9 @@ class VoiceIO:
         while not self._wake.heard(self._frame()):
             pass
 
-    def record_utterance(self, max_seconds: float = 15.0, trailing_silence: float = 1.2) -> Any:
+    def record_utterance(
+        self, max_seconds: float = 15.0, trailing_silence: float = 1.2, start_timeout: float = 4.0
+    ) -> Any:
         frame_seconds = self.FRAME / self.SAMPLE_RATE
         frames: list[Any] = []
         heard_speech = False
@@ -147,8 +169,8 @@ class VoiceIO:
                 quiet += frame_seconds
                 if quiet >= trailing_silence:
                     break
-            elif elapsed > 4.0:
-                break  # nothing said after the wake word
+            elif elapsed > start_timeout:
+                break  # nothing said
         audio = self._np.concatenate(frames).astype(self._np.float32) / 32768.0
         return audio if heard_speech else None
 
@@ -158,8 +180,8 @@ class VoiceIO:
         segments, _info = self._model.transcribe(audio, language="en", beam_size=1)
         return " ".join(segment.text.strip() for segment in segments).strip()
 
-    def listen(self) -> str:
-        return self.transcribe(self.record_utterance())
+    def listen(self, start_timeout: float = 4.0) -> str:
+        return self.transcribe(self.record_utterance(start_timeout=start_timeout))
 
     def close(self) -> None:
         self._stream.close()
@@ -167,8 +189,16 @@ class VoiceIO:
         self._wake.close()
 
 
+YES = {"yes", "confirm", "go ahead", "do it", "yes please", "yes go ahead", "confirmed", "approve"}
+
+
+def is_yes(heard: str) -> bool:
+    """Only a clear, short yes counts; "yes but…", "no" or silence decline."""
+    return heard.lower().strip(" .!,") in YES
+
+
 class VoiceConfirmer:
-    """Speaks the action and accepts only the word "confirm". Opt-in: JARVIS_VOICE_CONFIRM."""
+    """Speaks the action and goes ahead only on a clear spoken yes (only for important steps)."""
 
     def __init__(self, voice: VoiceIO, voice_name: str) -> None:
         self._voice = voice
@@ -176,6 +206,7 @@ class VoiceConfirmer:
 
     def confirm(self, summary: str) -> bool:
         print(f"\nJarvis wants to: {summary}")
-        speak(f"I'm about to {summary}. Say confirm to go ahead.", self._name)
-        heard = self._voice.listen().lower().strip(" .!")
-        return heard == "confirm"
+        speak(f"Before I {summary}: shall I go ahead?", self._name)
+        heard = self._voice.listen(start_timeout=6.0)
+        print(f"you> {heard}")
+        return is_yes(heard)

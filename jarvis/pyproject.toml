@@ -24,6 +24,7 @@ voice = [
   "numpy>=1.26",
 ]
 porcupine = ["pvporcupine>=3.0"]
+browser = ["playwright>=1.45"]
 dev = [
   "pytest>=8",
   "ruff>=0.6",
@@ -68,5 +69,8 @@ mypy_path = "src"
 packages = ["jarvis"]
 
 [[tool.mypy.overrides]]
-module = ["openwakeword", "openwakeword.*", "pvporcupine", "pyaudio", "faster_whisper", "numpy"]
+module = [
+  "openwakeword", "openwakeword.*", "pvporcupine", "pyaudio", "faster_whisper", "numpy",
+  "playwright", "playwright.*",
+]
 ignore_missing_imports = true

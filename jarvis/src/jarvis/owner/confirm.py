@@ -39,3 +39,35 @@ class DenyAll:
     def confirm(self, summary: str) -> bool:
         self._write(f"[dry run] would ask to: {summary}")
         return False
+
+
+class DialogConfirmer:
+    """A macOS pop-up with Allow / Cancel: one click, no typing. Used for requests from the website.
+
+    The action text is passed to osascript as an argument, never pasted into script source.
+    Cancel is the default button, and the dialog gives up (declines) after two minutes.
+    """
+
+    SCRIPT = """
+on run argv
+    try
+        set msg to "Jarvis wants to: " & item 1 of argv
+        set r to display dialog msg with title "Jarvis" buttons {"Cancel", "Allow"} ¬
+            default button "Cancel" cancel button "Cancel" giving up after 120
+        return (button returned of r) & "|" & (gave up of r)
+    on error
+        return "Cancel|false"
+    end try
+end run
+"""
+
+    def __init__(self, run: Callable[[list[str]], str] | None = None) -> None:
+        import subprocess
+
+        self._run = run or (
+            lambda argv: subprocess.run(argv, capture_output=True, text=True, timeout=130).stdout
+        )
+
+    def confirm(self, summary: str) -> bool:
+        out = self._run(["osascript", "-e", self.SCRIPT, summary]).strip()
+        return out == "Allow|false"

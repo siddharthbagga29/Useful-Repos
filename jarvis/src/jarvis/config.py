@@ -13,6 +13,8 @@ from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BRIEF = PACKAGE_ROOT / "knowledge" / "brief.md"
+REPO_ROOT = PACKAGE_ROOT.parent
+DEFAULT_SITE_INDEX = REPO_ROOT / "portfolio" / "public" / "jarvis" / "site-index.json"
 
 EFFORT_LEVELS = ("low", "medium", "high", "xhigh", "max")
 
@@ -64,6 +66,19 @@ def _choice(env: Mapping[str, str], key: str, default: str, options: tuple[str, 
     return value
 
 
+def _hours(env: Mapping[str, str], key: str) -> tuple[int, int] | None:
+    raw = _get(env, key, "")
+    if not raw:
+        return None
+    try:
+        start, end = (int(x) for x in raw.split("-"))
+    except ValueError as exc:
+        raise ConfigError(f"JARVIS_{key} must look like 22-7, got {raw!r}") from exc
+    if not (0 <= start <= 23 and 0 <= end <= 23):
+        raise ConfigError(f"JARVIS_{key} hours must be 0-23")
+    return start, end
+
+
 def _csv(env: Mapping[str, str], key: str) -> tuple[str, ...]:
     return tuple(part.strip() for part in _get(env, key, "").split(",") if part.strip())
 
@@ -75,7 +90,7 @@ class LLMSettings:
     effort: str = "medium"
     max_tokens: int = 2048
     ollama_url: str = "http://127.0.0.1:11434"
-    ollama_model: str = "llama3.1:8b"
+    ollama_model: str = "qwen3:8b"
     timeout_seconds: int = 60
 
 
@@ -103,13 +118,30 @@ class OwnerSettings:
     state_dir: Path = Path.home() / ".jarvis"
     max_agent_steps: int = 8
     default_calendar: str = "Calendar"
-    voice_name: str = "Daniel"
-    voice_confirm: bool = False  # side effects need a typed "yes" unless explicitly enabled
+    voice_name: str = "auto"  # "auto" picks the best installed British voice (Jamie Premium first)
+    voice_confirm: bool = (
+        True  # in voice mode, important steps are confirmed by saying "yes" or "confirm"
+    )
     whisper_model: str = "base.en"
     wake_engine: str = "openwakeword"  # "openwakeword" (free, no key) | "porcupine" (Picovoice key)
     wake_threshold: float = 0.5  # openWakeWord score that counts as "Hey Jarvis"
     picovoice_access_key: str = ""
     brief_path: Path = DEFAULT_BRIEF
+    autonomy: str = (
+        "standard"  # "standard": routine steps run on their own; "strict": everything asks
+    )
+    follow_up_seconds: float = (
+        6.0  # after he replies, keep listening this long without the wake word
+    )
+    repo_dir: Path = REPO_ROOT
+    site_index: Path = DEFAULT_SITE_INDEX
+    bridge_port: int = 8765
+    fast_model: str = ""  # optional smaller local model for quick classification
+    research_backend: str = (
+        "ollama"  # "anthropic" sends research summaries to Claude (opt-in, paid)
+    )
+    quiet_hours: tuple[int, int] | None = None  # e.g. (22, 7): no speech or banners
+    bridge_origins: tuple[str, ...] = ("https://siddharthbagga29.github.io",)
 
 
 def load_llm(env: Mapping[str, str], *, default_backend: str) -> LLMSettings:
@@ -119,7 +151,7 @@ def load_llm(env: Mapping[str, str], *, default_backend: str) -> LLMSettings:
         effort=_choice(env, "EFFORT", "medium", EFFORT_LEVELS),
         max_tokens=_int(env, "MAX_TOKENS", 2048, 256, 64000),
         ollama_url=_get(env, "OLLAMA_URL", "http://127.0.0.1:11434"),
-        ollama_model=_get(env, "OLLAMA_MODEL", "llama3.1:8b"),
+        ollama_model=_get(env, "OLLAMA_MODEL", "qwen3:8b"),
         timeout_seconds=_int(env, "LLM_TIMEOUT_SECONDS", 60, 5, 600),
     )
 
@@ -159,11 +191,20 @@ def load_owner(env: Mapping[str, str] | None = None) -> OwnerSettings:
         state_dir=Path(_get(env, "STATE_DIR", str(Path.home() / ".jarvis"))).expanduser(),
         max_agent_steps=_int(env, "MAX_AGENT_STEPS", 8, 1, 32),
         default_calendar=_get(env, "DEFAULT_CALENDAR", "Calendar"),
-        voice_name=_get(env, "VOICE", "Daniel"),
-        voice_confirm=_bool(env, "VOICE_CONFIRM", False),
+        voice_name=_get(env, "VOICE", "auto"),
+        voice_confirm=_bool(env, "VOICE_CONFIRM", True),
         whisper_model=_get(env, "WHISPER_MODEL", "base.en"),
         wake_engine=_choice(env, "WAKE_ENGINE", "openwakeword", ("openwakeword", "porcupine")),
         wake_threshold=_float(env, "WAKE_THRESHOLD", 0.5, 0.05, 0.99),
         picovoice_access_key=_get(env, "PICOVOICE_ACCESS_KEY", ""),
         brief_path=Path(_get(env, "BRIEF_PATH", str(DEFAULT_BRIEF))),
+        autonomy=_choice(env, "AUTONOMY", "standard", ("standard", "strict")),
+        follow_up_seconds=_float(env, "FOLLOW_UP_SECONDS", 6.0, 0.0, 30.0),
+        repo_dir=Path(_get(env, "REPO_DIR", str(REPO_ROOT))).expanduser(),
+        site_index=Path(_get(env, "SITE_INDEX", str(DEFAULT_SITE_INDEX))).expanduser(),
+        bridge_port=_int(env, "BRIDGE_PORT", 8765, 1024, 65535),
+        fast_model=_get(env, "FAST_MODEL", ""),
+        research_backend=_choice(env, "RESEARCH_BACKEND", "ollama", ("ollama", "anthropic")),
+        quiet_hours=_hours(env, "QUIET_HOURS"),
+        bridge_origins=_csv(env, "BRIDGE_ORIGINS") or ("https://siddharthbagga29.github.io",),
     )

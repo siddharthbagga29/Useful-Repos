@@ -11,6 +11,7 @@ import subprocess
 import sys
 from collections.abc import Callable
 from datetime import date, time
+from pathlib import Path
 
 Runner = Callable[[list[str]], str]
 
@@ -120,6 +121,14 @@ class MacActions:
 
     def list_events(self, days_ahead: int) -> str:
         return self._run(_osascript(LIST_EVENTS, [str(days_ahead)])) or "No events in that window."
+
+    def open_file(self, path: Path) -> str:
+        """Open a file Jarvis saved under ~/Downloads/Jarvis in its default app."""
+        root = (Path.home() / "Downloads" / "Jarvis").resolve()
+        if root not in path.resolve().parents:
+            raise ValueError("Jarvis only opens files he saved in ~/Downloads/Jarvis.")
+        self._run(["open", str(path)])
+        return f"saved and opened {path.name}"
 
     def open_url(self, url: str) -> str:
         if not re.fullmatch(r"https://[^\s]+", url):

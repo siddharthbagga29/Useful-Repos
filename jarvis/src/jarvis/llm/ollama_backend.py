@@ -44,7 +44,7 @@ class OllamaAnswerBackend:
 
 
 class OllamaAgentSession:
-    """Needs a tool-capable model such as llama3.1 or qwen2.5; plain llama3 cannot call tools."""
+    """Needs a tool-capable model such as qwen3 or llama3.1; plain llama3 cannot call tools."""
 
     def __init__(
         self,
