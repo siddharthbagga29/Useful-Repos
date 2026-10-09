@@ -224,3 +224,22 @@ Jarvis loop approved at 10.0/10, build passes, browser e2e all passing.
   - Port 8765 is free.
 - **Next:** `jarvis-owner --voice-check` (microphone, transcription, wake word), then a live
   `--voice --serve` session.
+
+### Follow-up: Jarvis spoke his reasoning (2026-10-09)
+
+- **Root cause:**
+  - Ollama's plain `qwen3:4b` appears to be a reasoning ("thinking") build. Its output matches:
+    the reasoning ended in `</think>` with no opening tag.
+  - Jarvis printed and spoke the raw reply.
+  - The context note `[You just said to Siddharth: ...]` led the model to treat the
+    conversation as a "simulation".
+- **Fixed:**
+  - Reasoning is stripped from every reply and from the conversation history, including replies
+    cut off mid-thought.
+  - Speech drops markup and is limited to a few sentences.
+  - The context note is rephrased.
+  - A new rule: never claim an action without calling its tool.
+  - The 8 GB default is now `qwen3:4b-instruct` (non-thinking).
+  - `--doctor` asks a real one-sentence question and flags a thinking model, with the fix.
+- **Verified:** the real `jarvis-owner` against a stand-in Ollama returning the exact leaked
+  reply prints and speaks only "Yes, Siddharth. I can hear you."

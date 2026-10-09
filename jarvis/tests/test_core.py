@@ -158,7 +158,8 @@ def test_notifier_quiet_hours_and_argv_safety() -> None:
 
 
 @pytest.mark.parametrize(
-    ("ram", "model"), [(8, "qwen3:4b"), (16, "qwen3:8b"), (32, "qwen3:14b"), (64, "qwen3:30b")]
+    ("ram", "model"),
+    [(8, "qwen3:4b-instruct"), (16, "qwen3:8b"), (32, "qwen3:14b"), (64, "qwen3:30b")],
 )
 def test_recommend_model_by_ram(ram: float, model: str) -> None:
     assert recommend_model(ram) == model

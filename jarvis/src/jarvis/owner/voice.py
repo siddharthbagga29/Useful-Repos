@@ -5,6 +5,7 @@ Optional: install with ``pip install -e '.[voice]'``. Without the extras, text m
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from typing import Any
@@ -34,8 +35,22 @@ def pick_voice(requested: str, installed: str | None = None) -> str:
     return next((v for v in PREFERRED_VOICES if v in names), "Daniel")
 
 
+def for_speech(text: str, limit: int = 450) -> str:
+    """What gets said aloud: no markup, no LaTeX, and at most a few sentences (the full reply is
+    still printed in Terminal)."""
+    text = re.sub(r"\\boxed\{(.*?)\}", r"\1", text)
+    text = re.sub(r"```.*?```", " ", text, flags=re.DOTALL)
+    text = re.sub(r"[*_`#>|]+", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    end = max(cut.rfind(". "), cut.rfind("? "), cut.rfind("! "))
+    return cut[: end + 1] if end > 80 else cut.rsplit(" ", 1)[0] + "."
+
+
 def speak(text: str, voice: str) -> None:
-    text = text.strip()[:1000]
+    text = for_speech(text)
     if not text:
         return
     if sys.platform == "darwin":

@@ -8,6 +8,7 @@ cloud model: the caller reports the problem instead.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterator
 from typing import Any
 
@@ -26,6 +27,24 @@ class LocalModelError(RuntimeError):
         self.kind = kind
 
 
+_THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL)
+
+
+def visible_reply(text: str) -> str:
+    """The part of a reply meant for Siddharth. Reasoning models put their thinking in the reply
+    itself: a <think>...</think> block, or (when the template opened the block) everything up to
+    a lone </think>. Neither is ever shown or spoken."""
+    if "</think>" in text:
+        text = text.rsplit("</think>", 1)[1]
+    text = _THINK_BLOCK.sub("", text)
+    return text.split("<think>", 1)[0].strip()  # an unclosed block was cut off mid-thought
+
+
+def never_thinks(model: str) -> bool:
+    """Instruct builds never think; hybrid Qwen 3 builds accept think=false."""
+    return "instruct" in model
+
+
 def _http(settings: LLMSettings) -> httpx.Client:
     # First use loads the model from disk, which takes a while on an 8 GB Mac: generous read
     # timeout, but a fast connect timeout so "Ollama isn't running" is reported in seconds.
@@ -39,7 +58,7 @@ def _options(settings: LLMSettings) -> dict[str, Any]:
         "keep_alive": settings.ollama_keep_alive,
         "options": {"num_ctx": settings.ollama_num_ctx},
     }
-    if settings.ollama_model.startswith("qwen3"):
+    if settings.ollama_model.startswith("qwen3") and not never_thinks(settings.ollama_model):
         # Qwen 3 "thinks" out loud before answering by default: many seconds of hidden text per
         # reply. Spoken conversation wants the answer, so thinking is off for this family.
         body["think"] = False
@@ -165,6 +184,7 @@ class OllamaAgentSession:
         except Exception as exc:
             raise explain(exc, self._settings) from exc
         message.pop("thinking", None)  # never sent back: it only bloats the context
+        message["content"] = visible_reply(str(message.get("content") or ""))
         self._messages.append(message)
         calls: list[ToolCall] = []
         for raw in message.get("tool_calls") or []:
@@ -184,6 +204,33 @@ class OllamaAgentSession:
                 )
             )
         return AgentStep(text=str(message.get("content") or ""), tool_calls=calls)
+
+
+def probe(settings: LLMSettings, http: httpx.Client | None = None) -> tuple[float, str, bool]:
+    """Ask for one short spoken-style sentence, the way a voice turn does. Returns (seconds,
+    visible reply, whether the model reasoned first). Reasoning first is slow for conversation."""
+    import time
+
+    client = http or _http(settings)
+    body = {
+        **_options(settings),
+        "stream": False,
+        "messages": [
+            {"role": "system", "content": "Answer in one short sentence."},
+            {"role": "user", "content": "Are you ready?"},
+        ],
+    }
+    body["options"] = {**body["options"], "num_predict": 512}
+    start = time.monotonic()
+    try:
+        r = client.post("/api/chat", json=body)
+        r.raise_for_status()
+        message = r.json().get("message", {})
+    except Exception as exc:
+        raise explain(exc, settings) from exc
+    raw = str(message.get("content") or "")
+    thought = bool(message.get("thinking")) or "</think>" in raw or "<think>" in raw
+    return time.monotonic() - start, visible_reply(raw), thought
 
 
 def warm_up(settings: LLMSettings, http: httpx.Client | None = None) -> float:

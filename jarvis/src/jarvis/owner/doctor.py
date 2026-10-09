@@ -22,7 +22,7 @@ import httpx
 
 from jarvis.config import ConfigError, OwnerSettings, load_owner, owner_env
 from jarvis.core.router import mac_ram_gb, recommend_model
-from jarvis.llm.ollama_backend import LocalModelError, warm_up
+from jarvis.llm.ollama_backend import LocalModelError, probe, warm_up
 
 APP_BINARY = Path("/Applications/Ollama.app/Contents/Resources/ollama")
 Run = Callable[[list[str]], tuple[int, str]]
@@ -228,6 +228,21 @@ def check_inference(r: Report, s: OwnerSettings) -> None:
         return
     r.ok(f"model loaded and answered in {first:.1f}s (first load)")
     r.ok(f"second answer in {again:.1f}s (kept in memory for {s.llm.ollama_keep_alive})")
+    try:
+        seconds, reply, thought = probe(s.llm)
+    except LocalModelError as exc:
+        r.fail(f"{exc.kind}: {exc}")
+        return
+    if thought:
+        r.warn(
+            f"{s.llm.ollama_model} reasons to itself before every answer ({seconds:.1f}s for one "
+            "sentence). Jarvis hides that text, but you still wait for it",
+            "For fast conversation use the non-thinking build:\n"
+            "  ollama pull qwen3:4b-instruct\n"
+            "  then set OLLAMA_MODEL=qwen3:4b-instruct in jarvis/.env",
+        )
+    else:
+        r.ok(f"a spoken-length answer took {seconds:.1f}s: {reply[:80]!r}")
 
 
 def check_voice(r: Report, s: OwnerSettings, run: Run) -> None:

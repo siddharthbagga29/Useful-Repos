@@ -50,10 +50,13 @@ def test_precedence_flag_then_environment_then_file_then_auto(tmp_path: Path) ->
 def test_unprefixed_shell_variable_is_not_read(tmp_path: Path) -> None:
     # OLLAMA_* in the shell can belong to Ollama itself, so only JARVIS_ is read there.
     s = settings_for({"JARVIS_ENV_FILE": str(tmp_path / "none"), "OLLAMA_MODEL": "qwen3:14b"})
-    assert s.llm.ollama_model == "qwen3:4b" and s.llm.ollama_model_source == "auto: 8 GB memory"
+    assert s.llm.ollama_model == "qwen3:4b-instruct"
+    assert s.llm.ollama_model_source == "auto: 8 GB memory"
 
 
-@pytest.mark.parametrize(("ram", "model"), [(8, "qwen3:4b"), (16, "qwen3:8b"), (0, "qwen3:8b")])
+@pytest.mark.parametrize(
+    ("ram", "model"), [(8, "qwen3:4b-instruct"), (16, "qwen3:8b"), (0, "qwen3:8b")]
+)
 def test_auto_model_fits_the_mac(tmp_path: Path, ram: float, model: str) -> None:
     s = settings_for({"JARVIS_ENV_FILE": str(tmp_path / "none")}, ram=ram)
     assert s.llm.ollama_model == model
@@ -311,13 +314,13 @@ def test_doctor_reports_mismatch_with_the_exact_fix(tmp_path: Path) -> None:
     }
     r = run_doctor(environ=environ, run=run, ram_gb=8, live=False)
     text = r.text()
-    assert "model: qwen3:4b  (from auto: 8 GB memory)" in text
+    assert "model: qwen3:4b-instruct  (from auto: 8 GB memory)" in text
     assert "no Ollama server answering" in text and r.failed >= 1
 
     def server(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/api/version":
             return httpx.Response(200, json={"version": "0.40.1"})
-        return httpx.Response(200, json={"models": [{"name": "qwen3:4b"}]})
+        return httpx.Response(200, json={"models": [{"name": "qwen3:4b-instruct"}]})
 
     def client(url: str) -> httpx.Client:
         return httpx.Client(base_url=url, transport=httpx.MockTransport(server))
@@ -336,7 +339,7 @@ def test_doctor_flags_unprefixed_shell_variable(tmp_path: Path) -> None:
         r, {"OLLAMA_MODEL": "qwen3:14b", "JARVIS_ENV_FILE": str(tmp_path / "none")}, ram_gb=8
     )
     assert "OLLAMA_MODEL=qwen3:14b in your shell is ignored" in r.text()
-    assert "using qwen3:4b" in r.text()
+    assert "using qwen3:4b-instruct" in r.text()
 
     env_file = tmp_path / ".env"
     env_file.write_text("OLLAMA_MODEL=qwen3:4b\n")
@@ -352,3 +355,89 @@ def test_pasted_shell_comment_is_ignored() -> None:
     assert strip_comment(pasted) == ["--doctor"]
     assert strip_comment(["--voice", "--serve", "#start", "talking"]) == ["--voice", "--serve"]
     assert strip_comment(["--model", "qwen3:4b"]) == ["--model", "qwen3:4b"]
+
+
+# --- reasoning never reaches Siddharth ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("raw", "shown"),
+    [
+        (
+            "Okay, let's see. The user asks...\n</think>\n\nYes, Siddharth. I can hear you.",
+            "Yes, Siddharth. I can hear you.",
+        ),
+        ("<think>plan</think>Done, sir.", "Done, sir."),
+        ("Plain answer.", "Plain answer."),
+        ("<think>still thinking when cut off", ""),
+    ],
+)
+def test_visible_reply_drops_reasoning(raw: str, shown: str) -> None:
+    from jarvis.llm.ollama_backend import visible_reply
+
+    assert visible_reply(raw) == shown
+
+
+def test_reasoning_is_stripped_from_agent_replies_and_history() -> None:
+    leaked = "Wait, the user is simulating...\n</think>\n\nYes, I can hear you."
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"message": {"role": "assistant", "content": leaked}})
+
+    s = llm()
+    http = httpx.Client(base_url=s.ollama_url, transport=httpx.MockTransport(handler))
+    session = OllamaAgentSession(s, "system", [], http=http)
+    assert session.send_user("Can you hear me?").text == "Yes, I can hear you."
+    assert "simulating" not in json.dumps(session._messages)
+
+
+def test_instruct_models_are_not_sent_think() -> None:
+    from jarvis.llm.ollama_backend import _options
+
+    assert "think" not in _options(LLMSettings(ollama_model="qwen3:4b-instruct"))
+    assert _options(LLMSettings(ollama_model="qwen3:8b"))["think"] is False
+
+
+def test_probe_detects_a_thinking_model() -> None:
+    from jarvis.llm.ollama_backend import probe
+
+    def thinking(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"message": {"content": "hmm\n</think>\nYes."}})
+
+    def direct(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"message": {"content": "Ready, sir."}})
+
+    s = llm()
+    for handler, thought, reply in ((thinking, True, "Yes."), (direct, False, "Ready, sir.")):
+        http = httpx.Client(base_url=s.ollama_url, transport=httpx.MockTransport(handler))
+        _, text, did_think = probe(s, http=http)
+        assert (text, did_think) == (reply, thought)
+
+
+def test_speech_is_short_and_free_of_markup() -> None:
+    from jarvis.owner.voice import for_speech
+
+    assert for_speech("**Yes**, sir. \\boxed{Done}") == "Yes, sir. Done"
+    long = "This is a sentence that goes on. " * 40
+    spoken = for_speech(long)
+    assert len(spoken) <= 450 and spoken.endswith(".")
+
+
+def test_context_note_is_not_a_bracketed_transcript(tmp_path: Path) -> None:
+    sent: list[str] = []
+
+    class Session:
+        def send_user(self, text: str) -> AgentStep:
+            sent.append(text)
+            return AgentStep(text="Yes, sir.", tool_calls=[])
+
+        def send_tool_results(self, results: Any) -> AgentStep:
+            raise AssertionError
+
+    agent = make_agent(tmp_path, lambda: Session())
+    agent.said("Shall I open it?")
+    agent.handle("Can you hear me?")
+    assert (
+        sent[0]
+        == '(Your last words to Siddharth were: "Shall I open it?")\n\nSiddharth: Can you hear me?'
+    )

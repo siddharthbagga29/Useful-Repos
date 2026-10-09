@@ -28,7 +28,7 @@ class Route:
 def recommend_model(ram_gb: float) -> str:
     """A tool-capable local model that fits this Mac comfortably alongside everything else."""
     if ram_gb < 12:
-        return "qwen3:4b"
+        return "qwen3:4b-instruct"  # never "thinks" first: fast enough for conversation
     if ram_gb < 24:
         return "qwen3:8b"
     if ram_gb < 48:

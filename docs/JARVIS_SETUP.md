@@ -68,12 +68,12 @@ Jarvis picks the model for your Mac's memory automatically (Qwen 3, open licence
 
 | Mac memory | Model | Download |
 |---|---|---|
-| 8 GB | `qwen3:4b` | ~2.5 GB |
+| 8 GB | `qwen3:4b-instruct` (answers directly, no slow "thinking" first) | ~2.5 GB |
 | 16 GB | `qwen3:8b` | ~5 GB |
 | 24-32 GB | `qwen3:14b` | ~9 GB |
 | 48 GB+ | `qwen3:30b` | ~18 GB |
 
-Download the one the doctor names, for example `ollama pull qwen3:4b`, then run `--doctor` again
+Download the one the doctor names, for example `ollama pull qwen3:4b-instruct`, then run `--doctor` again
 until it says "All checks passed".
 
 To choose a different model, use either of these:
@@ -178,6 +178,7 @@ Run `jarvis-owner --doctor` first; it names the cause. Common ones:
 |---|---|
 | Startup shows a model you didn't choose | The line says where it came from. Use `--model`, or `OLLAMA_MODEL=` in `jarvis/.env` (a plain `OLLAMA_MODEL=` in the shell is ignored: Ollama owns `OLLAMA_*` names there) |
 | `invalid argument: --no-map`, or `Warning: client version is ...` | Two Ollama installs. Quit Ollama, `pkill -f 'ollama serve'`, `brew uninstall ollama`, reopen the Ollama app. Models are kept |
+| He prints his reasoning, or takes ages to answer | You have a "thinking" model (plain `qwen3:4b` is one). `ollama pull qwen3:4b-instruct`, then `OLLAMA_MODEL=qwen3:4b-instruct` in `jarvis/.env`. The doctor flags this |
 | `Model problem (not_running)` | Open the Ollama app and wait 5 seconds |
 | `Model problem (model_missing)` | `ollama pull <the model named>` |
 | `Model problem (timeout)` | First load after a restart is slow; if it persists, use the smaller model `--doctor` recommends |
