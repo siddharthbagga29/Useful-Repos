@@ -506,7 +506,11 @@ a.chip { text-decoration: none; }
 @media (max-width: 560px) { .concierge { bottom: 76px; right: 12px; left: 12px; width: auto; } .greet-chips button { font-size: 12px; padding: 6px 10px; } }
 @media (prefers-reduced-motion: reduce) { .greet-who i, .greet-who i.talking { animation: none; } }
 /* Experience: US roles and the earlier India track side by side on wide screens */
-.exp-grid { display: grid; gap: 14px; max-width: 1180px; }
+/* One column that is never wider than the screen: without an explicit track the grid grew to its
+   longest line, which pushed the India roles and education off the right edge on phones. */
+.exp-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 1180px; width: 100%; min-width: 0; }
+.exp-grid .tl, .exp-grid .edu, .tl-body { min-width: 0; }
+.tl-body h3, .tl-body li, .edu dd { overflow-wrap: anywhere; }
 .exp-side { display: grid; gap: 14px; align-content: start; min-width: 0; }
 @media (min-width: 1200px) {
   .exp-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 36px; }
@@ -519,3 +523,12 @@ a.chip { text-decoration: none; }
 .greet-proto { height: 2px; background: rgba(34,211,238,.15); border-radius: 2px; margin: 2px 0 10px; overflow: hidden; }
 .greet-proto i { display: block; height: 100%; background: #22d3ee; box-shadow: 0 0 8px #22d3ee; transition: width .6s ease; }
 .greet-row .greet-credit { font-family: var(--mono); font-size: 9.5px; color: var(--dim); letter-spacing: .06em; }
+
+/* ---------- view-only (src/lib/protect.ts) ---------- */
+.view-only body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.view-only input, .view-only textarea, .view-only select, .view-only [contenteditable] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+.view-only img, .view-only svg, .view-only canvas { -webkit-user-drag: none; user-select: none; }
+@media print {
+  body > * { display: none !important; }
+  body::after { content: "This page is view-only. Contact Siddharth Bagga for a copy of his résumé."; display: block; padding: 48px; font: 16px/1.5 system-ui, sans-serif; color: #000; }
+}

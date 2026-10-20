@@ -4,6 +4,9 @@ import { MotionConfig } from "framer-motion";
 import App from "./App.tsx";
 import { JarvisProvider } from "./jarvis/JarvisProvider.tsx";
 import "./styles.css";
+import { protectContent } from "./lib/protect.ts";
+
+protectContent();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

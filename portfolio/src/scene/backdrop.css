@@ -51,3 +51,18 @@ html:not(.den-live) .den-ring { opacity: 0; }
 /* Secondary copy brightens a step when it sits over the live scene. */
 .den-live #hero .sub { color: #b4b0a5; }
 .den-live .sub b, .den-live .sub strong { color: var(--bone); }
+
+/* Phones and tablets (last, so it wins): readability can't depend on the masked veil above. On
+   iPhone Safari the mask over the live WebGL layer didn't dim it, and the tunnel showed at full
+   strength behind the experience section. So here the scene itself is dimmed: present behind the
+   name in the opening view, then down to a faint texture once the content starts. Plain opacity on
+   the canvas, which every browser composites the same way. */
+@media (max-width: 1024px), (hover: none) {
+  .den-scrim, .den-veil .den-scrim {
+    -webkit-mask-image: none; mask-image: none;
+    background: rgba(8, 6, 22, calc(0.58 + 0.27 * (1 - var(--den-open, 1))));
+  }
+  .den-ring { display: none; }
+  .den-live .den-canvas { opacity: calc(0.12 + 0.3 * var(--den-open, 1)); transition: opacity .35s linear; }
+  .den-live #hero .sub, .den-live #hero .avail { text-shadow: 0 1px 2px rgba(5, 2, 15, 0.95), 0 0 18px rgba(5, 2, 15, 0.9); }
+}
