@@ -6,6 +6,7 @@ import {
   DISTRICTS,
   EVIDENCE_LABEL,
   KIND_LABEL,
+  NATURE_LABEL,
   PROJECTS,
   SHIPPED,
   caseRoute,
@@ -14,6 +15,7 @@ import {
   shipped,
   type Agent,
   type AgentKind,
+  type CategoryId,
   type DistrictId,
   type Evidence,
   type Project,
@@ -196,20 +198,37 @@ interface BuildingProps {
   onSelect: () => void;
 }
 
+/**
+ * Building massing by discipline, so a district reads at a glance. Floors still map one-to-one to
+ * milestones; only the footprint, setback and rooftop differ.
+ */
+const SHAPES: Record<CategoryId, { w: number; d: number; inset: number; setbackAt: number; annex: boolean; antenna: boolean }> = {
+  "research-quant": { w: 6.6, d: 6.6, inset: 1.0, setbackAt: 0.6, annex: false, antenna: false },
+  "investment-underwriting": { w: 9, d: 8.2, inset: 0, setbackAt: 1, annex: false, antenna: false },
+  "ai-automation": { w: 7, d: 7, inset: 0.7, setbackAt: 0.7, annex: false, antenna: true },
+  "product-engineering": { w: 7.2, d: 6.2, inset: 0, setbackAt: 1, annex: true, antenna: false },
+};
+
 function Building({ p, plot, state, selected, dim, pulse, reduce, onSelect }: BuildingProps) {
   const [i, j] = plot;
   const color = COLORS[p.id];
-  const x = i * P + 3.75;
-  const y = j * P + 3.75;
-  const w = 7.5;
-  const d = 7.5;
+  const shape = SHAPES[p.category];
+  const w = shape.w;
+  const d = shape.d;
+  const x = i * P + (P - w) / 2;
+  const y = j * P + (P - d) / 2;
   const total = p.milestones.length;
   const topZ = total * FLOOR;
-  const [lx, ly] = iso(x + w / 2, y + d / 2, topZ + 5);
+  const setFrom = Math.max(1, Math.floor(total * shape.setbackAt));
+  const roofInset = total > setFrom ? shape.inset : 0;
+  const [lx, ly] = iso(x + w / 2, y + d / 2, topZ + 5 + (shape.antenna ? 4 : 0));
   const pct = Math.round(progress(p) * 100);
   const key = (e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect());
   const tags = statusTags(state);
   const failed = state?.execution === "failed";
+  const [ex, ey] = iso(x + w, y + d, 0);
+  const [, etop] = iso(x + w, y + d, Math.min(topZ, setFrom * FLOOR) - 0.25);
+  const [ax, ay] = iso(x + w / 2, y + d / 2, topZ - 0.25);
   return (
     <g
       className={`bld${selected ? " sel" : ""}${dim ? " recede" : ""}${failed ? " is-failed" : ""}`}
@@ -226,24 +245,43 @@ function Building({ p, plot, state, selected, dim, pulse, reduce, onSelect }: Bu
       {failed && <polygon className="plot-fail" points={pts([i * P + 1.4, j * P + 1.4, 0], [i * P + P - 1.4, j * P + 1.4, 0], [i * P + P - 1.4, j * P + P - 1.4, 0], [i * P + 1.4, j * P + P - 1.4, 0])} />}
       {pulse && !reduce && <PlotPulse i={i} j={j} tone={eventTone(pulse)} k={pulse.eventId} />}
       {pulse && reduce && <polygon className="rc-pulse static" stroke={TONE_COLOR[eventTone(pulse)]} points={pts([i * P + 1, j * P + 1, 0], [i * P + P - 1, j * P + 1, 0], [i * P + P - 1, j * P + P - 1, 0], [i * P + 1, j * P + P - 1, 0])} />}
+      <polygon className="bld-shadow" points={pts([x + 0.8, y + 0.8, 0], [x + w + 1.6, y + 0.8, 0], [x + w + 1.6, y + d + 1.6, 0], [x + 0.8, y + d + 1.6, 0])} />
       {p.milestones.map((m, k) => {
         const look = floorLook(m.evidence);
+        const n = k >= setFrom ? shape.inset : 0;
         return (
           <g key={k}>
-            <Box x={x} y={y} z={k * FLOOR} w={w} d={d} h={FLOOR - 0.25} color={color} look={look} />
-            {look === "solid" && <Windows x={x} y={y} z={k * FLOOR} w={w} d={d} h={FLOOR} />}
+            <Box x={x + n} y={y + n} z={k * FLOOR} w={w - 2 * n} d={d - 2 * n} h={FLOOR - 0.25} color={color} look={look} />
+            {look === "solid" && <Windows x={x + n} y={y + n} z={k * FLOOR} w={w - 2 * n} d={d - 2 * n} h={FLOOR} />}
           </g>
         );
       })}
+      {shipped(p).length > 0 && <line className="bld-edge" x1={ex} y1={ey} x2={ex} y2={etop} stroke={shade(color, 1.35)} />}
+      <polygon
+        className="bld-roof"
+        stroke={shade(color, 1.2)}
+        points={pts([x + roofInset, y + roofInset, topZ - 0.25], [x + w - roofInset, y + roofInset, topZ - 0.25], [x + w - roofInset, y + d - roofInset, topZ - 0.25], [x + roofInset, y + d - roofInset, topZ - 0.25])}
+      />
+      {shape.antenna && (
+        <g className="bld-antenna" stroke={shade(color, 1.2)}>
+          <line x1={ax} y1={ay} x2={ax} y2={ay - 24} />
+          <circle cx={ax} cy={ay - 24} r={1.4} fill={color} />
+        </g>
+      )}
+      {/* product-engineering annex: a low wing in front of the main block, not a milestone */}
+      {shape.annex && <Box x={x + 0.6} y={y + d} z={0} w={w - 1.2} d={2.2} h={FLOOR * 0.9} color={color} look="solid" />}
       <g className="sign" transform={`translate(${lx},${ly})`}>
-        <rect x={-56} y={-19} width={112} height={25} rx={5} />
-        <text y={-7} textAnchor="middle" className="sign-n">
+        <rect x={-56} y={-25} width={112} height={31} rx={5} />
+        <text y={-13} textAnchor="middle" className="sign-n">
           {p.title.length > 22 ? `${p.title.split(" ").slice(0, 2).join(" ")}` : p.title}
         </text>
-        <rect x={-42} y={-1} width={84} height={2.6} rx={1.3} className="sign-bar" />
-        <rect x={-42} y={-1} width={(84 * pct) / 100} height={2.6} rx={1.3} fill={color} />
+        <text y={-4} textAnchor="middle" className="sign-d" fill={DISTRICT_COLORS[p.district]}>
+          {DISTRICTS[p.district].toUpperCase()}
+        </text>
+        <rect x={-42} y={0} width={84} height={2.6} rx={1.3} className="sign-bar" />
+        <rect x={-42} y={0} width={(84 * pct) / 100} height={2.6} rx={1.3} fill={color} />
         {tags.map((t, k) => (
-          <Tag key={t.text} x={0} y={-27 - k * 13} text={t.text} tone={t.tone} />
+          <Tag key={t.text} x={0} y={-33 - k * 13} text={t.text} tone={t.tone} />
         ))}
       </g>
     </g>
@@ -983,6 +1021,19 @@ function sourceNote(feed: Feed, p: Project): string {
   return `From the public GitHub Actions run list of ${w.file} (${where}).${s.note ? ` ${s.note}` : ""}`;
 }
 
+/** what kind of thing this is (analysis, backtest, simulation…), each with its reason; text, not colour */
+export function NatureBadges({ p }: { p: Project }) {
+  return (
+    <ul className="nature" aria-label="What this project is" data-testid="nature">
+      {p.nature.map((n) => (
+        <li key={n.kind} className={`nature-b nature-${n.kind}`} title={n.note}>
+          <b>{NATURE_LABEL[n.kind]}</b> <span>{n.note}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function StatusBlock({ p, feed }: { p: Project; feed: Feed }) {
   const st = feed.states[p.id];
   const x = EXEC[st.execution];
@@ -1090,6 +1141,7 @@ function ProjectDossier({ p, feed, onAgent }: { p: Project; feed: Feed; onAgent:
         Read the case study →
       </a>
       <p className="ds-sum">{p.summary}</p>
+      <NatureBadges p={p} />
       <StatusBlock p={p} feed={feed} />
       {brain && (
         <>

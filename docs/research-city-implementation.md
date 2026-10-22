@@ -1,6 +1,6 @@
 # Research City 2.0: implementation log
 
-**Current phase:** iterations 1 and 2 are pushed. Iteration 3 (code integrity and accessibility) is committed locally and not pushed. Nothing is deployed.
+**Current phase:** iterations 1–3 are pushed. Iteration 4 (CI action releases, Cloudflare workflow, city visuals, project-kind labels) is committed locally and not pushed. Nothing is deployed.
 
 | Status | Items |
 |---|---|
@@ -114,11 +114,22 @@ The audit, risk register and baseline are in [research-city-audit.md](research-c
 | Results | Integrity clean (765 files); `npm test` passing; build OK; e2e **205/205**; axe 0 violations on research pages at both viewports and in interactive states, with 8/8 interactive checks passing. Home page: 3 rules remain, all outside the Terminal/Jarvis scope (audit A3) |
 | Not covered | Screen readers, WebKit/Safari, zoom and reflow, manual contrast on gradient backgrounds (axe marks 11 states for review) |
 
+## Iteration 4 (2026-10-22): CI releases, Cloudflare workflow, visuals, project kinds
+
+| Item | Result |
+|---|---|
+| Node 24 action releases | `actions/checkout` v7.0.1, `actions/setup-node` v7.1.0 and `actions/setup-python` v7.0.0, pinned to SHAs checked against the release tags. setup-python v7.1.0 was skipped because it was one day old. Behaviour changes from the release notes: the actions run on Node 24; checkout keeps credentials in a temp file (git push still works) and refuses fork checkouts under `pull_request_target`/`workflow_run` (not used here); setup-node no longer injects a placeholder `NODE_AUTH_TOKEN` and may auto-cache, so `package-manager-cache: false` keeps the old behaviour |
+| Cloudflare workflow (`deploy/cloudflare-pages.yml`, not active: it lives outside `.github/workflows`) | The gate reads both secrets through `env`; a missing secret gives a visible "deploy skipped" notice, not a silent success. The token is scoped to the two steps that call Cloudflare. Wrangler is pinned (3.114.17), checkout doesn't persist credentials, there's a 10-minute timeout, and a project-create error is reported instead of swallowed. No secrets were added and the workflow was not enabled |
+| Building shapes | Massing follows discipline: research is a slim tower with a setback, underwriting is a broad block, AI systems have a setback and a mast, and product engineering has a low annex. Edge, roof and ground-shadow lines give depth. Floors still equal milestones |
+| District labels | Each building's sign now names its district, instead of floating ground labels that buildings and bots covered |
+| Project kinds | `nature` in the manifest: analysis, backtest, simulation, interactive model, prototype, live system, or "live system · not verified", each with a reason. Shown on every case page and in the city dossier. A unit test rejects "live" without a deployed milestone, "interactive" without a demo link, and "not verified" without an unverified milestone |
+| Motion | No new animation. Idle stillness e2e passes |
+| Results | `npm test` passing (city 25/25); build OK; e2e **205/205**; axe 0 violations, 8/8 interactive checks; quality gate APPROVED 10.0/10; integrity clean (765 files) |
+
 ## Next steps
 
 1. Home-page accessibility findings (A2 in the audit), if the owner approves changes outside Terminal and Jarvis.
-2. Visual polish (P3): ground labels per district, and distinct silhouettes per project type.
-4. After deploy, confirm on a phone that the Actions refresh works from the browser (CORS and rate limits), and that the Brain state shows its provenance after the first run under the new workflow.
+2. After deploy, confirm on a phone that the Actions refresh works from the browser (CORS and rate limits), and that the Brain state shows its provenance after the first run under the new workflow.
 
 ## Recovery
 

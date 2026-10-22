@@ -1,7 +1,7 @@
 import { CASES, DEFAULT_ORDER, SECTION_TITLE, type Block, type SectionId } from "./cases.ts";
 import { CATEGORIES, DISTRICTS, PROJECTS, caseRoute, currentMilestone, pending, unverified, type Project } from "./manifest.ts";
 import { COLORS } from "./layout.ts";
-import { EvidenceList, StatusBlock, Timeline } from "./City.tsx";
+import { EvidenceList, NatureBadges, StatusBlock, Timeline } from "./City.tsx";
 import { Module } from "./CaseModules.tsx";
 import { useCityFeed, type Feed } from "./feed.ts";
 import { SiteNav } from "./SiteNav.tsx";
@@ -225,6 +225,7 @@ export function CaseStudy({ id }: { id: string }) {
           </div>
           <h1 data-testid="case-title">{p.title}</h1>
           <p className="sub">{p.summary}</p>
+          <NatureBadges p={p} />
           <div className="cs-status">
             <StatusBlock p={p} feed={feed} />
           </div>

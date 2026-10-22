@@ -80,6 +80,21 @@ export interface Link {
   station?: "model" | "jarvis";
 }
 
+/**
+ * What kind of thing a project is, so a simulation is never read as a track record and a prototype never
+ * as a production system. "live" needs a deployed milestone; "claimed-live" is a deployment we can't see.
+ */
+export type NatureKind = "analysis" | "backtest" | "simulation" | "interactive" | "prototype" | "live" | "claimed-live";
+export const NATURE_LABEL: Record<NatureKind, string> = {
+  analysis: "Analysis",
+  backtest: "Backtest",
+  simulation: "Simulation",
+  interactive: "Interactive model",
+  prototype: "Prototype",
+  live: "Live system",
+  "claimed-live": "Live system · not verified",
+};
+
 export interface Project {
   id: ProjectId;
   title: string;
@@ -93,6 +108,8 @@ export interface Project {
   data: { label: string; asOf?: string; staleAfterDays?: number };
   /** the automated pipeline whose verified runs drive this project's execution status */
   pipeline: "brain" | "jarvis-ci" | "none";
+  /** what this is: analysis, backtest, simulation, interactive model, prototype or live system, each with a one-line why */
+  nature: { kind: NatureKind; note: string }[];
   /** repository paths whose commits count as this project's change history */
   paths: string[];
   milestones: Milestone[];
@@ -122,6 +139,10 @@ export const PROJECTS: Project[] = [
     tags: ["valuation", "dcf", "sensitivity"],
     data: { label: "SPGI reported revenue 2023–2025 (10-K); site model's cash flows and net debt are estimates", asOf: "2026-10-02" },
     pipeline: "none",
+    nature: [
+      { kind: "analysis", note: "Capstone valuation; the report is linked, not reproduced here" },
+      { kind: "interactive", note: "The site's WACC × growth grid recomputes in your browser; it is not a market feed" },
+    ],
     paths: ["portfolio/src/stations/Model.tsx"],
     milestones: [
       { label: "Capstone model and report", evidence: "unverified", ref: "https://drive.google.com/file/d/16exTikgrGDXtMG6ZUGbIU22tXKgNhoKl/view" },
@@ -153,6 +174,9 @@ export const PROJECTS: Project[] = [
     tags: ["survey", "scoring", "spss"],
     data: { label: "Survey responses analysed in SPSS (Sri Vipra project, 2022–2023)" },
     pipeline: "none",
+    nature: [
+      { kind: "analysis", note: "Published survey study; the data and scoring are not reproduced in this repository" },
+    ],
     paths: [],
     milestones: [
       { label: "Survey design", evidence: "unverified" },
@@ -180,6 +204,10 @@ export const PROJECTS: Project[] = [
     tags: ["quant", "backtest", "montecarlo", "search"],
     data: { label: "8 ETFs, 561 weekly bars, split-adjusted closes, distributions excluded", asOf: "2026-09-21", staleAfterDays: 14 },
     pipeline: "brain",
+    nature: [
+      { kind: "backtest", note: "Historical weekly prices with a locked holdout, re-searched every 6 hours on a fixed snapshot; no live or paper trading record yet" },
+      { kind: "simulation", note: "Block-bootstrap Monte Carlo resampling the same history" },
+    ],
     paths: ["portfolio/src/lab", "portfolio/src/brain", "portfolio/scripts/brain-run.ts", "portfolio/scripts/research.ts", "portfolio/scripts/lab-check.ts", "portfolio/deploy/brain.yml"],
     milestones: [
       { label: "Weekly data snapshot", evidence: "implemented", ref: "repo:portfolio/src/lab/weekly.json" },
@@ -224,6 +252,10 @@ export const PROJECTS: Project[] = [
     tags: ["underwriting", "realestate", "montecarlo"],
     data: { label: "Illustrative deal inputs from the v2 workbook (ARV $160k, rehab $40k, contract $60k)" },
     pipeline: "none",
+    nature: [
+      { kind: "interactive", note: "Underwriting calculator that mirrors the Excel workbook" },
+      { kind: "simulation", note: "ARV and rehab-overrun scenarios drawn from assumed ranges, not closed deals" },
+    ],
     paths: ["portfolio/src/deal", "projects/deal-analyzer", "portfolio/public/Wholesale_Deal_Analyzer_v2.xlsx"],
     milestones: [
       { label: "Audit of the v1 workbook", evidence: "implemented", ref: "repo:portfolio/vault/03_PEER_REVIEW_LOGS/Deal Analyzer v1 audit.md" },
@@ -260,6 +292,9 @@ export const PROJECTS: Project[] = [
     tags: ["realestate", "dashboard", "nextjs"],
     data: { label: "Illustrative sample portfolio (not real holdings)" },
     pipeline: "none",
+    nature: [
+      { kind: "prototype", note: "Concept dashboard on illustrative sample data; no real holdings" },
+    ],
     paths: ["projects/twin-engine-dashboard", "portfolio/public/projects/twin-engine"],
     milestones: [
       { label: "Concept dashboard", evidence: "implemented", ref: "repo:projects/twin-engine-dashboard/components/DashboardLayout.tsx" },
@@ -288,6 +323,10 @@ export const PROJECTS: Project[] = [
     tags: ["quant", "insurance", "montecarlo"],
     data: { label: "29 public loss claims, graded A–D by source quality" },
     pipeline: "none",
+    nature: [
+      { kind: "analysis", note: "29 public loss claims graded by source quality" },
+      { kind: "simulation", note: "Viability and pricing Monte Carlo; the outputs are not reproduced here" },
+    ],
     paths: ["sentinel"],
     milestones: [
       { label: "Loss-claim dataset", evidence: "implemented", ref: "repo:sentinel/evidence.json" },
@@ -323,6 +362,10 @@ export const PROJECTS: Project[] = [
     tags: ["llm", "agents", "voice"],
     data: { label: "One knowledge brief (jarvis/knowledge/brief.md) and an eval set of recruiter questions" },
     pipeline: "jarvis-ci",
+    nature: [
+      { kind: "live", note: "The in-browser agent on this site, graded by an eval before every deploy" },
+      { kind: "prototype", note: "The Python service runs on the owner's machine; tested in CI, not public" },
+    ],
     paths: ["jarvis", "portfolio/src/jarvis", "portfolio/src/agent", ".github/workflows/jarvis.yml"],
     milestones: [
       { label: "In-browser agent with citations", evidence: "deployed", ref: "repo:portfolio/src/jarvis/engine.ts" },
@@ -355,6 +398,9 @@ export const PROJECTS: Project[] = [
     tags: ["fullstack", "realestate", "security"],
     data: { label: "Listings and leads in Supabase (production data not inspected)" },
     pipeline: "none",
+    nature: [
+      { kind: "claimed-live", note: "The code is here; the Vercel deployment and its data were not inspected" },
+    ],
     paths: ["admin.js", "auth.js", "db.js", "leads.js", "listings.js", "webhook.js", "whatsapp.js", "supabase-schema.sql"],
     milestones: [
       { label: "Listings", evidence: "implemented", ref: "repo:listings.js" },

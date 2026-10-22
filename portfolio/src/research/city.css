@@ -67,7 +67,7 @@
 .tl-detail { margin: 2px 0 0; font-size: 11.5px; color: #b9bfd8; line-height: 1.45; }
 
 .ground { fill: rgba(96, 165, 250, .02); stroke: rgba(96, 165, 250, .10); }
-.district-ground { opacity: .05; }
+.district-ground { opacity: .08; }
 .conduit { fill: none; stroke: rgba(34, 211, 238, .5); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .conduit.stale { stroke: var(--rc-warn); stroke-dasharray: 3 3; opacity: .8; }
 .plot { fill: rgba(255, 255, 255, .025); stroke: rgba(255, 255, 255, .07); stroke-width: .8; transition: stroke .2s; }
@@ -203,3 +203,19 @@
 /* the explorer dialog takes focus itself on open; its controls show their own focus rings */
 .city-x:focus { outline: none; }
 .ds-tabs button:focus-visible { outline: 2px solid var(--rc-cyan); outline-offset: 2px; }
+
+/* massing and district labels: static shapes that carry hierarchy, no motion */
+.bld-shadow { fill: rgba(2, 4, 14, .55); }
+.bld-edge { stroke-width: .7; opacity: .7; }
+.bld-roof { fill: none; stroke-width: .6; opacity: .85; }
+.bld-antenna line { stroke-width: .8; }
+.sign-d { font-family: var(--mono); font-size: 5.4px; letter-spacing: .12em; font-weight: 600; }
+
+/* what kind of thing a project is: label plus reason, in text */
+.nature { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 6px; }
+.nature-b { display: grid; grid-template-columns: max-content 1fr; gap: 8px; align-items: baseline; font-size: 12.5px; line-height: 1.45; color: #cfccc2; }
+.nature-b b { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--rc-edge); color: #e8e6df; white-space: nowrap; }
+.nature-live b { border-color: #3fb37f; color: #7fe0b0; }
+.nature-claimed-live b { border-style: dashed; color: #f2c46d; border-color: #b8913f; }
+.nature-prototype b, .nature-simulation b, .nature-backtest b { color: #c9d2ff; }
+@media (max-width: 560px) { .nature-b { grid-template-columns: 1fr; gap: 2px; } .nature-b b { justify-self: start; } }

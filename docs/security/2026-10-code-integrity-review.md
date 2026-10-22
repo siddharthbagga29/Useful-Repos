@@ -93,15 +93,15 @@ From GitHub's repository activity log (`GET /repos/…/activity`) and the commit
 | Branch | Tip | Findings at tip (`tools/repo-integrity.mjs --rev`) | Status |
 |---|---|---|---|
 | `claude/resume-one-page-keywords-lfau66` | `5454cc7` → stage-1 commit | 4 → **0** | #2–#4 removed in `6ecd080`; #1 removed in the stage-1 commit (all 22 files `efcc955` added; the commit it replaced had none of them, and nothing references them) |
-| `claude/high-properties-v4-overhaul-ktwy5t` (default) | `a8e8900` | 7 | Not remediated |
-| `claude/add-skill-sessions-k620xh` | `a8e8900` | 7 | Not remediated |
-| `claude/icloud-reusable-skill-daro1p` | `a8e8900` | 7 | Not remediated |
-| `claude/bank-deposit-bonus-analysis-med2uc` | `1ae77b5` | 7 | Not remediated |
-| `claude/energy-stocks-analysis-10ey87` | `a92ceb4` | 7 | Not remediated |
-| `claude/private-markets-positioning-system-b5twgr` | `cc57dc6` | 7 | Not remediated |
-| `claude/public-apis-integration-2k05vq` | `93a6d69` | 7 | Not remediated |
-| `claude/quant-career-mentorship-h414h6` | `93a6d69` | 7 | Not remediated |
-| `claude/trading-agents-website-7ncfgt` | `93a6d69` | 7 | Not remediated |
+| `claude/high-properties-v4-overhaul-ktwy5t` (default) | `a8e8900` | 7 | Cleanup commit `4a40dfa` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
+| `claude/add-skill-sessions-k620xh` | `a8e8900` | 7 | Cleanup commit `4a40dfa` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
+| `claude/icloud-reusable-skill-daro1p` | `a8e8900` | 7 | Cleanup commit `4a40dfa` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
+| `claude/bank-deposit-bonus-analysis-med2uc` | `1ae77b5` | 7 | Cleanup commit `5da6f49` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
+| `claude/energy-stocks-analysis-10ey87` | `a92ceb4` | 7 | Cleanup commit `55fed72` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
+| `claude/private-markets-positioning-system-b5twgr` | `cc57dc6` | 7 | Cleanup commit `761776c` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
+| `claude/public-apis-integration-2k05vq` | `93a6d69` | 7 | Cleanup commit `6496084` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
+| `claude/quant-career-mentorship-h414h6` | `93a6d69` | 7 | Cleanup commit `6496084` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
+| `claude/trading-agents-website-7ncfgt` | `93a6d69` | 7 | Cleanup commit `6496084` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
 
 **Restoring earlier commits does not clean a branch.** The commits each branch had before its first rewrite already contain variant #1, because they were built on top of `efcc955`. The safe fix for every branch is the same as for this one: an ordinary new commit that removes the payload paths and restores `package.json` and `sentinel/src/tailwind.config.js`. Work lost in the history replacements can then be brought back from the earlier commits (§6), file by file, after the same check.
 

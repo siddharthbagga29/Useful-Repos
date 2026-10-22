@@ -55,3 +55,16 @@ test("a shipped milestone carries evidence in this repository or a deployed path
 test("an agent marked verified names its source", () => {
   for (const p of PROJECTS) for (const a of p.agents) if (a.verification === "verified") assert.ok(a.source?.startsWith("repo:"), `${p.id}/${a.name}`);
 });
+
+test("each project says what kind of thing it is, and a live claim is backed by a deployment", () => {
+  for (const p of PROJECTS) {
+    assert.ok(p.nature.length > 0, `${p.id} has no nature`);
+    const kinds = p.nature.map((n) => n.kind);
+    assert.equal(new Set(kinds).size, kinds.length, `${p.id} repeats a kind`);
+    const deployed = p.milestones.some((m) => m.evidence === "deployed");
+    if (kinds.includes("live")) assert.ok(deployed, `${p.id} is "live" without a deployed milestone`);
+    if (kinds.includes("claimed-live")) assert.ok(!kinds.includes("live") && p.milestones.some((m) => m.evidence === "unverified"), `${p.id}: claimed-live needs an unverified milestone`);
+    if (kinds.includes("interactive")) assert.ok(p.links.some((l) => l.kind === "demo"), `${p.id} is interactive without a demo link`);
+    for (const n of p.nature) assert.ok(n.note.length > 10, `${p.id}/${n.kind} needs a reason`);
+  }
+});
