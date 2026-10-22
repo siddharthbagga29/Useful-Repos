@@ -14,7 +14,8 @@
     "lint": "biome lint src/agent src/jarvis/sales scripts/jarvis-loop.ts scripts/voice-build.ts scripts/site-index.ts",
     "test:agent": "node --experimental-strip-types --no-warnings --test src/agent/agent.test.ts",
     "test:city": "node --experimental-strip-types --no-warnings --test src/research/events.test.ts src/research/manifest.test.ts",
-    "test": "npm run -s test:agent && npm run -s test:city && node --experimental-strip-types --no-warnings scripts/lab-check.ts && npm run -s eval",
+    "test:integrity": "node ../tools/repo-integrity.mjs",
+    "test": "npm run -s test:integrity && npm run -s test:agent && npm run -s test:city && node --experimental-strip-types --no-warnings scripts/lab-check.ts && npm run -s eval",
     "jarvis:loop": "node --experimental-strip-types --no-warnings scripts/jarvis-loop.ts",
     "voice:build": "node --experimental-strip-types --no-warnings scripts/voice-build.ts"
   },

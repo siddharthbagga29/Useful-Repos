@@ -1,7 +1,7 @@
 {
  "schemaVersion": 1,
- "generatedAt": "2026-10-22T14:54:42.527Z",
- "commit": "df63e2bbf7be18488d4c3931552459d66dfe699e",
+ "generatedAt": "2026-10-22T22:42:57.031Z",
+ "commit": "5454cc7522525f4aec6ea1a6aff4a53a4c12029d",
  "commits": {
   "dcf": [
    {
@@ -17,6 +17,11 @@
   ],
   "risk-tolerance": [],
   "strategy-lab": [
+   {
+    "sha": "5454cc7522525f4aec6ea1a6aff4a53a4c12029d",
+    "at": "2026-10-22T14:58:29.000Z",
+    "subject": "Research City iteration 2: pin Actions to SHAs, zero axe violations"
+   },
    {
     "sha": "df63e2bbf7be18488d4c3931552459d66dfe699e",
     "at": "2026-10-22T11:48:17.000Z",
@@ -36,11 +41,6 @@
     "sha": "d582471a25a38fec162b13d173f86417fcbcbc37",
     "at": "2026-10-06T09:00:57.000Z",
     "subject": "Research, Deal Lab and Twin-Engine: audit, fix and stress-test the projects"
-   },
-   {
-    "sha": "6224ff49714c4943ab6cc7b6bd169ef76282caaf",
-    "at": "2026-10-06T08:37:11.000Z",
-    "subject": "Private-capital positioning, Strategy Lab, Positioning OS webhook, Jarvis concierge"
    }
   ],
   "deal-lab": [
@@ -72,13 +72,13 @@
     "sha": "5f416f8ff6ec17d0dc309cdff120add0b89f15a6",
     "at": "2026-10-09T23:10:27.000Z",
     "subject": "Audit fixes: structural false-claim guard, long dictation, single-thread speech, stale audio",
-    "note": "Not the owner's change: this commit reused a real commit's title and added injected malicious code (api.js, sentinel/src/tailwind.config.js, package.json). Removed in 6ecd080."
+    "note": "Its title repeats commit 38266f4, but it also added hidden code that downloads and runs remote programs (api.js, sentinel/src/tailwind.config.js, package.json). Removed in 6ecd080."
    },
    {
     "sha": "93a6d69bfcc2185e608a8a13e6565c9827bd42b3",
     "at": "2026-08-20T14:37:40.000Z",
     "subject": "Add files via upload",
-    "note": "Bulk upload. It also carried an injected payload in sentinel/src/tailwind.config.js, removed in 6ecd080."
+    "note": "Bulk upload. It also contained hidden code in sentinel/src/tailwind.config.js, removed in 6ecd080."
    },
    {
     "sha": "452857eb008bbf84356807977d2d4343072a2cd2",
@@ -92,6 +92,11 @@
    }
   ],
   "jarvis": [
+   {
+    "sha": "5454cc7522525f4aec6ea1a6aff4a53a4c12029d",
+    "at": "2026-10-22T14:58:29.000Z",
+    "subject": "Research City iteration 2: pin Actions to SHAs, zero axe violations"
+   },
    {
     "sha": "df63e2bbf7be18488d4c3931552459d66dfe699e",
     "at": "2026-10-22T11:48:17.000Z",
@@ -111,11 +116,6 @@
     "sha": "0d1d125327cfcf4a9e9269943e185c2e2d11a31b",
     "at": "2026-10-09T06:32:02.000Z",
     "subject": "Jarvis repair: truthful action reporting, verified LinkedIn workflow, continuous voice sessions"
-   },
-   {
-    "sha": "16f5897f0d4e4cf52361ae556ddaa59f09daea87",
-    "at": "2026-10-09T05:58:20.000Z",
-    "subject": "Voice: a bare 'Hey Jarvis' is answered, not sent to the model; one-paste start script"
    }
   ],
   "high-properties": [
@@ -123,14 +123,40 @@
     "sha": "93a6d69bfcc2185e608a8a13e6565c9827bd42b3",
     "at": "2026-08-20T14:37:40.000Z",
     "subject": "Add files via upload",
-    "note": "Bulk upload. It also carried an injected payload in sentinel/src/tailwind.config.js, removed in 6ecd080."
+    "note": "Bulk upload. It also contained hidden code in sentinel/src/tailwind.config.js, removed in 6ecd080."
    }
   ]
  },
  "workflows": {
   "brain": {
-   "fetchedAt": "2026-10-22T14:54:40.945Z",
+   "fetchedAt": "2026-10-22T22:42:55.733Z",
    "runs": [
+    {
+     "id": 39858443877,
+     "number": 58,
+     "attempt": 1,
+     "event": "schedule",
+     "status": "completed",
+     "conclusion": "success",
+     "startedAt": "2026-10-22T21:35:06Z",
+     "updatedAt": "2026-10-22T21:35:16Z",
+     "sha": "a5a0e3fa5829a06e0bf2fcca318e9ec638d2e229",
+     "branch": "main",
+     "url": "https://github.com/siddharthbagga29/siddharthbagga29.github.io/actions/runs/39858443877"
+    },
+    {
+     "id": 39820246233,
+     "number": 57,
+     "attempt": 1,
+     "event": "schedule",
+     "status": "completed",
+     "conclusion": "success",
+     "startedAt": "2026-10-22T17:09:55Z",
+     "updatedAt": "2026-10-22T17:10:09Z",
+     "sha": "4c1f96c6b6fb73512712945fc97cece4f65bccbf",
+     "branch": "main",
+     "url": "https://github.com/siddharthbagga29/siddharthbagga29.github.io/actions/runs/39820246233"
+    },
     {
      "id": 39773745481,
      "number": 56,
@@ -494,38 +520,25 @@
      "sha": "9896384b7904b29f0812ce8c884312933e8225e1",
      "branch": "main",
      "url": "https://github.com/siddharthbagga29/siddharthbagga29.github.io/actions/runs/38773608158"
-    },
-    {
-     "id": 38727541954,
-     "number": 28,
-     "attempt": 1,
-     "event": "schedule",
-     "status": "completed",
-     "conclusion": "success",
-     "startedAt": "2026-10-15T11:28:09Z",
-     "updatedAt": "2026-10-15T11:28:20Z",
-     "sha": "e838858409b67a9e4ba267beb68056985ebd3f85",
-     "branch": "main",
-     "url": "https://github.com/siddharthbagga29/siddharthbagga29.github.io/actions/runs/38727541954"
-    },
-    {
-     "id": 38682460757,
-     "number": 27,
-     "attempt": 1,
-     "event": "schedule",
-     "status": "completed",
-     "conclusion": "success",
-     "startedAt": "2026-10-15T04:37:43Z",
-     "updatedAt": "2026-10-15T04:37:54Z",
-     "sha": "558f56a57aabb7e9bf951628f84daac21ba6369b",
-     "branch": "main",
-     "url": "https://github.com/siddharthbagga29/siddharthbagga29.github.io/actions/runs/38682460757"
     }
    ]
   },
   "jarvis-ci": {
-   "fetchedAt": "2026-10-22T14:54:42.037Z",
+   "fetchedAt": "2026-10-22T22:42:56.634Z",
    "runs": [
+    {
+     "id": 39800458661,
+     "number": 18,
+     "attempt": 1,
+     "event": "push",
+     "status": "completed",
+     "conclusion": "success",
+     "startedAt": "2026-10-22T14:58:34Z",
+     "updatedAt": "2026-10-22T15:00:45Z",
+     "sha": "5454cc7522525f4aec6ea1a6aff4a53a4c12029d",
+     "branch": "claude/resume-one-page-keywords-lfau66",
+     "url": "https://github.com/siddharthbagga29/Useful-Repos/actions/runs/39800458661"
+    },
     {
      "id": 39054896964,
      "number": 17,
@@ -751,11 +764,11 @@
   }
  },
  "labCheck": {
-  "ranAt": "2026-10-22T14:54:42.526Z",
+  "ranAt": "2026-10-22T22:42:57.030Z",
   "passed": true,
   "checks": 38,
   "failures": 0,
-  "seconds": 0.5
+  "seconds": 0.4
  },
  "releaseGate": {
   "at": "2026-10-22T11:47:40.557Z",

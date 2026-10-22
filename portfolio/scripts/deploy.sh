@@ -6,6 +6,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PAGES_DIR=${PAGES_DIR:-../../siddharthbagga29.github.io}
+# Integrity gate: refuse to publish if the repository contains code that could run without anyone
+# choosing to run it (editor auto-run tasks, code disguised as fonts, hidden code after whitespace).
+node ../tools/repo-integrity.mjs
 # Quality gate: the actor-critic loop runs typecheck, lint and tests, then scores Jarvis's lines.
 # Nothing ships unless it approves (S >= 9.5, gates clear); it also writes the approved playbook.
 npm run -s jarvis:loop

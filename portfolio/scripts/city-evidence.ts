@@ -23,10 +23,11 @@ const git = (...args: string[]) => execFileSync("git", ["-C", ROOT, ...args], { 
 
 type Unavailable = { unavailable: string };
 
-// Commits whose subject doesn't describe what they did to a project, annotated from the incident record.
+// Commits whose subject doesn't describe what they changed in a project. Facts only, from the commit
+// contents and docs/security/2026-10-code-integrity-review.md.
 const ANNOTATIONS: Record<string, string> = {
-  "5f416f8": "Not the owner's change: this commit reused a real commit's title and added injected malicious code (api.js, sentinel/src/tailwind.config.js, package.json). Removed in 6ecd080.",
-  "93a6d69": "Bulk upload. It also carried an injected payload in sentinel/src/tailwind.config.js, removed in 6ecd080.",
+  "5f416f8": "Its title repeats commit 38266f4, but it also added hidden code that downloads and runs remote programs (api.js, sentinel/src/tailwind.config.js, package.json). Removed in 6ecd080.",
+  "93a6d69": "Bulk upload. It also contained hidden code in sentinel/src/tailwind.config.js, removed in 6ecd080.",
 };
 
 const commits: Record<string, { sha: string; at: string; subject: string; note?: string }[]> = {};
