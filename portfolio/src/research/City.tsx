@@ -1,13 +1,41 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as RPointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { KIND_LABEL, PROJECTS, progress, type Agent, type AgentKind, type Project } from "./projects.ts";
-import { useBrain, nextRun } from "../brain/useBrain.ts";
-import type { BrainState } from "../brain/engine.ts";
+import {
+  CATEGORIES,
+  DISTRICTS,
+  EVIDENCE_LABEL,
+  KIND_LABEL,
+  PROJECTS,
+  SHIPPED,
+  caseRoute,
+  pending,
+  progress,
+  shipped,
+  type Agent,
+  type AgentKind,
+  type DistrictId,
+  type Evidence,
+  type Project,
+  type ProjectId,
+} from "./manifest.ts";
+import { COLORS, DISTRICT_COLORS, FOUNDRY, PLOTS } from "./layout.ts";
+import { ago, consume, replayLatest, useCityFeed, when, type Feed } from "./feed.ts";
+import type { CityEvent, Execution, ProjectState } from "./events.ts";
+import { assessChampion, VALIDATION_LABEL } from "./validation.ts";
+import { WORKFLOWS } from "./sources.ts";
 import { bus } from "../jarvis/bus.ts";
 import "./city.css";
 
-// Isometric projection. World units: plots are 14 × 14 on a 3 × 3 grid; roads run along multiples of 14.
+// The Research City. Every building is a project from the canonical manifest; every floor a
+// milestone, drawn by the strength of its evidence (lit: shipped and checkable here; hatched: claimed
+// but not verified here; scaffolding: planned). Every bot is an automated job.
+//
+// Motion rule: the scene is still unless something real happened. A bot moves while its job is
+// verifiably running, or once when a new verified event arrives (newer than this visitor's last
+// visit), or when the visitor asks for a replay. Selection and the camera move only on input.
+
+// Isometric projection. World units: plots are 15 × 15 on a 3 × 3 grid; roads run along multiples of P.
 const K = 10;
 const C = Math.cos(Math.PI / 6) * K;
 const S = 0.5 * K;
@@ -20,34 +48,46 @@ export const KIND_COLOR: Record<AgentKind, string> = {
   scheduled: "#22d3ee",
   ci: "#4ade80",
   deploy: "#fbbf24",
-  script: "#ff7a45",
+  script: "#ff8a5c",
   local: "#c084fc",
 };
 
 const FLOOR = 2.4;
-const BRAIN: [number, number] = [1, 1];
-const FOUNDRY: [number, number] = [0, 0];
+const CENTRE: ProjectId = "strategy-lab";
 const BASE: string = import.meta.env.BASE_URL;
+const PULSE_MS = 3200;
 
-// Fit the view to the ground diamond and the tallest sign.
 const VIEWBOX = (() => {
   const g = [iso(-3, -3), iso(3 * P + 3, -3), iso(3 * P + 3, 3 * P + 3), iso(-3, 3 * P + 3)];
   const minX = Math.min(...g.map((q) => q[0])) - 6;
   const maxX = Math.max(...g.map((q) => q[0])) + 6;
-  const top = iso(1.5 * P, 1.5 * P, 36 + 3.5)[1] - 50;
+  const top = iso(1.5 * P, 1.5 * P, 36 + 3.5)[1] - 58;
   const bottom = Math.max(...g.map((q) => q[1])) + 6;
   return `${minX} ${top} ${maxX - minX} ${bottom - top}`;
 })();
+const VB = VIEWBOX.split(" ").map(Number) as [number, number, number, number];
 
-type Sel = { type: "project"; p: Project } | { type: "brain" } | { type: "foundry" } | { type: "agent"; p: Project; a: Agent; key: string };
+export const EXEC: Record<Execution, { label: string; short: string; icon: string; tone: "ok" | "run" | "err" | "warn" | "idle" }> = {
+  idle: { label: "No automated pipeline", short: "", icon: "○", tone: "idle" },
+  unavailable: { label: "Status unavailable", short: "NO DATA", icon: "?", tone: "idle" },
+  running: { label: "Running now", short: "RUNNING", icon: "▶", tone: "run" },
+  succeeded: { label: "Last run succeeded", short: "RUN OK", icon: "✓", tone: "ok" },
+  failed: { label: "Last run failed", short: "FAILED", icon: "✕", tone: "err" },
+  stale: { label: "Stale: missed its schedule", short: "STALE", icon: "!", tone: "warn" },
+};
 
-/** The grid turned a quarter clockwise `rot` times; the Brain sits at the centre and never moves. */
+const TONE_COLOR = { ok: "#4ade80", run: "#22d3ee", err: "#f87171", warn: "#fbbf24", idle: "#94a3b8", info: "#a78bfa" } as const;
+const eventTone = (e: CityEvent): keyof typeof TONE_COLOR =>
+  e.status === "failed" ? "err" : e.status === "started" ? "run" : e.status === "succeeded" ? "ok" : e.status === "warning" ? "warn" : "info";
+const EVENT_ICON: Record<CityEvent["status"], string> = { started: "▶", succeeded: "✓", failed: "✕", warning: "!", info: "•" };
+
+type Sel = { type: "project"; id: ProjectId } | { type: "foundry" } | { type: "agent"; id: ProjectId; k: number };
+
 const turn = ([i, j]: [number, number], rot: number): [number, number] => {
   let q: [number, number] = [i, j];
   for (let n = 0; n < ((rot % 4) + 4) % 4; n++) q = [2 - q[1], q[0]];
   return q;
 };
-const VB = VIEWBOX.split(" ").map(Number) as [number, number, number, number];
 
 function shade(hex: string, f: number) {
   const n = parseInt(hex.slice(1), 16);
@@ -55,16 +95,26 @@ function shade(hex: string, f: number) {
   return `rgb(${c(n >> 16)},${c((n >> 8) & 255)},${c(n & 255)})`;
 }
 
-function Box({ x, y, z, w, d, h, color, wire = false }: { x: number; y: number; z: number; w: number; d: number; h: number; color: string; wire?: boolean }) {
+const byId = (id: ProjectId) => PROJECTS.find((p) => p.id === id)!;
+
+function Box({ x, y, z, w, d, h, color, look = "solid" }: { x: number; y: number; z: number; w: number; d: number; h: number; color: string; look?: "solid" | "wire" | "hatch" }) {
   const top = pts([x, y, z + h], [x + w, y, z + h], [x + w, y + d, z + h], [x, y + d, z + h]);
   const right = pts([x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]);
   const left = pts([x, y + d, z], [x + w, y + d, z], [x + w, y + d, z + h], [x, y + d, z + h]);
-  if (wire)
+  if (look === "wire")
     return (
       <g className="wire" stroke={color}>
         <polygon points={left} />
         <polygon points={right} />
         <polygon points={top} />
+      </g>
+    );
+  if (look === "hatch")
+    return (
+      <g className="hatch" stroke={color}>
+        <polygon points={left} fill="url(#rc-hatch)" />
+        <polygon points={right} fill="url(#rc-hatch)" />
+        <polygon points={top} fill={shade(color, 0.35)} fillOpacity={0.35} />
       </g>
     );
   return (
@@ -76,118 +126,191 @@ function Box({ x, y, z, w, d, h, color, wire = false }: { x: number; y: number; 
   );
 }
 
-/** Lit windows on the two visible faces of one floor. */
-function Windows({ x, y, z, w, d, h, seed }: { x: number; y: number; z: number; w: number; d: number; h: number; seed: number }) {
+/** Lit windows on one shipped floor. Static: lights don't flicker to fake activity. */
+function Windows({ x, y, z, w, d, h }: { x: number; y: number; z: number; w: number; d: number; h: number }) {
   const out = [];
   const n = 3;
+  const zz = z + h * 0.3;
+  const hh = h * 0.42;
   for (let i = 0; i < n; i++) {
     const a = 0.8 + (i * (w - 1.6)) / n;
-    const lit = (seed * 7 + i * 3) % 5 !== 0;
-    const delay = ((seed * 13 + i * 5) % 17) / 3;
-    const zz = z + h * 0.3;
-    const hh = h * 0.42;
     const ww = (w - 1.6) / n - 0.5;
-    out.push(<polygon key={`l${i}`} className={lit ? "win on" : "win"} style={{ animationDelay: `${delay}s` }} points={pts([x + a, y + d, zz], [x + a + ww, y + d, zz], [x + a + ww, y + d, zz + hh], [x + a, y + d, zz + hh])} />);
+    out.push(<polygon key={`l${i}`} className="win" points={pts([x + a, y + d, zz], [x + a + ww, y + d, zz], [x + a + ww, y + d, zz + hh], [x + a, y + d, zz + hh])} />);
     const b = 0.8 + (i * (d - 1.6)) / n;
-    const lit2 = (seed * 5 + i * 7) % 4 !== 0;
-    out.push(<polygon key={`r${i}`} className={lit2 ? "win on" : "win"} style={{ animationDelay: `${delay + 1.1}s` }} points={pts([x + w, y + b, zz], [x + w, y + b + ww, zz], [x + w, y + b + ww, zz + hh], [x + w, y + b, zz + hh])} />);
+    out.push(<polygon key={`r${i}`} className="win" points={pts([x + w, y + b, zz], [x + w, y + b + ww, zz], [x + w, y + b + ww, zz + hh], [x + w, y + b, zz + hh])} />);
   }
   return <g>{out}</g>;
 }
 
-function Building({ p, plot, selected, onSelect, reduce }: { p: Project; plot: [number, number]; selected: boolean; onSelect: () => void; reduce: boolean }) {
+function floorLook(e: Evidence): "solid" | "hatch" | "wire" {
+  return SHIPPED.includes(e) ? "solid" : e === "unverified" ? "hatch" : "wire";
+}
+
+/** A status pill above a sign. Text and icon carry the meaning; colour only repeats it. */
+function Tag({ x, y, text, tone }: { x: number; y: number; text: string; tone: keyof typeof TONE_COLOR }) {
+  const w = 10 + text.length * 5.9;
+  return (
+    <g className={`rc-tag t-${tone}`} transform={`translate(${x},${y})`}>
+      <rect x={-w / 2} y={-8.6} width={w} height={12} rx={6} stroke={TONE_COLOR[tone]} />
+      <text y={0.6} textAnchor="middle" fill={TONE_COLOR[tone]}>
+        {text}
+      </text>
+    </g>
+  );
+}
+
+function PlotPulse({ i, j, tone, k }: { i: number; j: number; tone: keyof typeof TONE_COLOR; k: string }) {
+  return (
+    <motion.polygon
+      key={k}
+      className="rc-pulse"
+      points={pts([i * P + 1, j * P + 1, 0], [i * P + P - 1, j * P + 1, 0], [i * P + P - 1, j * P + P - 1, 0], [i * P + 1, j * P + P - 1, 0])}
+      stroke={TONE_COLOR[tone]}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 1, 0.6, 1, 0] }}
+      transition={{ duration: PULSE_MS / 1000, ease: "easeInOut" }}
+    />
+  );
+}
+
+function statusTags(st: ProjectState | undefined): { text: string; tone: keyof typeof TONE_COLOR }[] {
+  if (!st) return [];
+  const out: { text: string; tone: keyof typeof TONE_COLOR }[] = [];
+  const x = EXEC[st.execution];
+  if (x.short) out.push({ text: `${x.icon} ${x.short}`, tone: x.tone });
+  if (st.dataStale) out.push({ text: "! DATA STALE", tone: "warn" });
+  return out;
+}
+
+interface BuildingProps {
+  p: Project;
+  plot: [number, number];
+  state?: ProjectState;
+  selected: boolean;
+  dim: boolean;
+  pulse: CityEvent | null;
+  reduce: boolean;
+  onSelect: () => void;
+}
+
+function Building({ p, plot, state, selected, dim, pulse, reduce, onSelect }: BuildingProps) {
   const [i, j] = plot;
+  const color = COLORS[p.id];
   const x = i * P + 3.75;
   const y = j * P + 3.75;
   const w = 7.5;
   const d = 7.5;
-  const done = p.milestones.filter(([, m]) => m).length;
   const total = p.milestones.length;
-  const roofZ = done * FLOOR;
   const topZ = total * FLOOR;
   const [lx, ly] = iso(x + w / 2, y + d / 2, topZ + 5);
   const pct = Math.round(progress(p) * 100);
-  const [mx, my] = iso(x + w, y, topZ + 3);
   const key = (e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect());
+  const tags = statusTags(state);
+  const failed = state?.execution === "failed";
   return (
-    <g className={`bld${selected ? " sel" : ""}`} role="button" tabIndex={0} aria-label={`${p.name}: ${done} of ${total} milestones shipped`} aria-pressed={selected} onClick={onSelect} onKeyDown={key} data-testid={`bld-${p.id}`}>
-      <polygon className="plot" points={pts([i * P + 2, j * P + 2, 0], [i * P + P - 2, j * P + 2, 0], [i * P + P - 2, j * P + P - 2, 0], [i * P + 2, j * P + P - 2, 0])} style={{ stroke: selected ? p.color : undefined }} />
-      {p.milestones.map(([, m], k) =>
-        m ? (
-          <motion.g key={k} initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.15 + k * 0.09, type: "spring", stiffness: 200, damping: 20 }}>
-            <Box x={x} y={y} z={k * FLOOR} w={w} d={d} h={FLOOR - 0.25} color={p.color} />
-            <Windows x={x} y={y} z={k * FLOOR} w={w} d={d} h={FLOOR} seed={k + p.id.length} />
-          </motion.g>
-        ) : (
-          <Box key={k} x={x} y={y} z={k * FLOOR} w={w} d={d} h={FLOOR - 0.25} color={p.color} wire />
-        ),
-      )}
-      {done < total ? (
-        <g className="crane">
-          <line className="mast" x1={iso(x + w, y, roofZ)[0]} y1={iso(x + w, y, roofZ)[1]} x2={mx} y2={my} stroke={p.color} />
-          <g>
-            {!reduce && <animateTransform attributeName="transform" type="rotate" values={`-14 ${mx} ${my};14 ${mx} ${my};-14 ${mx} ${my}`} dur={`${9 + (p.id.length % 4)}s`} repeatCount="indefinite" />}
-            <line className="jib" x1={mx - 26} y1={my} x2={mx + 14} y2={my} stroke={p.color} />
-            <line className="cable" x1={mx - 20} y1={my} x2={mx - 20} y2={my + 10} stroke={p.color}>
-              {!reduce && <animate attributeName="y2" values={`${my + 6};${iso(x + w, y, roofZ + 1)[1]};${my + 6}`} dur="5s" repeatCount="indefinite" />}
-            </line>
+    <g
+      className={`bld${selected ? " sel" : ""}${dim ? " recede" : ""}${failed ? " is-failed" : ""}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`${p.title}: ${shipped(p).length} of ${total} milestones with evidence. ${state ? EXEC[state.execution].label : ""}${state?.dataStale ? ". Data stale" : ""}`}
+      aria-pressed={selected}
+      onClick={onSelect}
+      onKeyDown={key}
+      data-testid={`bld-${p.id}`}
+      data-exec={state?.execution}
+    >
+      <polygon className="plot" points={pts([i * P + 2, j * P + 2, 0], [i * P + P - 2, j * P + 2, 0], [i * P + P - 2, j * P + P - 2, 0], [i * P + 2, j * P + P - 2, 0])} style={{ stroke: selected ? color : undefined }} />
+      {failed && <polygon className="plot-fail" points={pts([i * P + 1.4, j * P + 1.4, 0], [i * P + P - 1.4, j * P + 1.4, 0], [i * P + P - 1.4, j * P + P - 1.4, 0], [i * P + 1.4, j * P + P - 1.4, 0])} />}
+      {pulse && !reduce && <PlotPulse i={i} j={j} tone={eventTone(pulse)} k={pulse.eventId} />}
+      {pulse && reduce && <polygon className="rc-pulse static" stroke={TONE_COLOR[eventTone(pulse)]} points={pts([i * P + 1, j * P + 1, 0], [i * P + P - 1, j * P + 1, 0], [i * P + P - 1, j * P + P - 1, 0], [i * P + 1, j * P + P - 1, 0])} />}
+      {p.milestones.map((m, k) => {
+        const look = floorLook(m.evidence);
+        return (
+          <g key={k}>
+            <Box x={x} y={y} z={k * FLOOR} w={w} d={d} h={FLOOR - 0.25} color={color} look={look} />
+            {look === "solid" && <Windows x={x} y={y} z={k * FLOOR} w={w} d={d} h={FLOOR} />}
           </g>
-          {!reduce && <circle className="spark" cx={iso(x + w * 0.6, y + d, roofZ + 0.6)[0]} cy={iso(x + w * 0.6, y + d, roofZ + 0.6)[1]} r={1.6} />}
-        </g>
-      ) : (
-        <motion.circle className="beacon" cx={iso(x + w / 2, y + d / 2, roofZ + 0.8)[0]} cy={iso(x + w / 2, y + d / 2, roofZ + 0.8)[1]} r={2.2} fill={p.color} animate={reduce ? undefined : { opacity: [0.3, 1, 0.3] }} transition={{ duration: 2.4, repeat: Infinity }} />
-      )}
+        );
+      })}
       <g className="sign" transform={`translate(${lx},${ly})`}>
-        <rect x={-52} y={-19} width={104} height={25} rx={5} />
+        <rect x={-56} y={-19} width={112} height={25} rx={5} />
         <text y={-7} textAnchor="middle" className="sign-n">
-          {p.name}
+          {p.title.length > 22 ? `${p.title.split(" ").slice(0, 2).join(" ")}` : p.title}
         </text>
-        <rect x={-40} y={-1} width={80} height={2.6} rx={1.3} className="sign-bar" />
-        <rect x={-40} y={-1} width={(80 * pct) / 100} height={2.6} rx={1.3} fill={p.color} />
+        <rect x={-42} y={-1} width={84} height={2.6} rx={1.3} className="sign-bar" />
+        <rect x={-42} y={-1} width={(84 * pct) / 100} height={2.6} rx={1.3} fill={color} />
+        {tags.map((t, k) => (
+          <Tag key={t.text} x={0} y={-27 - k * 13} text={t.text} tone={t.tone} />
+        ))}
       </g>
     </g>
   );
 }
 
-function BrainTower({ gen, selected, onSelect, reduce }: { gen: number | null; selected: boolean; onSelect: () => void; reduce: boolean }) {
-  const [i, j] = BRAIN;
+/** The centre: Strategy Lab and the Brain. Its bands move only while a Brain run is verifiably running or a new run event arrives. */
+function CentreTower({ p, state, gen, unavailable, selected, dim, pulse, reduce, onSelect }: Omit<BuildingProps, "plot"> & { gen: number | null; unavailable: boolean }) {
+  const [i, j] = PLOTS[CENTRE];
   const cx = i * P + P / 2;
   const cy = j * P + P / 2;
   const h = 36;
   const [ox, oy] = iso(cx, cy, h + 3.5);
   const key = (e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect());
+  const live = !reduce && (state?.execution === "running" || (pulse && pulse.status !== "warning"));
+  const tags = statusTags(state);
+  const failed = state?.execution === "failed";
   return (
-    <g className={`bld brain${selected ? " sel" : ""}`} role="button" tabIndex={0} aria-pressed={selected} onClick={onSelect} onKeyDown={key} data-testid="bld-brain">
+    <g
+      className={`bld brain${selected ? " sel" : ""}${dim ? " recede" : ""}${failed ? " is-failed" : ""}`}
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      aria-label={`${p.title}: ${state ? EXEC[state.execution].label : "status loading"}${state?.dataStale ? ". Data stale" : ""}`}
+      onClick={onSelect}
+      onKeyDown={key}
+      data-testid={`bld-${p.id}`}
+      data-exec={state?.execution}
+    >
       <polygon className="plot" points={pts([i * P + 2, j * P + 2, 0], [i * P + P - 2, j * P + 2, 0], [i * P + P - 2, j * P + P - 2, 0], [i * P + 2, j * P + P - 2, 0])} />
-      <Box x={cx - 4.5} y={cy - 4.5} z={0} w={9} d={9} h={3} color="#1f2937" />
+      {failed && <polygon className="plot-fail" points={pts([i * P + 1.4, j * P + 1.4, 0], [i * P + P - 1.4, j * P + 1.4, 0], [i * P + P - 1.4, j * P + P - 1.4, 0], [i * P + 1.4, j * P + P - 1.4, 0])} />}
+      {pulse && !reduce && <PlotPulse i={i} j={j} tone={eventTone(pulse)} k={pulse.eventId} />}
+      <Box x={cx - 4.5} y={cy - 4.5} z={0} w={9} d={9} h={3} color="#1e293b" />
       <Box x={cx - 2.2} y={cy - 2.2} z={3} w={4.4} d={4.4} h={h - 3} color="#0e7490" />
-      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((k) => (
-        <motion.polygon key={k} className="brain-band" points={pts([cx + 2.2, cy - 2.2, 5 + k * 3], [cx + 2.2, cy + 2.2, 5 + k * 3], [cx + 2.2, cy + 2.2, 5.6 + k * 3], [cx + 2.2, cy - 2.2, 5.6 + k * 3])} animate={reduce ? undefined : { opacity: [0.15, 1, 0.15] }} transition={{ duration: 1.8, delay: k * 0.22, repeat: Infinity }} />
+      {Array.from({ length: 10 }, (_, k) => (
+        <motion.polygon
+          key={k}
+          className="brain-band"
+          points={pts([cx + 2.2, cy - 2.2, 5 + k * 3], [cx + 2.2, cy + 2.2, 5 + k * 3], [cx + 2.2, cy + 2.2, 5.6 + k * 3], [cx + 2.2, cy - 2.2, 5.6 + k * 3])}
+          initial={{ opacity: 0.45 }}
+          animate={live ? { opacity: [0.15, 1, 0.15] } : { opacity: 0.45 }}
+          transition={live ? { duration: 1.6, delay: k * 0.12, repeat: state?.execution === "running" ? Infinity : 1 } : { duration: 0.3 }}
+        />
       ))}
-      <motion.ellipse cx={ox} cy={oy + 6} rx={22} ry={8} className="ring" animate={reduce ? undefined : { rx: [20, 26, 20], opacity: [0.7, 0.25, 0.7] }} transition={{ duration: 3, repeat: Infinity }} />
       <circle cx={ox} cy={oy} r={9} fill="url(#core)" />
-      <motion.circle cx={ox} cy={oy} r={9} className="core-pulse" animate={reduce ? undefined : { r: [9, 16, 9], opacity: [0.6, 0, 0.6] }} transition={{ duration: 2.2, repeat: Infinity }} />
+      {live && <motion.circle cx={ox} cy={oy} r={9} className="core-pulse" initial={{ r: 9, opacity: 0.6 }} animate={{ r: [9, 17, 9], opacity: [0.6, 0, 0.6] }} transition={{ duration: 2, repeat: state?.execution === "running" ? Infinity : 1 }} />}
       <g className="sign brain-sign" transform={`translate(${ox},${oy - 22})`}>
-        <rect x={-56} y={-20} width={112} height={27} rx={5} />
+        <rect x={-62} y={-20} width={124} height={27} rx={5} />
         <text y={-8} textAnchor="middle" className="sign-n">
-          THE BRAIN
+          STRATEGY LAB · BRAIN
         </text>
         <text y={3} textAnchor="middle" className="sign-s">
-          {gen === null ? "loading…" : `generation ${gen.toLocaleString("en-US")}`}
+          {gen !== null ? `generation ${gen.toLocaleString("en-US")}` : unavailable ? "state unavailable" : "state loading…"}
         </text>
+        {tags.map((t, k) => (
+          <Tag key={t.text} x={0} y={-28 - k * 13} text={t.text} tone={t.tone} />
+        ))}
       </g>
     </g>
   );
 }
 
-function Foundry({ plot, selected, onSelect }: { plot: [number, number]; selected: boolean; onSelect: () => void }) {
+function Foundry({ plot, selected, dim, stale, asOf, onSelect }: { plot: [number, number]; selected: boolean; dim: boolean; stale: boolean; asOf: string; onSelect: () => void }) {
   const [i, j] = plot;
   const x = i * P + 2.5;
   const y = j * P + 3;
-  const [lx, ly] = iso(x + 1, y + 9, 12); // sign offset to the left so the Brain doesn't hide it
+  const [lx, ly] = iso(x + 1, y + 9, 12);
   const key = (e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect());
   return (
-    <g className={`bld${selected ? " sel" : ""}`} role="button" tabIndex={0} aria-pressed={selected} onClick={onSelect} onKeyDown={key} data-testid="bld-foundry">
+    <g className={`bld${selected ? " sel" : ""}${dim ? " recede" : ""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={`Data Foundry: weekly ETF data as of ${asOf}${stale ? ", stale" : ""}`} onClick={onSelect} onKeyDown={key} data-testid="bld-foundry">
       <polygon className="plot" points={pts([i * P + 2, j * P + 2, 0], [i * P + P - 2, j * P + 2, 0], [i * P + P - 2, j * P + P - 2, 0], [i * P + 2, j * P + P - 2, 0])} />
       <Box x={x} y={y + 3} z={0} w={9} d={5} h={3.5} color="#64748b" />
       {[0, 1, 2].map((k) => (
@@ -197,13 +320,14 @@ function Foundry({ plot, selected, onSelect }: { plot: [number, number]; selecte
         </g>
       ))}
       <g className="sign" transform={`translate(${lx},${ly})`}>
-        <rect x={-52} y={-20} width={104} height={27} rx={5} />
+        <rect x={-54} y={-20} width={108} height={27} rx={5} />
         <text y={-8} textAnchor="middle" className="sign-n">
           Data Foundry
         </text>
         <text y={3} textAnchor="middle" className="sign-s">
-          561 weeks · vault
+          ETF data as of {asOf}
         </text>
+        {stale && <Tag x={0} y={-28} text="! STALE" tone="warn" />}
       </g>
     </g>
   );
@@ -219,17 +343,23 @@ function route(from: [number, number], to: [number, number]): [number, number][]
   return [...go, ...go.slice(0, -1).reverse()];
 }
 
-function Bot({ path, color, packet, delay, speed, reduce, label, selected, onSelect }: { path: [number, number][]; color: string; packet: string; delay: number; speed: number; reduce: boolean; label: string; selected: boolean; onSelect: () => void }) {
+type BotMode = { kind: "park" } | { kind: "loop" } | { kind: "once"; key: string };
+
+function Bot({ path, color, packet, slot, mode, reduce, label, selected, onSelect }: { path: [number, number][]; color: string; packet: string; slot: number; mode: BotMode; reduce: boolean; label: string; selected: boolean; onSelect: () => void }) {
   const screen = path.map(([x, y]) => iso(x, y, 0));
   const segs = screen.slice(1).map((p, k) => Math.hypot(p[0] - screen[k]![0], p[1] - screen[k]![1]));
   const total = segs.reduce((a, b) => a + b, 0) || 1;
   let acc = 0;
   const times = [0, ...segs.map((s) => (acc += s) / total)];
+  // parked bots line up beside their building's door, so each one stays clickable
   const [x0, y0] = screen[0]!;
+  const px = x0 - 7 + slot * 7;
+  const py = y0 + 2 + slot * 1.5;
   const key = (e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect());
+  const moving = !reduce && mode.kind !== "park";
   return (
     <motion.g
-      className={`bot${selected ? " sel" : ""}`}
+      className={`bot${selected ? " sel" : ""}${moving ? " moving" : ""}`}
       role="button"
       tabIndex={0}
       aria-label={label}
@@ -239,32 +369,23 @@ function Bot({ path, color, packet, delay, speed, reduce, label, selected, onSel
         onSelect();
       }}
       onKeyDown={key}
-      initial={{ x: x0, y: y0 }}
-      animate={reduce ? { x: x0, y: y0 } : { x: screen.map((p) => p[0]), y: screen.map((p) => p[1]) }}
-      transition={reduce ? undefined : { duration: total / speed, times, repeat: Infinity, ease: "linear", delay, repeatDelay: 0.8 }}
+      initial={{ x: px, y: py }}
+      animate={moving ? { x: [px, ...screen.slice(1).map((p) => p[0]), px], y: [py, ...screen.slice(1).map((p) => p[1]), py] } : { x: px, y: py }}
+      transition={moving ? { duration: total / 30, times: [0, ...times.slice(1, -1).map((t) => t * 0.96), 0.96, 1], ease: "linear", repeat: mode.kind === "loop" ? Infinity : 0 } : { duration: 0.4 }}
     >
       <title>{label}</title>
-      <circle cx={0} cy={-5} r={11} className="bot-hit" />
-      {selected && <circle cx={0} cy={-5} r={10} className="bot-ring" stroke={color} />}
-      <circle cx={0} cy={-5} r={7} fill={color} className="bot-glow" />
-      <ellipse cx={0} cy={0.8} rx={3.8} ry={1.5} className="bot-shadow" />
-      <rect x={-2.6} y={-7.6} width={5.2} height={7} rx={1.8} className="bot-body" />
-      <circle cx={0} cy={-9.8} r={2.6} className="bot-head" />
-      <rect x={-1.7} y={-10.6} width={3.4} height={1.3} rx={0.6} fill={color} />
-      <rect x={2.9} y={-8} width={3.2} height={3.2} rx={0.6} fill={packet} className="bot-packet" />
-      {selected && (
-        <g className="bot-tag" transform="translate(0,-22)">
-          <rect x={-34} y={-8} width={68} height={12} rx={3} />
-          <text y={0.6} textAnchor="middle">
-            {label.split(" · ")[0]}
-          </text>
-        </g>
-      )}
+      <circle cx={0} cy={-5} r={8} className="bot-hit" />
+      {selected && <circle cx={0} cy={-5} r={8} className="bot-ring" stroke={color} />}
+      <ellipse cx={0} cy={0.8} rx={3} ry={1.2} className="bot-shadow" />
+      <rect x={-2.1} y={-6.4} width={4.2} height={6} rx={1.5} className="bot-body" />
+      <circle cx={0} cy={-8.2} r={2.1} className="bot-head" />
+      <rect x={-1.4} y={-8.9} width={2.8} height={1.1} rx={0.5} fill={color} />
+      {moving && <rect x={2.4} y={-6.8} width={2.6} height={2.6} rx={0.5} fill={packet} className="bot-packet" />}
     </motion.g>
   );
 }
 
-/** Pan, zoom and pinch for the explorer, in viewBox units so the drawing stays crisp. */
+/** Pan, zoom and pinch for the explorer, in viewBox units so the drawing stays crisp. Bounded: 0.7× to 6×. */
 function useCamera(svg: React.RefObject<SVGSVGElement | null>, on: boolean) {
   const [cam, setCam] = useState({ k: 1, x: 0, y: 0 });
   const ptrs = useRef(new Map<number, { x: number; y: number }>());
@@ -279,11 +400,15 @@ function useCamera(svg: React.RefObject<SVGSVGElement | null>, on: boolean) {
     },
     [svg],
   );
+  const bound = (c: { k: number; x: number; y: number }) => {
+    const lim = (VB[2] * c.k) / 1.2;
+    return { k: c.k, x: Math.max(-lim, Math.min(lim, c.x)), y: Math.max(-lim, Math.min(lim, c.y)) };
+  };
   const zoomAt = useCallback((vx: number, vy: number, f: number) => {
     setCam((c) => {
       const k = Math.min(6, Math.max(0.7, c.k * f));
       const r = k / c.k;
-      return { k, x: vx - (vx - c.x) * r, y: vy - (vy - c.y) * r };
+      return bound({ k, x: vx - (vx - c.x) * r, y: vy - (vy - c.y) * r });
     });
   }, []);
   useEffect(() => {
@@ -323,14 +448,13 @@ function useCamera(svg: React.RefObject<SVGSVGElement | null>, on: boolean) {
             moved.current += Math.abs(next.x - prev.x) + Math.abs(next.y - prev.y);
             if (moved.current > 4) {
               (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
-              setCam((c) => ({ ...c, x: c.x + dx, y: c.y + dy }));
+              setCam((c) => bound({ ...c, x: c.x + dx, y: c.y + dy }));
             }
           }
           ptrs.current.set(e.pointerId, next);
         },
         onPointerUp: (e: RPointerEvent) => void ptrs.current.delete(e.pointerId),
         onPointerCancel: (e: RPointerEvent) => void ptrs.current.delete(e.pointerId),
-        // a drag is not a click
         onClickCapture: (e: React.MouseEvent) => {
           if (moved.current > 4) {
             e.stopPropagation();
@@ -345,57 +469,123 @@ function useCamera(svg: React.RefObject<SVGSVGElement | null>, on: boolean) {
     cam,
     handlers,
     zoom: (f: number) => zoomAt(centre.x, centre.y, f),
-    pan: (dx: number, dy: number) => setCam((c) => ({ ...c, x: c.x + dx, y: c.y + dy })),
+    pan: (dx: number, dy: number) => setCam((c) => bound({ ...c, x: c.x + dx, y: c.y + dy })),
     reset: () => setCam({ k: 1, x: 0, y: 0 }),
   };
 }
 
+// ---------------------------------------------------------------- filters
+
+type StatusFilter = "all" | "running" | "failed" | "stale" | "succeeded" | "no-pipeline" | "open-work" | "unverified";
+const STATUS_FILTERS: [StatusFilter, string][] = [
+  ["all", "Any status"],
+  ["succeeded", "Last run succeeded"],
+  ["running", "Running"],
+  ["failed", "Failed"],
+  ["stale", "Stale (schedule or data)"],
+  ["no-pipeline", "No automated pipeline"],
+  ["open-work", "Has planned work"],
+  ["unverified", "Has unverified claims"],
+];
+
+function matches(p: Project, st: ProjectState | undefined, q: string, district: DistrictId | "all", status: StatusFilter) {
+  if (district !== "all" && p.district !== district) return false;
+  const text = `${p.title} ${p.tags.join(" ")} ${DISTRICTS[p.district]} ${CATEGORIES[p.category]}`.toLowerCase();
+  if (q && !q.toLowerCase().split(/\s+/).every((w) => text.includes(w))) return false;
+  switch (status) {
+    case "all":
+      return true;
+    case "running":
+    case "failed":
+    case "succeeded":
+      return st?.execution === status;
+    case "stale":
+      return st?.execution === "stale" || !!st?.dataStale;
+    case "no-pipeline":
+      return p.pipeline === "none";
+    case "open-work":
+      return pending(p).length > 0;
+    case "unverified":
+      return p.milestones.some((m) => m.evidence === "unverified");
+  }
+}
+
+// ---------------------------------------------------------------- the city
+
 export function City({ compact = false, active = true, explore = false, onClose, initial }: { compact?: boolean; active?: boolean; explore?: boolean; onClose?: () => void; initial?: Sel }) {
   const reduce = !!useReducedMotion();
-  const { data } = useBrain(compact ? 0 : 120_000);
-  const brain = data?.state ?? null;
-  const [sel, setSel] = useState<Sel>(initial ?? { type: "project", p: PROJECTS[0]! });
+  const feed = useCityFeed();
+  const brain = feed.brain;
+  const [sel, setSel] = useState<Sel>(initial ?? { type: "project", id: CENTRE });
+  const [focused, setFocused] = useState(false);
   const [rot, setRot] = useState(0);
-  const [tab, setTab] = useState<"detail" | "crew">("detail");
-  const [open, setOpen] = useState(false); // the full-screen explorer, from the inline city
+  const [tab, setTab] = useState<"detail" | "timeline" | "crew">("detail");
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [district, setDistrict] = useState<DistrictId | "all">("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
   const svg = useRef<SVGSVGElement>(null);
   const { cam, handlers, zoom, pan, reset } = useCamera(svg, explore);
 
-  const plotOf = useCallback((plot: [number, number]) => turn(plot, rot), [rot]);
-  const foundryPlot = plotOf(FOUNDRY);
+  // the event being animated right now: the head of the shared queue. Only one visible city consumes it.
+  const consumer = active && !open;
+  const head = feed.queue[0] ?? null;
+  const [pulse, setPulse] = useState<CityEvent | null>(null);
+  const [announce, setAnnounce] = useState("");
+  useEffect(() => {
+    if (!consumer || !head) return;
+    setPulse(head);
+    setAnnounce(`${head.demo ? "Demo event" : "New event"}: ${byId(head.projectId).title}, ${head.title}`);
+    const t = setTimeout(() => {
+      setPulse(null);
+      consume(head.eventId);
+    }, PULSE_MS);
+    return () => clearTimeout(t);
+  }, [consumer, head]);
+
+  const plotOf = useCallback((id: ProjectId) => turn(PLOTS[id], rot), [rot]);
+  const foundryPlot = turn(FOUNDRY, rot);
+  const visible = useMemo(() => new Set(PROJECTS.filter((p) => matches(p, feed.states[p.id], q, district, status)).map((p) => p.id)), [feed.states, q, district, status]);
+  const filtering = visible.size < PROJECTS.length;
 
   const bots = useMemo(() => {
-    const out: { key: string; p: Project; a: Agent; path: [number, number][]; color: string; packet: string; delay: number; speed: number; label: string }[] = [];
-    let n = 0;
+    const out: { key: string; p: Project; a: Agent; k: number; path: [number, number][]; color: string; label: string }[] = [];
     for (const p of PROJECTS) {
-      const home = turn(p.plot, rot);
-      const foundry = turn(FOUNDRY, rot);
+      const home = turn(PLOTS[p.id], rot);
+      const target: [number, number] = turn(FOUNDRY, rot);
       p.agents.forEach((a, k) => {
-        const target: [number, number] = a.kind === "script" || a.kind === "local" ? foundry : BRAIN;
-        const path = target[0] === home[0] && target[1] === home[1] ? route(home, BRAIN) : route(home, target);
-        out.push({ key: `${p.id}-${k}`, p, a, path, color: KIND_COLOR[a.kind], packet: p.color, delay: (n++ * 1.37) % 7, speed: 26 + ((n * 7) % 11), label: `${a.name} · ${p.name} · ${KIND_LABEL[a.kind]}` });
+        const to = a.kind === "script" || a.kind === "local" ? target : turn(PLOTS[CENTRE], rot);
+        const path = to[0] === home[0] && to[1] === home[1] ? route(home, target) : route(home, to);
+        out.push({ key: `${p.id}-${k}`, p, a, k, path, color: KIND_COLOR[a.kind], label: `${a.name} · ${p.title} · ${KIND_LABEL[a.kind]}${a.verification === "verified" ? "" : " · not verified"}` });
       });
     }
     return out;
   }, [rot]);
 
-  const order = useMemo(() => {
-    const items: { k: string; depth: number; el: "brain" | "foundry" | Project }[] = [
-      ...PROJECTS.map((p) => {
-        const [i, j] = turn(p.plot, rot);
-        return { k: p.id, depth: i + j, el: p as Project };
-      }),
-      { k: "brain", depth: BRAIN[0] + BRAIN[1], el: "brain" as const },
-      { k: "foundry", depth: turn(FOUNDRY, rot)[0] + turn(FOUNDRY, rot)[1], el: "foundry" as const },
-    ];
-    return items.sort((a, b) => a.depth - b.depth);
-  }, [rot]);
+  const botMode = (b: (typeof bots)[number]): BotMode => {
+    const st = feed.states[b.p.id];
+    const job = b.a.kind === "scheduled" || b.a.kind === "ci";
+    if (job && st?.execution === "running") return { kind: "loop" };
+    if (pulse && pulse.projectId === b.p.id) {
+      const t = pulse.eventType;
+      const fits =
+        ((t.startsWith("research_run") || t === "candidate_promoted") && b.a.kind === "scheduled") ||
+        (t.startsWith("test_suite") && b.a.kind === "ci") ||
+        (t.startsWith("release_gate") && b.a.kind === "deploy");
+      if (fits) return { kind: "once", key: pulse.eventId };
+    }
+    return { kind: "park" };
+  };
 
-  // explorer keys: arrows pan, + / - zoom, R turns the city, 0 resets, Esc leaves
+  const order = useMemo(() => {
+    const items: { k: string; depth: number }[] = [...PROJECTS.map((p) => ({ k: p.id, depth: plotOf(p.id)[0] + plotOf(p.id)[1] })), { k: "foundry", depth: foundryPlot[0] + foundryPlot[1] }];
+    return items.sort((a, b) => a.depth - b.depth);
+  }, [plotOf, foundryPlot]);
+
   useEffect(() => {
     if (!explore) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if ((e.target as HTMLElement | null)?.closest?.("input, textarea")) return;
+      if ((e.target as HTMLElement | null)?.closest?.("input, textarea, select")) return;
       const step = 24 / cam.k;
       if (e.key === "Escape") onClose?.();
       else if (e.key === "+" || e.key === "=") zoom(1.25);
@@ -415,42 +605,79 @@ export function City({ compact = false, active = true, explore = false, onClose,
 
   const pick = (s: Sel) => {
     setSel(s);
+    setFocused(true);
     setTab("detail");
   };
+  const selId: ProjectId | "foundry" = sel.type === "foundry" ? "foundry" : sel.id;
+  const dimOf = (id: ProjectId | "foundry") => (focused && selId !== id) || (filtering && (id === "foundry" || !visible.has(id)));
 
   const roads = [];
   for (let k = 0; k <= 3; k++) {
     roads.push(<line key={`a${k}`} className="road" x1={iso(k * P, 0)[0]} y1={iso(k * P, 0)[1]} x2={iso(k * P, 3 * P)[0]} y2={iso(k * P, 3 * P)[1]} />);
     roads.push(<line key={`b${k}`} className="road" x1={iso(0, k * P)[0]} y1={iso(0, k * P)[1]} x2={iso(3 * P, k * P)[0]} y2={iso(3 * P, k * P)[1]} />);
-    roads.push(<line key={`c${k}`} className="road-flow" x1={iso(k * P, 0)[0]} y1={iso(k * P, 0)[1]} x2={iso(k * P, 3 * P)[0]} y2={iso(k * P, 3 * P)[1]} />);
-    roads.push(<line key={`d${k}`} className="road-flow" x1={iso(0, k * P)[0]} y1={iso(0, k * P)[1]} x2={iso(3 * P, k * P)[0]} y2={iso(3 * P, k * P)[1]} />);
   }
+  // district grounds: a faint tint under each project's plot
+  const grounds = PROJECTS.map((p) => {
+    const [i, j] = plotOf(p.id);
+    return <polygon key={`g-${p.id}`} className="district-ground" fill={DISTRICT_COLORS[p.district]} points={pts([i * P, j * P, 0], [i * P + P, j * P, 0], [i * P + P, j * P + P, 0], [i * P, j * P + P, 0])} />;
+  });
+  // the data conduit: Foundry → Strategy Lab. Amber and dashed while its data is stale.
+  const lab = feed.states[CENTRE];
+  const [fi, fj] = foundryPlot;
+  const [ci, cj] = plotOf(CENTRE);
+  const conduit = [iso(fi * P + P / 2, fj * P + P / 2, 0.2), iso(ci * P + P / 2, fj * P + P / 2, 0.2), iso(ci * P + P / 2, cj * P + P / 2, 0.2)];
 
-  const totalBots = bots.length;
-  const shipped = PROJECTS.reduce((a, p) => a + p.milestones.filter(([, m]) => m).length, 0);
-  const floors = PROJECTS.reduce((a, p) => a + p.milestones.length, 0);
-  const selKey = sel.type === "project" ? sel.p.id : sel.type === "agent" ? sel.key : sel.type;
+  const pipelinesList = PROJECTS.filter((p) => p.pipeline !== "none");
+  const counts = { ok: 0, running: 0, failed: 0, stale: 0, unavailable: 0 };
+  for (const p of pipelinesList) {
+    const e = feed.states[p.id]?.execution;
+    if (e === "succeeded") counts.ok++;
+    else if (e === "running") counts.running++;
+    else if (e === "failed") counts.failed++;
+    else if (e === "stale") counts.stale++;
+    else counts.unavailable++;
+  }
+  const lastResearch = lab?.lastSuccess;
+  const artifacts = PROJECTS.flatMap((p) => p.links).filter((l) => l.kind !== "page").length;
+  const staleData = PROJECTS.filter((p) => feed.states[p.id]?.dataStale);
 
   return (
-    <div className={`city${compact ? " compact" : ""}${explore ? " explore" : ""}`}>
+    <div className={`city${compact ? " compact" : ""}${explore ? " explore" : ""}${feed.demo ? " demo" : ""}`}>
       <div className="city-stage">
-        <div className="city-hud" aria-hidden>
-          <span>
-            <b>{PROJECTS.length}</b> districts
-          </span>
-          <span>
-            <b>{totalBots}</b> bots
-          </span>
-          <span>
+        {feed.demo && (
+          <p className="city-demo" role="note">
+            DEMO MODE · scripted events below are simulated to show how the city reacts. They are not real and are not saved.
+          </p>
+        )}
+        <ul className="city-hud" aria-label="City health">
+          <li>
+            <b>{PROJECTS.length}</b> projects
+          </li>
+          <li>
+            Pipelines <b>{counts.ok}</b> ok · <b>{counts.running}</b> running · <b className={counts.failed ? "hud-err" : ""}>{counts.failed}</b> failed · <b className={counts.stale ? "hud-warn" : ""}>{counts.stale}</b> stale
+          </li>
+          <li>
+            Last research run{" "}
             <b>
-              {shipped}/{floors}
-            </b>{" "}
-            floors built
-          </span>
-          <span>
-            <b>{brain ? brain.generation.toLocaleString("en-US") : "…"}</b> brain gens
-          </span>
-        </div>
+              {lastResearch ? (
+                <a href={lastResearch.url} target="_blank" rel="noopener noreferrer">
+                  ✓ {ago(lastResearch.occurredAt, feed.now)}
+                </a>
+              ) : (
+                "unknown"
+              )}
+            </b>
+          </li>
+          <li>
+            Data{" "}
+            <b className={staleData.length ? "hud-warn" : ""}>
+              {staleData.length ? `! stale (as of ${feed.evidence.dataset.asOf})` : `as of ${feed.evidence.dataset.asOf}`}
+            </b>
+          </li>
+          <li>
+            <b>{artifacts}</b> public artifacts
+          </li>
+        </ul>
         <div className="city-ctl" role="toolbar" aria-label="City view">
           {explore ? (
             <>
@@ -472,17 +699,54 @@ export function City({ compact = false, active = true, explore = false, onClose,
             </>
           ) : (
             <button type="button" className="city-explore" onClick={() => setOpen(true)} data-testid="city-explore">
-              ⤢ Explore the city
+              ⤢ Explore
             </button>
           )}
         </div>
+        {!compact && (
+          <div className="city-filters" role="search" aria-label="Filter projects">
+            <label>
+              <span className="vh">Search projects</span>
+              <input type="search" placeholder="Search projects, tags…" value={q} onChange={(e) => setQ(e.target.value)} data-testid="city-search" />
+            </label>
+            <label>
+              <span className="vh">District</span>
+              <select value={district} onChange={(e) => setDistrict(e.target.value as DistrictId | "all")} data-testid="city-district">
+                <option value="all">All districts</option>
+                {(Object.keys(DISTRICTS) as DistrictId[]).map((d) => (
+                  <option key={d} value={d}>
+                    {DISTRICTS[d]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="vh">Status</span>
+              <select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} data-testid="city-status">
+                {STATUS_FILTERS.map(([v, l]) => (
+                  <option key={v} value={v}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {filtering && (
+              <span className="city-count" aria-live="polite">
+                {visible.size} of {PROJECTS.length}
+              </span>
+            )}
+          </div>
+        )}
         <svg
           ref={svg}
           className="city-svg"
           viewBox={VIEWBOX}
           role="group"
-          aria-label="Research city: each building is a project, each floor a milestone, each bot an automated job"
+          aria-label="Research city: each building is a project, each floor a milestone drawn by its evidence, each bot an automated job"
           data-testid={explore ? "city-explore-svg" : undefined}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && focused && !explore) setFocused(false);
+          }}
           {...handlers}
         >
           <defs>
@@ -491,40 +755,84 @@ export function City({ compact = false, active = true, explore = false, onClose,
               <stop offset=".45" stopColor="#22d3ee" />
               <stop offset="1" stopColor="#0e7490" stopOpacity=".2" />
             </radialGradient>
+            <pattern id="rc-hatch" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="3" height="3" fill="rgba(255,255,255,.02)" />
+              <line x1="0" y1="0" x2="0" y2="3" stroke="rgba(255,255,255,.28)" strokeWidth="1" />
+            </pattern>
           </defs>
           <g transform={`translate(${cam.x} ${cam.y}) scale(${cam.k})`} data-testid="city-cam" data-k={cam.k.toFixed(2)}>
             <polygon className="ground" points={pts([-3, -3, 0], [3 * P + 3, -3, 0], [3 * P + 3, 3 * P + 3, 0], [-3, 3 * P + 3, 0])} />
+            {grounds}
             {roads}
-            {order.map(({ k, el }) =>
-              el === "brain" ? (
-                <BrainTower key={k} gen={brain?.generation ?? null} selected={sel.type === "brain"} onSelect={() => pick({ type: "brain" })} reduce={reduce} />
-              ) : el === "foundry" ? (
-                <Foundry key={k} plot={foundryPlot} selected={sel.type === "foundry"} onSelect={() => pick({ type: "foundry" })} />
-              ) : (
-                <Building key={k} p={el} plot={plotOf(el.plot)} selected={(sel.type === "project" || sel.type === "agent") && sel.p.id === el.id} onSelect={() => pick({ type: "project", p: el })} reduce={reduce} />
-              ),
-            )}
-            {active &&
-              bots.map((b) => (
-                <Bot key={`${b.key}-${rot}`} path={b.path} color={b.color} packet={b.packet} delay={b.delay} speed={b.speed} label={b.label} reduce={reduce} selected={sel.type === "agent" && sel.key === b.key} onSelect={() => pick({ type: "agent", p: b.p, a: b.a, key: b.key })} />
-              ))}
+            <polyline className={`conduit${lab?.dataStale ? " stale" : ""}`} points={conduit.map((p) => p.join(",")).join(" ")} />
+            {order.map(({ k }) => {
+              if (k === "foundry")
+                return <Foundry key={k} plot={foundryPlot} selected={sel.type === "foundry"} dim={dimOf("foundry")} stale={!!lab?.dataStale} asOf={feed.evidence.dataset.asOf} onSelect={() => pick({ type: "foundry" })} />;
+              const p = byId(k as ProjectId);
+              const common = {
+                p,
+                state: feed.states[p.id],
+                selected: sel.type !== "foundry" && sel.id === p.id,
+                dim: dimOf(p.id),
+                pulse: pulse && pulse.projectId === p.id ? pulse : null,
+                reduce,
+                onSelect: () => pick({ type: "project", id: p.id }),
+              };
+              return p.id === CENTRE ? <CentreTower key={k} {...common} gen={brain?.generation ?? null} unavailable={feed.brainSource === "unavailable"} /> : <Building key={k} {...common} plot={plotOf(p.id)} />;
+            })}
+            {bots.map((b) => {
+              const mode: BotMode = active ? botMode(b) : { kind: "park" };
+              return (
+              <Bot
+                key={`${b.key}-${rot}-${mode.kind === "once" ? mode.key : mode.kind}`}
+                path={b.path}
+                color={b.color}
+                packet={COLORS[b.p.id]}
+                slot={b.k}
+                mode={mode}
+                label={b.label}
+                reduce={reduce}
+                selected={sel.type === "agent" && sel.id === b.p.id && sel.k === b.k}
+                onSelect={() => pick({ type: "agent", id: b.p.id, k: b.k })}
+              />
+              );
+            })}
           </g>
         </svg>
-        {explore && <p className="city-tip">Drag to pan · scroll or pinch to zoom · ⟳ turns the city · tap a building or a bot</p>}
-        <div className="city-pick" role="toolbar" aria-label="Choose a district">
-          {PROJECTS.map((p) => (
-            <button key={p.id} type="button" className={(sel.type === "project" || sel.type === "agent") && sel.p.id === p.id ? "on" : ""} style={{ ["--c" as string]: p.color }} onClick={() => pick({ type: "project", p })}>
-              {p.name}
-            </button>
-          ))}
-          <button type="button" className={sel.type === "brain" ? "on" : ""} style={{ ["--c" as string]: "#22d3ee" }} onClick={() => pick({ type: "brain" })} data-testid="pick-brain">
-            The Brain
-          </button>
-          <button type="button" className={sel.type === "foundry" ? "on" : ""} style={{ ["--c" as string]: "#94a3b8" }} onClick={() => pick({ type: "foundry" })}>
+        <p className="vh" aria-live="polite" data-testid="city-announce">
+          {announce}
+        </p>
+        {explore && <p className="city-tip">Drag to pan · scroll or pinch to zoom · ⟳ turns the city · Esc closes</p>}
+        <div className="city-pick" role="toolbar" aria-label="Choose a project">
+          {PROJECTS.filter((p) => visible.has(p.id)).map((p) => {
+            const st = feed.states[p.id];
+            const x = st ? EXEC[st.execution] : null;
+            return (
+              <button key={p.id} type="button" className={sel.type !== "foundry" && sel.id === p.id ? "on" : ""} style={{ ["--c" as string]: COLORS[p.id] }} onClick={() => pick({ type: "project", id: p.id })} aria-pressed={sel.type !== "foundry" && sel.id === p.id}>
+                {p.title}
+                {x?.short ? <em className={`t-${x.tone}`}> {x.icon}</em> : null}
+              </button>
+            );
+          })}
+          <button type="button" className={sel.type === "foundry" ? "on" : ""} style={{ ["--c" as string]: "#94a3b8" }} onClick={() => pick({ type: "foundry" })} aria-pressed={sel.type === "foundry"}>
             Data Foundry
           </button>
+          {focused && (
+            <button type="button" className="city-clear" onClick={() => setFocused(false)}>
+              Show all
+            </button>
+          )}
         </div>
         <div className="city-legend">
+          <span>
+            <i className="lg-solid" /> evidence here
+          </span>
+          <span>
+            <i className="lg-hatch" /> claimed, not verified
+          </span>
+          <span>
+            <i className="lg-wire" /> planned
+          </span>
           {(Object.keys(KIND_COLOR) as AgentKind[]).map((k) => (
             <span key={k}>
               <i style={{ background: KIND_COLOR[k] }} />
@@ -534,35 +842,37 @@ export function City({ compact = false, active = true, explore = false, onClose,
         </div>
       </div>
       <div className="city-side">
-        <div className="ds-tabs" role="tablist">
-          <button type="button" role="tab" aria-selected={tab === "detail"} onClick={() => setTab("detail")}>
+        <div className="ds-tabs" role="tablist" aria-label="Side panel">
+          <button type="button" role="tab" aria-selected={tab === "detail"} onClick={() => setTab("detail")} data-testid="tab-detail">
             Dossier
           </button>
+          <button type="button" role="tab" aria-selected={tab === "timeline"} onClick={() => setTab("timeline")} data-testid="tab-timeline">
+            Timeline
+          </button>
           <button type="button" role="tab" aria-selected={tab === "crew"} onClick={() => setTab("crew")} data-testid="tab-crew">
-            All bots · {totalBots}
+            Bots · {bots.length}
           </button>
         </div>
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.aside
-            key={tab === "crew" ? "crew" : selKey}
+            key={tab === "detail" ? `d-${sel.type}-${sel.type === "foundry" ? "" : sel.id}-${sel.type === "agent" ? sel.k : ""}` : tab}
             className="dossier"
-            initial={{ opacity: 0, x: 16 }}
+            initial={reduce ? false : { opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.22 }}
-            aria-live="polite"
+            exit={reduce ? undefined : { opacity: 0, x: -8 }}
+            transition={{ duration: 0.18 }}
             data-testid="dossier"
           >
             {tab === "crew" ? (
-              <CrewRoster bots={bots} selected={sel.type === "agent" ? sel.key : null} onPick={(b) => pick({ type: "agent", p: b.p, a: b.a, key: b.key })} />
+              <CrewRoster bots={bots} feed={feed} selected={sel.type === "agent" ? `${sel.id}-${sel.k}` : null} onPick={(b) => pick({ type: "agent", id: b.p.id, k: b.k })} />
+            ) : tab === "timeline" ? (
+              <Timeline feed={feed} project={focused && sel.type !== "foundry" ? sel.id : null} />
             ) : sel.type === "project" ? (
-              <ProjectDossier p={sel.p} onAgent={(a, k) => pick({ type: "agent", p: sel.p, a, key: `${sel.p.id}-${k}` })} />
+              <ProjectDossier p={byId(sel.id)} feed={feed} onAgent={(k) => pick({ type: "agent", id: sel.id, k })} />
             ) : sel.type === "agent" ? (
-              <AgentDossier p={sel.p} a={sel.a} brain={brain} onProject={() => pick({ type: "project", p: sel.p })} />
-            ) : sel.type === "brain" ? (
-              <BrainDossier brain={brain} />
+              <AgentDossier p={byId(sel.id)} a={byId(sel.id).agents[sel.k]!} feed={feed} onProject={() => pick({ type: "project", id: sel.id })} />
             ) : (
-              <FoundryDossier />
+              <FoundryDossier feed={feed} />
             )}
           </motion.aside>
         </AnimatePresence>
@@ -572,7 +882,6 @@ export function City({ compact = false, active = true, explore = false, onClose,
   );
 }
 
-/** The city full-screen: free camera, every bot clickable, Esc to leave. */
 function CityExplorer({ initial, onClose }: { initial: Sel; onClose: () => void }) {
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -589,124 +898,218 @@ function CityExplorer({ initial, onClose }: { initial: Sel; onClose: () => void 
   );
 }
 
-type BotInfo = { key: string; p: Project; a: Agent; color: string };
+// ---------------------------------------------------------------- side panel
 
-function CrewRoster({ bots, selected, onPick }: { bots: BotInfo[]; selected: string | null; onPick: (b: BotInfo) => void }) {
+function ExtLink({ href, children }: { href?: string; children: React.ReactNode }) {
+  if (!href) return <>{children}</>;
+  const ext = href.startsWith("http");
   return (
-    <>
-      <div className="ds-k" style={{ color: "#22d3ee" }}>
-        The crew
-      </div>
-      <h3>Every bot</h3>
-      <p className="ds-sum">Each one is a real automated job. Tap one to see its task, its latest result and where to check the work.</p>
-      {PROJECTS.map((p) => (
-        <div key={p.id} className="crew-g">
-          <div className="crew-h" style={{ color: p.color }}>
-            {p.name} · {Math.round(progress(p) * 100)}%
-          </div>
-          <ul className="crew">
-            {bots
-              .filter((b) => b.p.id === p.id)
-              .map((b) => (
-                <li key={b.key}>
-                  <button type="button" className={selected === b.key ? "on" : ""} onClick={() => onPick(b)} data-testid={`crew-${b.key}`}>
-                    <i className="ds-bot" style={{ background: b.color, color: b.color }} aria-hidden />
-                    <span>
-                      <b>{b.a.name}</b>
-                      <small>{b.a.output}</small>
-                    </span>
-                  </button>
-                </li>
-              ))}
-          </ul>
-        </div>
-      ))}
-    </>
+    <a href={href} target={ext ? "_blank" : undefined} rel={ext ? "noopener noreferrer" : undefined}>
+      {children}
+    </a>
   );
 }
 
-function AgentDossier({ p, a, brain, onProject }: { p: Project; a: Agent; brain: BrainState | null; onProject: () => void }) {
-  const done = p.milestones.filter(([, m]) => m);
-  const todo = p.milestones.filter(([, m]) => !m);
-  const when =
-    a.kind === "scheduled"
-      ? brain
-        ? `Last ran ${new Date(brain.lastRun).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · next ${nextRun(brain.lastRun)}`
-        : "Runs every 6 hours"
-      : a.kind === "ci"
-        ? "Runs on every push to the repository"
-        : a.kind === "deploy"
-          ? "Runs before every release; a failure blocks it"
-          : a.kind === "local"
-            ? "Runs on the owner's machine when it's on"
-            : "Runs on demand; same seed, same result";
+function EventLine({ e, now }: { e?: CityEvent; now: number }) {
+  if (!e) return <span className="ds-none">None recorded</span>;
+  return (
+    <span>
+      <span className={`ev-ico t-${eventTone(e)}`} aria-hidden>
+        {EVENT_ICON[e.status]}
+      </span>{" "}
+      <ExtLink href={e.url}>{e.title}</ExtLink> <span className="ds-when">· {ago(e.occurredAt, now)}</span>
+    </span>
+  );
+}
+
+function sourceNote(feed: Feed, p: Project): string {
+  if (p.pipeline === "none") return "Status comes from repository evidence only.";
+  const w = WORKFLOWS.find((x) => x.projectId === p.id);
+  if (!w) return "";
+  const s = feed.sources[w.id];
+  const where = s.state === "live" ? "fetched from GitHub just now" : s.state === "cached" ? `GitHub, cached ${ago(s.at, feed.now)}` : s.state === "build" ? `build snapshot from ${when(s.at)}` : "unavailable";
+  return `From the public GitHub Actions run list of ${w.file} (${where}).${s.note ? ` ${s.note}` : ""}`;
+}
+
+export function StatusBlock({ p, feed }: { p: Project; feed: Feed }) {
+  const st = feed.states[p.id];
+  const x = EXEC[st.execution];
+  const assess = p.id === CENTRE ? assessChampion(feed.brain) : null;
+  return (
+    <dl className="ds-params ds-status" data-testid={`status-${p.id}`}>
+      <div>
+        <dt>Execution</dt>
+        <dd>
+          <span className={`pill t-${x.tone}`}>
+            {x.icon} {x.label}
+          </span>
+          <small>{sourceNote(feed, p)}</small>
+        </dd>
+      </div>
+      <div>
+        <dt>Validation</dt>
+        <dd>
+          {assess ? (
+            <>
+              <span className={`pill t-${assess.status === "provisional" ? "ok" : assess.status === "not-validated" ? "warn" : "idle"}`}>{VALIDATION_LABEL[assess.status]}</span>
+              <small>{assess.ceiling}</small>
+            </>
+          ) : st.lastGate ? (
+            <>
+              <EventLine e={st.lastGate} now={feed.now} />
+              <small>A release check, not an independent validation of results.</small>
+            </>
+          ) : (
+            <span className="pill t-idle">Manual verification required</span>
+          )}
+        </dd>
+      </div>
+      {p.pipeline !== "none" && (
+        <>
+          <div>
+            <dt>Last attempt</dt>
+            <dd>
+              <EventLine e={st.lastAttempt} now={feed.now} />
+            </dd>
+          </div>
+          <div>
+            <dt>Last success</dt>
+            <dd>
+              <EventLine e={st.lastSuccess} now={feed.now} />
+            </dd>
+          </div>
+          <div>
+            <dt>Last failure</dt>
+            <dd>
+              <EventLine e={st.lastFailure} now={feed.now} />
+            </dd>
+          </div>
+        </>
+      )}
+      <div>
+        <dt>Data</dt>
+        <dd>
+          {p.data.label}
+          {p.data.asOf && <small>As of {p.data.asOf}</small>}
+          {st.dataStale && <span className="pill t-warn">! {st.dataStale.title}</span>}
+        </dd>
+      </div>
+      <div>
+        <dt>Latest change</dt>
+        <dd>
+          {st.lastChange ? (
+            <>
+              <ExtLink href={st.lastChange.url}>
+                <code>{st.lastChange.commitSha?.slice(0, 7)}</code> {st.lastChange.title}
+              </ExtLink>{" "}
+              <span className="ds-when">· {ago(st.lastChange.occurredAt, feed.now)}</span>
+              {st.lastChange.detail && <small className="t-warn">{st.lastChange.detail}</small>}
+            </>
+          ) : (
+            <span className="ds-none">No commits in this repository</span>
+          )}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+export function EvidenceList({ p }: { p: Project }) {
+  return (
+    <ul className="ds-ms">
+      {p.milestones.map((m) => (
+        <li key={m.label} className={`ev-${m.evidence}`}>
+          <span className="ev-grade">{EVIDENCE_LABEL[m.evidence]}</span> {m.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ProjectDossier({ p, feed, onAgent }: { p: Project; feed: Feed; onAgent: (k: number) => void }) {
+  const brain = p.id === CENTRE ? feed.brain : null;
   return (
     <>
-      <div className="ds-k" style={{ color: KIND_COLOR[a.kind] }}>
-        Bot · {p.name}
+      <div className="ds-k" style={{ color: COLORS[p.id] }}>
+        {DISTRICTS[p.district]} · {CATEGORIES[p.category]}
       </div>
-      <h3>{a.name}</h3>
-      <dl className="ds-params">
-        <div>
-          <dt>Task</dt>
-          <dd>{a.duty}</dd>
-        </div>
-        <div>
-          <dt>Latest result</dt>
-          <dd className="ds-out">{a.kind === "scheduled" && brain ? `Generation ${brain.generation.toLocaleString("en-US")}: champion "${brain.champion.label}", ${brain.trials.toLocaleString("en-US")} strategies tried` : a.output}</dd>
-        </div>
-        <div>
-          <dt>Schedule</dt>
-          <dd>{when}</dd>
-        </div>
-      </dl>
-      <div className="ds-h">Project progress</div>
-      <div className="ds-prog">
-        <div className="ds-bar">
-          <motion.i style={{ background: p.color }} initial={{ width: 0 }} animate={{ width: `${progress(p) * 100}%` }} transition={{ duration: 0.8 }} />
-        </div>
-        <span>
-          {done.length}/{p.milestones.length} shipped
-        </span>
-      </div>
-      <div className="ds-h">Built so far</div>
-      <ul className="ds-ms">
-        {done.map(([m]) => (
-          <li key={m} className="on">
-            <span aria-hidden>■</span> {m}
-          </li>
+      <h3>{p.title}</h3>
+      <a className="chip hot ds-case" href={caseRoute(p.id)} data-testid="case-link">
+        Read the case study →
+      </a>
+      <p className="ds-sum">{p.summary}</p>
+      <StatusBlock p={p} feed={feed} />
+      {brain && (
+        <>
+          <div className="ds-h">The Brain · committed state</div>
+          <dl className="ds-params">
+            <div>
+              <dt>Generation</dt>
+              <dd>
+                {brain.generation.toLocaleString("en-US")} · {brain.trials.toLocaleString("en-US")} strategies tried
+              </dd>
+            </div>
+            <div>
+              <dt>Champion</dt>
+              <dd>{brain.champion.label}</dd>
+            </div>
+            <div>
+              <dt>State read</dt>
+              <dd>
+                {feed.brainSource === "live" ? "Latest committed state on GitHub" : feed.brainSource === "site" ? "Copy published with the site (may lag the latest run)" : feed.brainSource}
+                <small>
+                  Written {when(brain.lastRun)}
+                  {brain.provenance ? ` by workflow run #${brain.provenance.runNumber} on data as of ${brain.provenance.dataAsOf}` : " (this state predates run provenance)"}
+                </small>
+              </dd>
+            </div>
+          </dl>
+        </>
+      )}
+      <div className="ds-h">Evidence by milestone</div>
+      <EvidenceList p={p} />
+      <div className="ds-h">Known limitations</div>
+      <ul className="ds-lim">
+        {p.limitations.map((l) => (
+          <li key={l}>{l}</li>
         ))}
       </ul>
-      {todo.length > 0 && (
+      {p.agents.length > 0 && (
         <>
-          <div className="ds-h">Still to build</div>
-          <ul className="ds-ms">
-            {todo.map(([m]) => (
-              <li key={m}>
-                <span aria-hidden>▢</span> {m}
+          <div className="ds-h">Bots</div>
+          <ul className="ds-agents">
+            {p.agents.map((a, k) => (
+              <li key={a.name}>
+                <button type="button" className="ds-agent" onClick={() => onAgent(k)} data-testid={`agent-${p.id}-${k}`}>
+                  <i className="ds-bot" style={{ background: KIND_COLOR[a.kind], color: KIND_COLOR[a.kind] }} aria-hidden />
+                  <div>
+                    <b>{a.name}</b> <span className="ds-kind">{KIND_LABEL[a.kind]}</span>
+                    <p>{a.duty}</p>
+                    <p className="ds-out">
+                      → {a.output}
+                      {a.verification === "not-verified" && <em className="t-warn"> · not verified</em>}
+                    </p>
+                  </div>
+                </button>
               </li>
             ))}
           </ul>
         </>
       )}
       <div className="ds-h">Where to see it</div>
-      <ViewLinks p={p} extra={a.kind === "scheduled" ? { label: "Brain log", href: `${BASE}research/#brain` } : undefined} />
-      <div className="ds-links">
-        <button type="button" className="chip" onClick={onProject}>
-          ← {p.name} dossier
-        </button>
-      </div>
+      <ViewLinks p={p} />
     </>
   );
 }
 
-function ViewLinks({ p, extra }: { p: Project; extra?: { label: string; href: string } }) {
-  const onHome = location.pathname === BASE;
-  const links: Project["links"] = [...p.links, ...(extra ? [extra] : [])];
-  if (!links.length) return <p className="ds-sum">Private work: the write-up isn't public yet. Ask Jarvis for the summary.</p>;
+function ViewLinks({ p }: { p: Project }) {
+  const onHome = typeof location !== "undefined" && location.pathname === BASE;
   return (
     <div className="ds-links">
-      {links.map((l) =>
+      <a className="chip" href={caseRoute(p.id)}>
+        Case study
+      </a>
+      {p.links.map((l) =>
         l.station && onHome ? (
           <button key={l.label} className="chip" type="button" onClick={() => (l.station === "jarvis" ? bus.emit({ type: "open_jarvis" }) : bus.emit({ type: "navigate", station: "model" }))}>
             {l.label}
@@ -721,139 +1124,215 @@ function ViewLinks({ p, extra }: { p: Project; extra?: { label: string; href: st
   );
 }
 
-function ProjectDossier({ p, onAgent }: { p: Project; onAgent: (a: Agent, k: number) => void }) {
-  const done = p.milestones.filter(([, m]) => m).length;
+function AgentDossier({ p, a, feed, onProject }: { p: Project; a: Agent; feed: Feed; onProject: () => void }) {
+  const st = feed.states[p.id];
+  const job = a.kind === "scheduled" || a.kind === "ci";
+  const when =
+    a.kind === "scheduled"
+      ? "Every 6 hours on GitHub Actions"
+      : a.kind === "ci"
+        ? "On every push that touches its files"
+        : a.kind === "deploy"
+          ? "Before every deploy; a failure blocks it"
+          : a.kind === "local"
+            ? "On the owner's machine"
+            : "On demand; same seed, same result";
   return (
     <>
-      <div className="ds-k" style={{ color: p.color }}>
-        {p.district}
+      <div className="ds-k" style={{ color: KIND_COLOR[a.kind] }}>
+        Bot · {p.title}
       </div>
-      <h3>{p.name}</h3>
+      <h3>{a.name}</h3>
+      <dl className="ds-params">
+        <div>
+          <dt>Task</dt>
+          <dd>{a.duty}</dd>
+        </div>
+        <div>
+          <dt>Last output</dt>
+          <dd className="ds-out">{a.output}</dd>
+        </div>
+        <div>
+          <dt>Runs</dt>
+          <dd>{when}</dd>
+        </div>
+        {job && (
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <span className={`pill t-${EXEC[st.execution].tone}`}>
+                {EXEC[st.execution].icon} {EXEC[st.execution].label}
+              </span>
+            </dd>
+          </div>
+        )}
+        <div>
+          <dt>Verified</dt>
+          <dd>{a.verification === "verified" ? <>Defined in {a.source?.replace(/^repo:/, "")}</> : <span className="t-warn">Not verified from this repository</span>}</dd>
+        </div>
+      </dl>
+      <div className="ds-h">Project progress</div>
       <div className="ds-prog">
         <div className="ds-bar">
-          <motion.i style={{ background: p.color }} initial={{ width: 0 }} animate={{ width: `${progress(p) * 100}%` }} transition={{ duration: 0.8 }} />
+          <i style={{ background: COLORS[p.id], width: `${progress(p) * 100}%` }} />
         </div>
         <span>
-          {done}/{p.milestones.length} floors · {Math.round(progress(p) * 100)}%
+          {shipped(p).length}/{p.milestones.length} shipped
         </span>
       </div>
-      <p className="ds-sum">{p.summary}</p>
-      <dl className="ds-params">
-        {p.params.map(([k, v]) => (
-          <div key={k}>
-            <dt>{k}</dt>
-            <dd>{v}</dd>
-          </div>
-        ))}
-      </dl>
-      <div className="ds-h">Crew</div>
-      <ul className="ds-agents">
-        {p.agents.map((a, k) => (
-          <li key={a.name}>
-            <button type="button" className="ds-agent" onClick={() => onAgent(a, k)} data-testid={`agent-${p.id}-${k}`}>
-              <i className="ds-bot" style={{ background: KIND_COLOR[a.kind], color: KIND_COLOR[a.kind] }} aria-hidden />
-              <div>
-                <b>{a.name}</b> <span className="ds-kind">{KIND_LABEL[a.kind]}</span>
-                <p>{a.duty}</p>
-                <p className="ds-out">→ {a.output}</p>
-              </div>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="ds-h">Floors</div>
+      <div className="ds-h">Still to build</div>
       <ul className="ds-ms">
-        {p.milestones.map(([m, d]) => (
-          <li key={m} className={d ? "on" : ""}>
-            <span aria-hidden>{d ? "■" : "▢"}</span> {m}
-            {!d && <em> · under construction</em>}
-          </li>
-        ))}
+        {pending(p).length ? (
+          pending(p).map((m) => (
+            <li key={m.label}>
+              <span className="ev-grade">Planned</span> {m.label}
+            </li>
+          ))
+        ) : (
+          <li>Nothing planned</li>
+        )}
       </ul>
       <div className="ds-h">Where to see it</div>
       <ViewLinks p={p} />
+      <div className="ds-links">
+        <button type="button" className="chip" onClick={onProject}>
+          ← {p.title} dossier
+        </button>
+      </div>
     </>
   );
 }
 
-function BrainDossier({ brain }: { brain: BrainState | null }) {
-  const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
+type BotInfo = { key: string; p: Project; a: Agent; k: number; color: string };
+
+function CrewRoster({ bots, feed, selected, onPick }: { bots: BotInfo[]; feed: Feed; selected: string | null; onPick: (b: BotInfo) => void }) {
   return (
     <>
       <div className="ds-k" style={{ color: "#22d3ee" }}>
-        Central district
+        Every automated job
       </div>
-      <h3>The Brain</h3>
-      <p className="ds-sum">
-        A self-improving research loop over the Strategy Lab's rule families. Every 6 hours it mutates strategies, backtests them on 2016–2021 only, scores
-        them on an institutional rubric, plays challengers against the champion fold by fold with Elo ratings, and logs why each loser lost. 2021–2026 is a
-        locked holdout it never sees.
-      </p>
-      {brain ? (
-        <>
-          <dl className="ds-params">
-            <div>
-              <dt>Generation</dt>
-              <dd>
-                {brain.generation.toLocaleString("en-US")} · {brain.trials.toLocaleString("en-US")} strategies tried
-              </dd>
-            </div>
-            <div>
-              <dt>Champion</dt>
-              <dd>{brain.champion.label}</dd>
-            </div>
-            <div>
-              <dt>Score · Elo</dt>
-              <dd>
-                {brain.champion.score.toFixed(1)}/100 · {brain.champion.elo}
-              </dd>
-            </div>
-            <div>
-              <dt>Deflated Sharpe</dt>
-              <dd>{pct(brain.champion.is.dsr)} probability of real skill after all trials</dd>
-            </div>
-            {brain.champion.holdout && (
-              <div>
-                <dt>Holdout</dt>
-                <dd>
-                  Sharpe {brain.champion.holdout.sharpe.toFixed(2)} vs SPY {brain.champion.holdout.spySharpe.toFixed(2)}
-                </dd>
-              </div>
-            )}
-            <div>
-              <dt>Next run</dt>
-              <dd>{nextRun(brain.lastRun)}</dd>
-            </div>
-          </dl>
-        </>
-      ) : (
-        <p className="ds-sum">Loading the latest generation…</p>
-      )}
-      <div className="ds-links">
-        <a className="chip" href={`${BASE}research/#brain`}>
-          Open the Brain log ↗
-        </a>
-      </div>
+      <h3>Bots</h3>
+      <p className="ds-sum">A bot stands still unless its job is verifiably running or a new event just arrived. Each one names where its definition lives.</p>
+      {PROJECTS.filter((p) => p.agents.length).map((p) => (
+        <div key={p.id} className="crew-g">
+          <div className="crew-h" style={{ color: COLORS[p.id] }}>
+            {p.title} · {EXEC[feed.states[p.id].execution].label}
+          </div>
+          <ul className="crew">
+            {bots
+              .filter((b) => b.p.id === p.id)
+              .map((b) => (
+                <li key={b.key}>
+                  <button type="button" className={selected === b.key ? "on" : ""} onClick={() => onPick(b)} data-testid={`crew-${b.key}`}>
+                    <i className="ds-bot" style={{ background: b.color, color: b.color }} aria-hidden />
+                    <span>
+                      <b>{b.a.name}</b>
+                      <small>
+                        {b.a.output}
+                        {b.a.verification === "not-verified" ? " · not verified" : ""}
+                      </small>
+                    </span>
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </div>
+      ))}
     </>
   );
 }
 
-function FoundryDossier() {
+const SOURCE_LABEL: Record<CityEvent["source"], string> = {
+  "github-actions": "GitHub Actions",
+  "brain-state": "Brain state",
+  git: "git",
+  build: "build check",
+  derived: "derived",
+  demo: "DEMO",
+};
+
+export function Timeline({ feed, project, limit = 30 }: { feed: Feed; project: ProjectId | null; limit?: number }) {
+  const [more, setMore] = useState(false);
+  const [only, setOnly] = useState(!!project);
+  const list = feed.store.events.filter((e) => !only || !project || e.projectId === project);
+  const shown = more ? list : list.slice(0, limit);
+  return (
+    <div className="tl" data-testid="timeline">
+      <div className="ds-k" style={{ color: "#22d3ee" }}>
+        Verified events
+      </div>
+      <h3>Timeline</h3>
+      <p className="ds-sum">
+        Newest first. Every entry links to its source: a GitHub Actions run, a commit, a check run at build time, or a rule derived from those. {feed.store.rejected.length ? `${feed.store.rejected.length} malformed records were rejected.` : ""}
+      </p>
+      <div className="tl-bar">
+        {project && (
+          <label className="tl-only">
+            <input type="checkbox" checked={only} onChange={(e) => setOnly(e.target.checked)} /> {byId(project).title} only
+          </label>
+        )}
+        <button type="button" className="chip" onClick={() => replayLatest(only && project ? project : undefined)} data-testid="replay">
+          ↻ Replay latest event
+        </button>
+      </div>
+      <ol className="tl-list">
+        {shown.map((e) => (
+          <li key={e.eventId} className={`t-${eventTone(e)}${e.demo ? " is-demo" : ""}`} data-type={e.eventType}>
+            <span className="tl-ico" aria-hidden>
+              {EVENT_ICON[e.status]}
+            </span>
+            <div>
+              <div className="tl-meta">
+                <time dateTime={e.occurredAt}>{when(e.occurredAt)}</time> · <span style={{ color: COLORS[e.projectId] }}>{byId(e.projectId).title}</span> · {SOURCE_LABEL[e.source]}
+                {e.sourceRunId && e.source === "github-actions" ? ` · run ${e.sourceRunId}` : ""}
+                {e.demo ? " · not real" : ""}
+              </div>
+              <div className="tl-title">
+                <span className="vh">{e.status}: </span>
+                <ExtLink href={e.url}>{e.title}</ExtLink>
+              </div>
+              {e.detail && <p className="tl-detail">{e.detail}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+      {!more && list.length > limit && (
+        <button type="button" className="chip" onClick={() => setMore(true)}>
+          Show all {list.length}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function FoundryDossier({ feed }: { feed: Feed }) {
+  const d = feed.evidence.dataset;
+  const stale = feed.states[CENTRE].dataStale;
   return (
     <>
       <div className="ds-k" style={{ color: "#94a3b8" }}>
         Shared infrastructure
       </div>
       <h3>Data Foundry</h3>
-      <p className="ds-sum">Where every district gets its inputs. Script bots haul data from here; scheduled and release bots report to the Brain.</p>
+      <p className="ds-sum">Where the districts get their inputs. Script bots draw from here; scheduled and release bots report to the centre tower.</p>
       <dl className="ds-params">
         <div>
           <dt>Market data</dt>
-          <dd>8 ETFs · 561 weekly bars · split-adjusted closes, distributions excluded</dd>
+          <dd>
+            {d.weeks} weekly bars, {d.from} → {d.asOf}
+            <small>{d.source}</small>
+            {stale ? <span className="pill t-warn">! {stale.title}</span> : <span className="pill t-ok">✓ Within tolerance</span>}
+          </dd>
+        </div>
+        <div>
+          <dt>Refresh</dt>
+          <dd>
+            Manual snapshot. No automated refresh exists, so a successful Brain run re-searches the same history.
+          </dd>
         </div>
         <div>
           <dt>Deal inputs</dt>
-          <dd>ARV, rehab, fee and buyer-cost assumptions from the v2 workbook</dd>
+          <dd>Illustrative ARV, rehab, fee and buyer-cost assumptions from the v2 workbook</dd>
         </div>
         <div>
           <dt>Research vault</dt>

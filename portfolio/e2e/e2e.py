@@ -363,21 +363,21 @@ def research_and_lab(p) -> None:
     page.keyboard.press("8")
     page.wait_for_timeout(1600)
     check("key 8 → research section", page.locator(".dots button[aria-current=true]").get_attribute("aria-label") == "Research")
-    check("research city: seven projects + Brain + Foundry", page.locator("[data-testid^='bld-']").count() == 9, str(page.locator("[data-testid^='bld-']").count()))
+    check("research city: eight projects (Strategy Lab & Brain at the centre) + Foundry", page.locator("[data-testid^='bld-']").count() == 9, str(page.locator("[data-testid^='bld-']").count()))
     check("research city: one bot per automated job", page.locator(".city .bot").count() == 17, str(page.locator(".city .bot").count()))
     page.locator(".city-pick button", has_text="Deal Lab").click()
     try:
-        page.wait_for_function("document.querySelector('[data-testid=dossier]')?.innerText.toLowerCase().includes('underwriting row')", timeout=3000)
+        page.wait_for_function("document.querySelector('[data-testid=dossier]')?.innerText.toLowerCase().includes('investment & underwriting')", timeout=3000)
     except Exception:
         pass
-    check("city: picking a district opens its dossier", "underwriting row" in page.get_by_test_id("dossier").inner_text().lower())
+    check("city: picking a district opens its dossier", "investment & underwriting" in page.get_by_test_id("dossier").inner_text().lower())
     page.get_by_test_id("bld-high-properties").click(force=True)
     try:
-        page.wait_for_function("document.querySelectorAll(\"[data-testid=dossier] a[href*='github.com']\").length === 1", timeout=3000)
+        page.wait_for_function("document.querySelectorAll(\"[data-testid=dossier] a[href*='High-Properties']\").length === 1", timeout=3000)
     except Exception:
         pass
-    check("city: only the public repo is linked", page.locator("[data-testid=dossier] a[href*='github.com']").count() == 1)
-    page.get_by_test_id("pick-brain").click()
+    check("city: only the public repo is linked (besides commit evidence)", page.locator("[data-testid=dossier] a[href*='github.com']:not([href*='/commit/'])").count() == 1)
+    page.locator(".city-pick button", has_text="Strategy Lab").click()
     page.wait_for_function("document.querySelector('[data-testid=dossier]').innerText.toLowerCase().includes('strategies tried')", timeout=8000)
     check("city: Brain dossier shows the live generation", "strategies tried" in page.get_by_test_id("dossier").inner_text().lower())
     check("no fork presented as own work", "odysseus" not in page.content().lower())
@@ -558,7 +558,7 @@ def city_explorer(p) -> None:
         check(f"city explorer ({tag}): lists every bot", x.locator("[data-testid^=crew-]").count() == 17)
         x.get_by_test_id("crew-deal-lab-1").click()
         d = x.get_by_test_id("dossier")
-        expect(d).to_contain_text("Built so far", timeout=3000)
+        expect(d).to_contain_text("Still to build", timeout=3000)
         txt = d.inner_text().lower()
         check(f"city explorer ({tag}): bot shows task, progress, work and where to see it", all(k in txt for k in ["simulator", "works in 29%", "shipped", "still to build", "open the deal lab"]), txt[:200])
         page.keyboard.press("Escape")
@@ -705,6 +705,124 @@ def owner_terminal(p) -> None:
     browser.close()
 
 
+CASE_IDS = ["dcf", "risk-tolerance", "strategy-lab", "deal-lab", "twin-engine", "sentinel", "jarvis", "high-properties"]
+
+
+def research_city(p) -> None:
+    """Event-driven motion, filters, keyboard, failure/stale states, demo separation and case pages."""
+    import datetime
+
+    browser = p.chromium.launch(executable_path=CHROME)
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    page = ctx.new_page()
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(BASE + "research/")
+    page.wait_for_selector("[data-testid=bld-strategy-lab]", timeout=8000)
+    page.wait_for_timeout(4500)
+    # still unless something happens: no moving bots and no running animations on a quiet first visit
+    check("city: no bot moves without an event", page.locator(".city .bot.moving").count() == 0, str(page.locator(".city .bot.moving").count()))
+    anims = page.evaluate("document.querySelector('.city').getAnimations({subtree: true}).filter(a => a.playState === 'running').length")
+    check("city: no perpetual animations when idle", anims == 0, str(anims))
+    check("city: first visit replays nothing", page.locator(".city .rc-pulse").count() == 0)
+    # execution and validation are separate statements
+    d = page.get_by_test_id("dossier").inner_text()
+    check("dossier: execution and validation shown separately", "EXECUTION" in d.upper() and "VALIDATION" in d.upper())
+    check("dossier: a run's success isn't called a validated result", ("Not validated" in d or "Provisional" in d or "Unavailable" in d) and "Validated:" not in d, d[:300])
+    # data freshness, decided by today's date against the snapshot
+    as_of = datetime.date(2026, 9, 21)
+    stale = (datetime.date.today() - as_of).days >= 14
+    foundry_tag = page.locator("[data-testid=bld-foundry] .rc-tag").count()
+    check("foundry: stale tag matches the data's age", (foundry_tag > 0) == stale, f"stale={stale} tags={foundry_tag}")
+    # filters
+    page.get_by_test_id("city-search").fill("deal")
+    page.wait_for_timeout(200)
+    check("filter: search narrows the pick list", page.locator(".city-pick button").count() == 2, str(page.locator(".city-pick button").count()))
+    check("filter: non-matching buildings recede", page.locator(".bld.recede").count() >= 7)
+    page.get_by_test_id("city-search").fill("")
+    page.get_by_test_id("city-status").select_option("no-pipeline")
+    page.wait_for_timeout(200)
+    check("filter: status narrows to projects without a pipeline", page.locator(".city-pick button").count() == 6 + 1, str(page.locator(".city-pick button").count()))
+    page.get_by_test_id("city-status").select_option("all")
+    # keyboard: a building is a button
+    page.get_by_test_id("bld-jarvis").focus()
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(400)
+    check("keyboard: Enter on a building opens its dossier", "jarvis" in page.get_by_test_id("dossier").locator("h3").inner_text().lower())
+    check("selection: other buildings recede", page.locator(".bld.recede").count() == 8)
+    # timeline: verified sources with links
+    page.get_by_test_id("tab-timeline").click()
+    tl = page.get_by_test_id("timeline")
+    expect(tl.locator("li").first).to_be_visible(timeout=3000)
+    check("timeline: lists GitHub Actions runs with links", tl.locator("a[href*='/actions/runs/']").count() > 0)
+    check("timeline: lists commits with links", tl.locator("a[href*='/commit/']").count() > 0)
+    # a returning visitor sees events newer than their last visit, once
+    page.evaluate("localStorage.setItem('rc:seen', '2026-10-01T00:00:00.000Z')")
+    page.reload()
+    page.wait_for_selector("[data-testid=bld-strategy-lab]")
+    page.wait_for_timeout(800)
+    check("return visit: new events pulse", page.locator(".city .rc-pulse").count() > 0)
+    page.wait_for_timeout(11000)
+    page.reload()
+    page.wait_for_timeout(1500)
+    check("refresh: nothing replays", page.locator(".city .rc-pulse").count() == 0)
+    check("research: no script errors", not errors, "; ".join(errors)[:300])
+    ctx.close()
+
+    # demo mode: scripted events are labelled and drive the same reactions
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    page = ctx.new_page()
+    page.goto(BASE + "research/?demo=events")
+    page.wait_for_selector(".city-demo")
+    check("demo: banner says events are simulated", "not real" in page.locator(".city-demo").inner_text())
+    page.wait_for_timeout(2600)
+    check("demo: a running job moves its bot", page.locator(".city .bot.moving").count() > 0)
+    check("demo: the centre tower shows running", page.get_by_test_id("bld-strategy-lab").get_attribute("data-exec") == "running")
+    page.wait_for_timeout(9000)
+    check("demo: a failure is shown as failed", page.get_by_test_id("bld-jarvis").get_attribute("data-exec") == "failed")
+    page.get_by_test_id("tab-timeline").click()
+    expect(page.get_by_test_id("timeline").locator("li").first).to_be_visible(timeout=3000)
+    check("demo: timeline marks demo events", page.locator(".tl-list li.is-demo").count() > 0)
+    page.screenshot(path=f"{SHOTS}/city-demo.png")
+    ctx.close()
+
+    # reduced motion: the state changes, nothing travels
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+    page = ctx.new_page()
+    page.goto(BASE + "research/?demo=events")
+    page.wait_for_timeout(2800)
+    check("reduced motion: running is shown without moving bots", page.locator(".city .bot.moving").count() == 0 and page.get_by_test_id("bld-strategy-lab").get_attribute("data-exec") == "running")
+    ctx.close()
+
+    # every project has a real case-study page
+    for vp, mob in [({"width": 1440, "height": 900}, False), ({"width": 390, "height": 844}, True)]:
+        ctx = browser.new_context(viewport=vp, is_mobile=mob, has_touch=mob)
+        page = ctx.new_page()
+        errs: list[str] = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        for cid in CASE_IDS:
+            page.goto(BASE + f"research/{cid}/")
+            page.wait_for_selector("[data-testid=case-title]", timeout=8000)
+            if not mob:
+                check(f"case {cid}: twelve sections", page.locator(".cs-sec").count() == 12, str(page.locator(".cs-sec").count()))
+                check(f"case {cid}: status block present", page.get_by_test_id(f"status-{cid}").count() == 1)
+            else:
+                w = page.evaluate("document.documentElement.scrollWidth")
+                check(f"case {cid} mobile: no horizontal overflow", w <= vp["width"], str(w))
+        if not mob:
+            page.goto(BASE + "research/dcf/")
+            check("case dcf: sensitivity grid computed", page.get_by_test_id("dcf-grid").locator("td").count() == 40)
+            check("case dcf: model labelled illustrative", "not the capstone" in page.get_by_test_id("dcf-grid").inner_text())
+            page.goto(BASE + "research/sentinel/")
+            check("case sentinel: private source not linked", page.locator("#links a[href*='/tree/']").count() == 0)
+            page.goto(BASE + "research/strategy-lab/")
+            check("case strategy-lab: validation module present", page.get_by_test_id("brain-validation").count() == 1)
+            page.screenshot(path=f"{SHOTS}/case-strategy-lab.png", full_page=True)
+        check(f"case pages ({'phone' if mob else 'desktop'}): no script errors", not errs, "; ".join(errs)[:300])
+        ctx.close()
+    browser.close()
+
+
 if __name__ == "__main__":
     os.makedirs(SHOTS, exist_ok=True)
     with sync_playwright() as p:
@@ -716,6 +834,7 @@ if __name__ == "__main__":
         city_explorer(p)
         connect_and_links(p)
         research_and_lab(p)
+        research_city(p)
         den_scene(p)
         mobile(p)
     print(f"\n{len(failures)} failing" if failures else "\nall passing")

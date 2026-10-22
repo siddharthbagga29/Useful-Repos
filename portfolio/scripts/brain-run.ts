@@ -1,6 +1,9 @@
 // Runs the Brain for N generations and writes its state. Bundled to dist/brain/evolve.mjs and run by
 // the scheduled "Brain" workflow in the Pages repository (free on GitHub Actions).
-//   node brain/evolve.mjs --state brain/state.json --data brain/weekly.json --generations 24
+//   node brain/evolve.mjs --state brain/state.json --data brain/weekly.json --generations 24 --min-gap-hours 2
+// --min-gap-hours skips a run that starts within that many hours of the last one (GitHub sometimes
+// fires a schedule twice; the duplicate used to evolve a stale state and fail on push, run #49).
+// GITHUB_RUN_ID, GITHUB_RUN_NUMBER and GITHUB_SHA, when set, are recorded as the state's provenance.
 //   node --experimental-strip-types scripts/brain-run.ts --state /tmp/s.json --data src/lab/weekly.json --generations 40
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -16,11 +19,20 @@ const statePath = arg("state", "brain/state.json")!;
 const dataPath = arg("data", "brain/weekly.json")!;
 const gens = Math.max(1, Math.min(200, Number(arg("generations", "24"))));
 const now = arg("now", new Date().toISOString())!;
+const minGapHours = Number(arg("min-gap-hours", "0"));
 
 const data: Dataset = JSON.parse(readFileSync(dataPath, "utf8"));
 let state: BrainState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, "utf8")) : initState(data, now);
+const sinceH = (Date.parse(now) - Date.parse(state.lastRun)) / 3600e3;
+if (minGapHours > 0 && state.runs > 0 && sinceH >= 0 && sinceH < minGapHours) {
+  console.log(`skipped: the last run wrote this state ${Math.round(sinceH * 60)} min ago (min gap ${minGapHours} h); nothing changed`);
+  process.exit(0);
+}
 const t0 = Date.now();
 state = evolve(state, data, gens, now);
+const env = process.env;
+if (env.GITHUB_RUN_ID)
+  state.provenance = { runId: env.GITHUB_RUN_ID, runNumber: env.GITHUB_RUN_NUMBER ?? "", sha: env.GITHUB_SHA ?? "", writtenAt: now, dataAsOf: data.asOf };
 writeFileSync(statePath, JSON.stringify(state));
 const c = state.champion;
 console.log(

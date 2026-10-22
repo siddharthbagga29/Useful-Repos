@@ -92,6 +92,8 @@ export interface BrainState {
   families: Record<Family, FamilyState>;
   hallOfFame: Candidate[];
   log: LogEntry[];
+  /** which workflow run wrote this state, and on which data; optional so older states still load */
+  provenance?: { runId: string; runNumber: string; sha: string; writtenAt: string; dataAsOf: string };
 }
 
 // ---------------------------------------------------------------- data

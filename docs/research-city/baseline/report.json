@@ -1,0 +1,42 @@
+{
+ "research-desk": {
+  "console_errors": [
+   "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+   "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  ],
+  "raf_per_s_headless": 58,
+  "css_web_animations": 185,
+  "smil": 12,
+  "h_overflow": false
+ },
+ "home-desk": {
+  "console_errors": [
+   "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+   "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  ],
+  "raf_per_s_headless": 12.5,
+  "css_web_animations": 9,
+  "smil": 0,
+  "h_overflow": false
+ },
+ "research-phone": {
+  "console_errors": [
+   "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+   "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  ],
+  "raf_per_s_headless": 60,
+  "css_web_animations": 185,
+  "smil": 12,
+  "h_overflow": false
+ },
+ "home-phone": {
+  "console_errors": [
+   "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+   "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED"
+  ],
+  "raf_per_s_headless": 60.5,
+  "css_web_animations": 9,
+  "smil": 0,
+  "h_overflow": false
+ }
+}

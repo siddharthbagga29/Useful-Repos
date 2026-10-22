@@ -7,7 +7,7 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONTACT, EXHIBITS, SITE_URL, STATIONS } from "../src/data/site.ts";
-import { KIND_LABEL, PROJECTS, progress } from "../src/research/projects.ts";
+import { CATEGORIES, DISTRICTS, EVIDENCE_LABEL, KIND_LABEL, PROJECTS, caseRoute, pending, progress, shipped } from "../src/research/manifest.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 type Entry = { id: string; kind: string; title: string; url: string; text: string };
@@ -28,18 +28,19 @@ for (const s of STATIONS) out.push({ id: `station.${s.id}`, kind: "station", tit
 
 // projects, their bots and milestones
 for (const p of PROJECTS) {
-  const done = p.milestones.filter(([, d]) => d).map(([m]) => m);
-  const left = p.milestones.filter(([, d]) => !d).map(([m]) => m);
+  const done = shipped(p).map((m) => `${m.label} (${EVIDENCE_LABEL[m.evidence].toLowerCase()})`);
+  const left = pending(p).map((m) => m.label);
+  const unchecked = p.milestones.filter((m) => m.evidence === "unverified").map((m) => m.label);
   const links = p.links.map((l) => `${l.label}: ${abs(l.href)}`).join("; ");
   out.push({
     id: `project.${p.id}`,
     kind: "project",
-    title: `${p.name} (${p.district})`,
-    url: abs(p.links[0]?.href ?? "research/"),
-    text: `${p.summary} Progress ${Math.round(progress(p) * 100)}%. Built: ${done.join("; ")}. Still to build: ${left.join("; ") || "nothing"}. ${p.params.map(([k, v]) => `${k}: ${v}`).join("; ")}. Links: ${links || "none public"}.`,
+    title: `${p.title} (${DISTRICTS[p.district]} · ${CATEGORIES[p.category]})`,
+    url: abs(caseRoute(p.id)),
+    text: `${p.summary} Progress ${Math.round(progress(p) * 100)}%. Built: ${done.join("; ")}. Still to build: ${left.join("; ") || "nothing"}. Not verified here: ${unchecked.join("; ") || "nothing"}. Data: ${p.data.label}. Limitations: ${p.limitations.join(" ")} Links: ${links || "none public"}.`,
   });
   for (const a of p.agents)
-    out.push({ id: `bot.${p.id}.${a.name.toLowerCase().replace(/\W+/g, "-")}`, kind: "bot", title: `${a.name} · ${p.name}`, url: abs("research/"), text: `${a.duty} Runs: ${KIND_LABEL[a.kind]}. Latest result: ${a.output}.` });
+    out.push({ id: `bot.${p.id}.${a.name.toLowerCase().replace(/\W+/g, "-")}`, kind: "bot", title: `${a.name} · ${p.title}`, url: abs(caseRoute(p.id)), text: `${a.duty} Runs: ${KIND_LABEL[a.kind]}. Latest result: ${a.output}. ${a.verification === "verified" ? "Defined in the repository." : "Not verified from the repository."}` });
 }
 
 // exhibits and contact

@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -19,6 +20,12 @@ export default defineConfig({
         lab: resolve(import.meta.dirname, "lab/index.html"),
         deal: resolve(import.meta.dirname, "deal/index.html"),
         research: resolve(import.meta.dirname, "research/index.html"),
+        // one static page per project, written from the manifest by scripts/case-pages.ts
+        ...Object.fromEntries(
+          readdirSync(resolve(import.meta.dirname, "research"), { withFileTypes: true })
+            .filter((d) => d.isDirectory())
+            .map((d) => [`case-${d.name}`, resolve(import.meta.dirname, "research", d.name, "index.html")]),
+        ),
       },
     },
   },

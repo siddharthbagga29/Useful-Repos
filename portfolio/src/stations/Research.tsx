@@ -29,8 +29,8 @@ export function Research() {
           <h2 className="sec">The research city</h2>
         </div>
         <p>
-          Each building is a project and each lit floor a shipped milestone; scaffolding is what's left. Every bot is a real automated job, and the Brain
-          at the centre evolves strategies around the clock. Click any building.{" "}
+          Each building is a project and each floor a milestone, lit only where the evidence is in the repository. Bots move only when a real job runs or
+          a new verified event arrives; the Brain at the centre re-runs its strategy search every six hours. Click any building.{" "}
           <a href={`${BASE}research/`} className="rs-more">
             Open Research HQ ↗
           </a>

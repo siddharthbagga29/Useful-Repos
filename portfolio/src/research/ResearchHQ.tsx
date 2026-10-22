@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { City } from "./City.tsx";
+import { SiteNav } from "./SiteNav.tsx";
+import { WorkIndex } from "./WorkIndex.tsx";
 import { Graph } from "./Graph.tsx";
 import { BrainConsole } from "../brain/BrainConsole.tsx";
 import { loadAnalytics, track } from "../lib/track.ts";
 
-const BASE: string = import.meta.env.BASE_URL;
 
 export function ResearchHQ() {
   useEffect(() => {
@@ -14,42 +15,18 @@ export function ResearchHQ() {
   }, []);
   return (
     <div className="lab hq">
-      <header className="nav">
-        <a className="nav-id" href={BASE}>
-          <span className="mono-mark" aria-hidden>
-            SB
-          </span>
-          <span className="nav-name">
-            Research HQ
-            <em>Siddharth Bagga · research</em>
-          </span>
-        </a>
-        <nav className="nav-links" aria-label="Research HQ">
-          <a href="#city">City</a>
-          <a href="#brain">Brain</a>
-          <a href="#graph">Graph</a>
-          <a href={`${BASE}lab/`}>Strategy Lab</a>
-          <a href={`${BASE}deal/`}>Deal Lab</a>
-        </nav>
-        <div className="nav-cta">
-          <a className="nav-btn" href={BASE}>
-            ← Portfolio
-          </a>
-          <a className="nav-btn hot" href={`${BASE}#connect`}>
-            Get in touch
-          </a>
-        </div>
-      </header>
+      <SiteNav current="city" />
       <main className="lab-main">
         <motion.section className="lab-hero" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="kicker">Research HQ · projects as infrastructure</div>
+          <div className="kicker">Research HQ · research operations</div>
           <h1>
             The research <em>city</em>
           </h1>
           <p className="sub">
-            Every project is a building and every lit floor a shipped milestone; scaffolding is what's still under construction. Every bot is a real
-            automated job: a scheduled search, a CI test run, a release gate or a reproducible script. At the centre, the Brain evolves trading strategies
-            every six hours against a holdout it is never allowed to see.
+            Eight projects, one inventory. Each building is a project and each floor a milestone, drawn by the strength of its evidence: lit when it can be
+            checked in the repository, hatched when it's claimed but not verified here, scaffolding when it's planned. The city is still unless something
+            real happens: a GitHub Actions run, a commit, a check at build time, or data going stale. At the centre, the Brain re-runs its strategy search
+            every six hours on a fixed data snapshot; a successful run means the job worked, not that its champion is validated.
           </p>
         </motion.section>
 
@@ -58,11 +35,18 @@ export function ResearchHQ() {
           <City />
         </section>
 
+        <section id="work" className="hq-sec">
+          <div className="kicker">All work · by discipline</div>
+          <h2 className="sec">Case studies</h2>
+          <p className="hq-lede">The same eight projects as plain pages: problem, data, method, results, validation, limitations and how to reproduce each one.</p>
+          <WorkIndex />
+        </section>
+
         <section id="brain" className="hq-sec">
           <div className="kicker">The Brain · self-evolving search</div>
           <h2 className="sec">Mutate → test → rate → remember</h2>
           <p className="hq-lede">
-            Each run picks a hypothesis by UCB1, mutates its best strategy, backtests the children on 2016–2021 data only, scores them out of 100, and plays
+            Every six hours on GitHub Actions, against the same weekly snapshot (no automated data refresh). Each run picks a hypothesis by UCB1, mutates its best strategy, backtests the children on 2016–2021 data only, scores them out of 100, and plays
             each challenger against the champion fold by fold with Elo ratings. Losers are logged with the reason they lost, and that reason steers the next
             mutation.
           </p>

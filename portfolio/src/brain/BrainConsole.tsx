@@ -41,7 +41,7 @@ export function BrainConsole() {
     <div className="brain-con" data-testid="brain-console">
       <div className="bc-top">
         <span className="bc-live">
-          <i aria-hidden /> {data.source === "live" ? "LIVE" : "SNAPSHOT"}
+          <i aria-hidden /> {data.source === "live" ? "LATEST COMMITTED STATE" : "COPY PUBLISHED WITH THE SITE"}
         </span>
         <span>Runs every 6 h on GitHub Actions · last run {ago(s.lastRun)} · next {nextRun(s.lastRun)}</span>
       </div>
