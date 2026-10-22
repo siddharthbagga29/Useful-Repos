@@ -854,7 +854,9 @@ export function City({ compact = false, active = true, explore = false, onClose,
           </button>
         </div>
         <AnimatePresence mode="wait" initial={false}>
-          <motion.aside
+          <motion.div
+            role="region"
+            aria-label={tab === "detail" ? "Dossier" : tab === "timeline" ? "Timeline" : "Bots"}
             key={tab === "detail" ? `d-${sel.type}-${sel.type === "foundry" ? "" : sel.id}-${sel.type === "agent" ? sel.k : ""}` : tab}
             className="dossier"
             initial={reduce ? false : { opacity: 0, x: 12 }}
@@ -874,7 +876,7 @@ export function City({ compact = false, active = true, explore = false, onClose,
             ) : (
               <FoundryDossier feed={feed} />
             )}
-          </motion.aside>
+          </motion.div>
         </AnimatePresence>
       </div>
       {open && <CityExplorer initial={sel} onClose={() => setOpen(false)} />}

@@ -132,3 +132,4 @@
 .wi-meta { font-family: var(--mono); font-size: 10.5px; color: var(--dim); }
 .wi-go { font-family: var(--mono); font-size: 11px; color: var(--c); }
 @media (prefers-reduced-motion: reduce) { .wi-group a { transition: none; } .wi-group a:hover { transform: none; } }
+.bc-log:focus-visible { outline: 2px solid var(--rc-cyan, #22d3ee); outline-offset: 2px; }

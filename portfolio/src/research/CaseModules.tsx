@@ -64,7 +64,7 @@ function DcfSensitivity() {
           <b>{$b(DCF.marketCap)}</b>
         </div>
       </div>
-      <div className="cs-scroll">
+      <div className="cs-scroll" tabIndex={0} role="region" aria-label="DCF sensitivity grid (scrolls sideways)">
         <table className="cs-table cs-heat" data-testid="dcf-grid">
           <caption>Implied equity value ($B) by WACC (rows) and terminal growth (columns). Illustrative model, not the capstone's result.</caption>
           <thead>
@@ -106,7 +106,7 @@ function OpsTable() {
   const ops = research.ops as Ops[];
   return (
     <figure className="cs-fig">
-      <div className="cs-scroll">
+      <div className="cs-scroll" tabIndex={0} role="region" aria-label="Online portfolio selection results (scrolls sideways)">
         <table className="cs-table" data-testid="ops-table">
           <caption>
             Tuned on {research.method.split.inSample}, frozen, then run on {research.method.split.outOfSample} at {research.method.costBpsPerSide} bps per side.
@@ -202,7 +202,7 @@ function McTable() {
   const mc = research.mc as Mc[];
   return (
     <figure className="cs-fig">
-      <div className="cs-scroll">
+      <div className="cs-scroll" tabIndex={0} role="region" aria-label="Monte Carlo results (scrolls sideways)">
         <table className="cs-table" data-testid="mc-table">
           <caption>
             {research.method.monteCarlo.paths.toLocaleString("en-US")} block-bootstrapped {research.method.monteCarlo.years}-year paths (mean block {research.method.monteCarlo.meanBlockWeeks} weeks, seed{" "}
@@ -285,7 +285,7 @@ function BrainValidation({ feed }: { feed: Feed }) {
           Champion: <b>{c.label}</b> · score {c.score.toFixed(1)}/100 · Elo {c.elo} · generation {feed.brain!.generation.toLocaleString("en-US")}
         </p>
       )}
-      <div className="cs-scroll">
+      <div className="cs-scroll" tabIndex={0} role="region" aria-label="Brain validation checks (scrolls sideways)">
       <table className="cs-table">
         <caption>Checks applied to the current champion (all required). {a.ceiling}</caption>
         <thead>
@@ -315,7 +315,7 @@ function DealResult() {
   const r = analyze(DEAL_DEFAULTS);
   return (
     <figure className="cs-fig">
-      <div className="cs-scroll">
+      <div className="cs-scroll" tabIndex={0} role="region" aria-label="v1 versus v2 deal analysis (scrolls sideways)">
       <table className="cs-table" data-testid="deal-result">
         <caption>v1's formulas and v2's on the same example deal.</caption>
         <thead>

@@ -36,6 +36,7 @@
 .cs-note b { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-right: 6px; }
 .cs-missing { margin: 0; color: var(--rc-dim); font-style: italic; font-size: 13.5px; }
 .cs-scroll { overflow-x: auto; max-width: 100%; }
+.cs-scroll:focus-visible, .bc-log:focus-visible { outline: 2px solid var(--rc-cyan); outline-offset: 2px; }
 .cs-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .cs-table caption { caption-side: top; text-align: left; color: var(--rc-dim); font-size: 12px; padding-bottom: 8px; line-height: 1.5; }
 .cs-table th, .cs-table td { padding: 7px 10px; border-bottom: 1px solid rgba(148, 163, 255, .1); text-align: right; white-space: nowrap; }

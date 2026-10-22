@@ -139,7 +139,7 @@ export function BrainConsole() {
               ))}
             </span>
           </div>
-          <ol className="bc-log" aria-live="polite" data-testid="brain-log">
+          <ol className="bc-log" aria-live="polite" aria-label="Brain log" tabIndex={0} data-testid="brain-log">
             <AnimatePresence initial={false}>
               {log.slice(0, 80).map((l, i) => (
                 <motion.li key={`${l.t}-${l.gen}-${i}-${l.text.slice(0, 20)}`} className={`k-${l.kind}`} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(i, 20) * 0.02 }}>

@@ -1,15 +1,17 @@
 # Research City 2.0: implementation log
 
-**Current phase:** iteration 1 is complete and pushed to the branch. Nothing is deployed.
+**Current phase:** iterations 1 and 2 are complete and pushed to the branch. Nothing is deployed.
 
 | Status | Items |
 |---|---|
 | IMPLEMENTED | Manifest, event model, feeds, city refactor, case pages, nav and work index, Brain workflow fix (source) |
 | TESTED | All of the above: unit tests, e2e and the quality gate (results below) |
 | VERIFIED | In a production build served locally, headless Chromium at 1440 px and 390 px. Not on the live site or on a real iPhone |
-| REMAINING | Pin actions to SHAs; axe audit; visual polish (see Next steps) |
+| REMAINING | Home-page accessibility findings (needs approval); visual polish (see Next steps) |
 | BLOCKED | Total-return data and refresh; High Properties' deployed functions |
-| USER INPUT REQUIRED | Deploy approval; Sentinel visibility; default-branch payload clean-up | The audit, risk register and baseline are in [research-city-audit.md](research-city-audit.md).
+| USER INPUT REQUIRED | Deploy approval; Sentinel visibility; default-branch payload clean-up |
+
+The audit, risk register and baseline are in [research-city-audit.md](research-city-audit.md).
 
 ## What changed, and where
 
@@ -79,7 +81,7 @@
 - Events are announced through a polite live region.
 - Status is carried by text and icon.
 - Visible focus styles; reduced motion respected.
-- No automated axe audit was run (not installed). That remains open.
+- axe-core: 0 violations on the research pages (iteration 2).
 
 **Screenshots:** `docs/research-city/baseline/` and `docs/research-city/after/`, same viewports.
 
@@ -91,11 +93,18 @@
 - **BLOCKED:** total-return data (distributions) and an automated refresh. A data source is needed; until then, every Brain result is capped at provisional.
 - **BLOCKED:** High Properties' deployed functions and Supabase policies. This needs access to the High-Properties repository and Vercel project.
 
+## Iteration 2 (2026-10-22)
+
+| Item | Result |
+|---|---|
+| Pin GitHub Actions to commit SHAs | Done in `deploy/brain.yml`, `deploy/cloudflare-pages.yml` and `.github/workflows/jarvis.yml`. The SHAs were resolved from the action repositories and equal the current major tags, so behaviour is unchanged. Jarvis CI runs on this push and confirms the pins resolve |
+| Accessibility audit | `e2e/a11y.py` (axe-core 4.10.2, WCAG 2.0/2.1 A + AA + best practice). Before: 2 rules failing on research pages (nested landmark; keyboard-unreachable scroll regions). After: **0 violations** on /research/ and all 8 case pages, desktop and phone. Colour contrast passes |
+| Regression | `npm run test:city` 24/24; city e2e (research_city, research_and_lab, city_explorer) 0 failing; `tsc` clean |
+
 ## Next steps
 
-1. Pin GitHub Actions to commit SHAs, looked up from the action repositories.
-2. Run an axe accessibility pass on /research/ and one case page.
-3. Visual polish (P3): ground labels per district, and distinct silhouettes per project type.
+1. Home-page accessibility findings (A2 in the audit), if the owner approves changes outside Terminal and Jarvis.
+2. Visual polish (P3): ground labels per district, and distinct silhouettes per project type.
 4. After deploy, confirm on a phone that the Actions refresh works from the browser (CORS and rate limits), and that the Brain state shows its provenance after the first run under the new workflow.
 
 ## Recovery

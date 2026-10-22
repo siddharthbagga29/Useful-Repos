@@ -117,7 +117,9 @@ The published site is reproducible from source. No compiled bundles are edited b
 | R5 | P1 | Execution success was presented as research success ("champion", "LIVE") | City and console copy | Separate execution and validation states. The live champion fails validation (DSR 77.2% < 95%) |
 | R6 | P2 | 185 perpetual animations on /research/ implied constant work (bots, flicker, flowing roads, pulsing tower) | Baseline `getAnimations()` | Removed: 0 when idle; motion only on events |
 | R7 | P2 | When the live Brain state can't load, the site silently showed the build copy (generation 48) | Baseline screenshot | Source is now labelled; unavailable says so |
-| R8 | P2 | Third-party actions pinned to tags (`@v4`), not commit SHAs | `brain.yml`, `cloudflare-pages.yml`, `jarvis.yml` | Not changed: pin to SHAs taken from the action repositories, not from memory |
+| R8 | P2 | Third-party actions pinned to tags (`@v4`), not commit SHAs | `brain.yml`, `cloudflare-pages.yml`, `jarvis.yml` | **Fixed (iteration 2):** pinned to the commits the major tags pointed to on 2026-10-22, resolved with `git ls-remote` from the action repositories (checkout v4.4.0 `11d5960`, setup-node v4.4.0 `49933ea`, setup-python v5.6.0 `a26af69`). No change in what runs |
+| A1 | P2 | Accessibility (research pages): the dossier `<aside>` was nested in another landmark; scrollable tables and the Brain log weren't keyboard-reachable | axe-core 4.10.2 | **Fixed (iteration 2):** named regions, `tabIndex=0` with a visible focus ring. axe: 0 violations on /research/ and all 8 case pages at 1440 and 390 px |
+| A2 | P2 | Accessibility (home page, outside this scope): scrollable Model grid, Experience and terminal regions not focusable; an empty table header; duplicate `#jarvis` landmark name; tape and hint outside landmarks | axe-core 4.10.2 on `/` | Not changed: the owner limits home-page changes to the Terminal and Jarvis. **USER INPUT REQUIRED** to fix the rest |
 
 **Risks still to investigate:**
 

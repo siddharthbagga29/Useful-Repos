@@ -53,7 +53,7 @@ function Blocks({ blocks, feed }: { blocks: Block[]; feed: Feed }) {
             );
           case "table":
             return (
-              <div key={i} className="cs-scroll">
+              <div key={i} className="cs-scroll" tabIndex={0} role="region" aria-label={`${b.caption ?? b.head.join(", ")} (scrolls sideways)`}>
                 <table className="cs-table">
                   {b.caption && <caption>{b.caption}</caption>}
                   <thead>

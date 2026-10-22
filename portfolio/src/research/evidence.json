@@ -1,7 +1,7 @@
 {
  "schemaVersion": 1,
- "generatedAt": "2026-10-22T11:45:43.166Z",
- "commit": "0927c2bdfa4948fddacd0ecb47ea90f638acaace",
+ "generatedAt": "2026-10-22T14:54:42.527Z",
+ "commit": "df63e2bbf7be18488d4c3931552459d66dfe699e",
  "commits": {
   "dcf": [
    {
@@ -17,6 +17,11 @@
   ],
   "risk-tolerance": [],
   "strategy-lab": [
+   {
+    "sha": "df63e2bbf7be18488d4c3931552459d66dfe699e",
+    "at": "2026-10-22T11:48:17.000Z",
+    "subject": "Research City 2.0: evidence-graded inventory, event-driven city, case studies"
+   },
    {
     "sha": "247b2065a18ad5d987697fe4f8255280488e8bb5",
     "at": "2026-10-07T00:48:50.000Z",
@@ -88,6 +93,11 @@
   ],
   "jarvis": [
    {
+    "sha": "df63e2bbf7be18488d4c3931552459d66dfe699e",
+    "at": "2026-10-22T11:48:17.000Z",
+    "subject": "Research City 2.0: evidence-graded inventory, event-driven city, case studies"
+   },
+   {
     "sha": "0927c2bdfa4948fddacd0ecb47ea90f638acaace",
     "at": "2026-10-20T23:46:33.000Z",
     "subject": "Deploy record: quality-gate history and approved playbook from the mobile fix deploy"
@@ -106,11 +116,6 @@
     "sha": "16f5897f0d4e4cf52361ae556ddaa59f09daea87",
     "at": "2026-10-09T05:58:20.000Z",
     "subject": "Voice: a bare 'Hey Jarvis' is answered, not sent to the model; one-paste start script"
-   },
-   {
-    "sha": "1aab9624a5f84ed04524947a1c22dd93fd5a6fa8",
-    "at": "2026-10-09T05:49:12.000Z",
-    "subject": "Jarvis never prints or speaks model reasoning; non-thinking model for 8 GB Macs"
    }
   ],
   "high-properties": [
@@ -124,8 +129,21 @@
  },
  "workflows": {
   "brain": {
-   "fetchedAt": "2026-10-22T11:45:41.874Z",
+   "fetchedAt": "2026-10-22T14:54:40.945Z",
    "runs": [
+    {
+     "id": 39773745481,
+     "number": 56,
+     "attempt": 1,
+     "event": "schedule",
+     "status": "completed",
+     "conclusion": "success",
+     "startedAt": "2026-10-22T11:51:29Z",
+     "updatedAt": "2026-10-22T11:51:40Z",
+     "sha": "6639e8f88fcd20977dd2d39628896ea35e55b737",
+     "branch": "main",
+     "url": "https://github.com/siddharthbagga29/siddharthbagga29.github.io/actions/runs/39773745481"
+    },
     {
      "id": 39723981783,
      "number": 55,
@@ -502,24 +520,11 @@
      "sha": "558f56a57aabb7e9bf951628f84daac21ba6369b",
      "branch": "main",
      "url": "https://github.com/siddharthbagga29/siddharthbagga29.github.io/actions/runs/38682460757"
-    },
-    {
-     "id": 38642080592,
-     "number": 26,
-     "attempt": 1,
-     "event": "schedule",
-     "status": "completed",
-     "conclusion": "success",
-     "startedAt": "2026-10-14T21:40:41Z",
-     "updatedAt": "2026-10-14T21:40:53Z",
-     "sha": "529f2789ce5e8cf92070f0ab70f82ccd96899c2f",
-     "branch": "main",
-     "url": "https://github.com/siddharthbagga29/siddharthbagga29.github.io/actions/runs/38642080592"
     }
    ]
   },
   "jarvis-ci": {
-   "fetchedAt": "2026-10-22T11:45:42.777Z",
+   "fetchedAt": "2026-10-22T14:54:42.037Z",
    "runs": [
     {
      "id": 39054896964,
@@ -746,14 +751,14 @@
   }
  },
  "labCheck": {
-  "ranAt": "2026-10-22T11:45:43.166Z",
+  "ranAt": "2026-10-22T14:54:42.526Z",
   "passed": true,
   "checks": 38,
   "failures": 0,
-  "seconds": 0.4
+  "seconds": 0.5
  },
  "releaseGate": {
-  "at": "2026-10-20T23:44:06.221Z",
+  "at": "2026-10-22T11:47:40.557Z",
   "passed": true,
   "score": 10
  },
