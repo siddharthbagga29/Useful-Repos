@@ -92,16 +92,18 @@ From GitHub's repository activity log (`GET /repos/…/activity`) and the commit
 
 | Branch | Tip | Findings at tip (`tools/repo-integrity.mjs --rev`) | Status |
 |---|---|---|---|
-| `claude/resume-one-page-keywords-lfau66` | `5454cc7` → stage-1 commit | 4 → **0** | #2–#4 removed in `6ecd080`; #1 removed in the stage-1 commit (all 22 files `efcc955` added; the commit it replaced had none of them, and nothing references them) |
-| `claude/high-properties-v4-overhaul-ktwy5t` (default) | `a8e8900` | 7 | Cleanup commit `4a40dfa` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
-| `claude/add-skill-sessions-k620xh` | `a8e8900` | 7 | Cleanup commit `4a40dfa` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
-| `claude/icloud-reusable-skill-daro1p` | `a8e8900` | 7 | Cleanup commit `4a40dfa` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
-| `claude/bank-deposit-bonus-analysis-med2uc` | `1ae77b5` | 7 | Cleanup commit `5da6f49` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
-| `claude/energy-stocks-analysis-10ey87` | `a92ceb4` | 7 | Cleanup commit `55fed72` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
-| `claude/private-markets-positioning-system-b5twgr` | `cc57dc6` | 7 | Cleanup commit `761776c` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
-| `claude/public-apis-integration-2k05vq` | `93a6d69` | 7 | Cleanup commit `6496084` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
-| `claude/quant-career-mentorship-h414h6` | `93a6d69` | 7 | Cleanup commit `6496084` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
-| `claude/trading-agents-website-7ncfgt` | `93a6d69` | 7 | Cleanup commit `6496084` prepared locally (0 findings there); not pushed, awaiting the owner's approval |
+| `claude/resume-one-page-keywords-lfau66` | `5454cc7` → `18d98d4` (now `17a6ea7`) | 4 → **0** | #2–#4 removed in `6ecd080`; #1 removed in the stage-1 commit (all 22 files `efcc955` added; the commit it replaced had none of them, and nothing references them) |
+| `claude/high-properties-v4-overhaul-ktwy5t` (default) | `a8e8900` | 7 | **Held.** Cleanup commit `4a40dfa` is ready (0 findings) but not pushed: this is the branch Vercel deployed High Properties to production from (deployments on 2026-08-20, 08-22, 09-09). No Vercel deployment has happened since 09-09, but the Vercel project settings can't be checked from here, so a push could redeploy that site |
+| `claude/add-skill-sessions-k620xh` | `a8e8900` | 7 | Remediated: cleanup commit `4a40dfa` pushed 2026-10-22 as a fast-forward (0 findings); no workflow ran, no deployment |
+| `claude/icloud-reusable-skill-daro1p` | `a8e8900` | 7 | Remediated: cleanup commit `4a40dfa` pushed 2026-10-22 as a fast-forward (0 findings); no workflow ran, no deployment |
+| `claude/bank-deposit-bonus-analysis-med2uc` | `1ae77b5` | 7 | Remediated: cleanup commit `5da6f49` pushed 2026-10-22 as a fast-forward (0 findings); no workflow ran, no deployment |
+| `claude/energy-stocks-analysis-10ey87` | `a92ceb4` | 7 | Remediated: cleanup commit `55fed72` pushed 2026-10-22 as a fast-forward (0 findings); no workflow ran, no deployment |
+| `claude/private-markets-positioning-system-b5twgr` | `cc57dc6` | 7 | Remediated: cleanup commit `761776c` pushed 2026-10-22 as a fast-forward (0 findings); no workflow ran, no deployment |
+| `claude/public-apis-integration-2k05vq` | `93a6d69` | 7 | Remediated: cleanup commit `6496084` pushed 2026-10-22 as a fast-forward (0 findings); no workflow ran, no deployment |
+| `claude/quant-career-mentorship-h414h6` | `93a6d69` | 7 | Remediated: cleanup commit `6496084` pushed 2026-10-22 as a fast-forward (0 findings); no workflow ran, no deployment |
+| `claude/trading-agents-website-7ncfgt` | `93a6d69` | 7 | Remediated: cleanup commit `6496084` pushed 2026-10-22 as a fast-forward (0 findings); no workflow ran, no deployment |
+
+**Deployment check before the pushes.** GitHub records Vercel deployments for this repository up to 2026-09-09: production for pushes to the default branch, previews for others. Since then there have been none, including after the 2026-10-17 push to the default branch and the pushes on 2026-10-22, which are what an active integration would deploy. The non-default branches could at most produce a preview, which never changes a live site, so they were pushed. The default branch waits until the owner confirms in Vercel whether the project is still connected to this repository.
 
 **Restoring earlier commits does not clean a branch.** The commits each branch had before its first rewrite already contain variant #1, because they were built on top of `efcc955`. The safe fix for every branch is the same as for this one: an ordinary new commit that removes the payload paths and restores `package.json` and `sentinel/src/tailwind.config.js`. Work lost in the history replacements can then be brought back from the earlier commits (§6), file by file, after the same check.
 

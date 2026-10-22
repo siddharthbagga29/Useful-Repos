@@ -42,6 +42,7 @@
 .city-legend i { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-right: 5px; vertical-align: 1px; }
 .city-legend .lg-solid { background: #8fb7ff; }
 .city-legend .lg-hatch { background: repeating-linear-gradient(45deg, rgba(255, 255, 255, .5) 0 1px, transparent 1px 3px); outline: 1px solid rgba(255, 255, 255, .4); }
+.city-shapes { display: block; margin: 0; padding-top: 0; line-height: 1.5; }
 .city-legend .lg-wire { outline: 1px dashed rgba(255, 255, 255, .5); background: none; }
 .city-pick em { font-style: normal; }
 .city-pick .city-clear { border-style: dashed; }

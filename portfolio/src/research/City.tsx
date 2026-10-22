@@ -202,6 +202,13 @@ interface BuildingProps {
  * Building massing by discipline, so a district reads at a glance. Floors still map one-to-one to
  * milestones; only the footprint, setback and rooftop differ.
  */
+/** plain words for the legend, so the massing carries meaning rather than decoration */
+const SHAPE_WORDS: Record<CategoryId, string> = {
+  "research-quant": "slim stepped tower",
+  "investment-underwriting": "broad block",
+  "ai-automation": "tower with a mast",
+  "product-engineering": "block with a side wing",
+};
 const SHAPES: Record<CategoryId, { w: number; d: number; inset: number; setbackAt: number; annex: boolean; antenna: boolean }> = {
   "research-quant": { w: 6.6, d: 6.6, inset: 1.0, setbackAt: 0.6, annex: false, antenna: false },
   "investment-underwriting": { w: 9, d: 8.2, inset: 0, setbackAt: 1, annex: false, antenna: false },
@@ -891,6 +898,15 @@ export function City({ compact = false, active = true, explore = false, onClose,
             </span>
           ))}
         </div>
+        <p className="city-legend city-shapes">
+          Shape shows the discipline, floors the milestones:{" "}
+          {(Object.keys(SHAPE_WORDS) as CategoryId[]).map((c, i) => (
+            <span key={c}>
+              {i ? " · " : ""}
+              {SHAPE_WORDS[c]} = {CATEGORIES[c]}
+            </span>
+          ))}
+        </p>
       </div>
       <div className="city-side">
         <div className="ds-tabs" role="tablist" aria-label="Side panel" onKeyDown={onTabKey}>

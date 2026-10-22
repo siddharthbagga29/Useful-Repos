@@ -1,6 +1,6 @@
 # Research City 2.0: implementation log
 
-**Current phase:** iterations 1–3 are pushed. Iteration 4 (CI action releases, Cloudflare workflow, city visuals, project-kind labels) is committed locally and not pushed. Nothing is deployed.
+**Current phase:** iterations 1–4 are pushed (feature branch at `17a6ea7`). Iteration 5 (shape legend, kind labels in the work index, action-pin check) is committed locally and not pushed. Nothing is deployed.
 
 | Status | Items |
 |---|---|
@@ -122,9 +122,18 @@ The audit, risk register and baseline are in [research-city-audit.md](research-c
 | Cloudflare workflow (`deploy/cloudflare-pages.yml`, not active: it lives outside `.github/workflows`) | The gate reads both secrets through `env`; a missing secret gives a visible "deploy skipped" notice, not a silent success. The token is scoped to the two steps that call Cloudflare. Wrangler is pinned (3.114.17), checkout doesn't persist credentials, there's a 10-minute timeout, and a project-create error is reported instead of swallowed. No secrets were added and the workflow was not enabled |
 | Building shapes | Massing follows discipline: research is a slim tower with a setback, underwriting is a broad block, AI systems have a setback and a mast, and product engineering has a low annex. Edge, roof and ground-shadow lines give depth. Floors still equal milestones |
 | District labels | Each building's sign now names its district, instead of floating ground labels that buildings and bots covered |
-| Project kinds | `nature` in the manifest: analysis, backtest, simulation, interactive model, prototype, live system, or "live system · not verified", each with a reason. Shown on every case page and in the city dossier. A unit test rejects "live" without a deployed milestone, "interactive" without a demo link, and "not verified" without an unverified milestone |
+| Project kinds | `nature` in the manifest: analysis, backtest, simulation, interactive model, prototype, live system, or "live system (not verified)", each with a reason. Shown on every case page and in the city dossier. A unit test rejects "live" without a deployed milestone, "interactive" without a demo link, and "not verified" without an unverified milestone |
 | Motion | No new animation. Idle stillness e2e passes |
 | Results | `npm test` passing (city 25/25); build OK; e2e **205/205**; axe 0 violations, 8/8 interactive checks; quality gate APPROVED 10.0/10; integrity clean (765 files) |
+
+## Iteration 5 (2026-10-22): legend, labels everywhere, pin check
+
+| Item | Result |
+|---|---|
+| Shape legend | One line under the city map says what the shapes mean (slim stepped tower = research and quant, broad block = underwriting, mast = AI and automation, side wing = product) and that floors are milestones. Shapes now carry information, not just decoration |
+| Kind labels in the work index | The plain project list shows each project's kinds too, so the labels match on the city, the dossier, the case pages and the index |
+| `tools/check-actions.mjs` | Fails if any `uses:` in `.github/workflows/` or `portfolio/deploy/` is not a full commit SHA followed by a version comment. Runs in `npm test` and in the integrity workflow. Tested against a tag pin and a SHA without a comment (both rejected) |
+| Results | `npm test` passing; build OK; e2e **205/205** (idle stillness passes); axe 0 violations, 8/8 interactive checks; quality gate APPROVED 10.0/10 |
 
 ## Next steps
 

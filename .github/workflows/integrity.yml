@@ -1,6 +1,6 @@
 # Repository integrity: fails if any tracked file contains code that could run without anyone choosing
 # to run it (editor auto-run tasks, code disguised as fonts or images, code hidden after whitespace,
-# install hooks). Reads files only; never executes repository content. See tools/repo-integrity.mjs.
+# install hooks), or an action not pinned to a commit SHA. Reads files only; never executes repository content. See tools/repo-integrity.mjs.
 name: integrity
 
 on:
@@ -23,3 +23,4 @@ jobs:
           node-version: 22
           package-manager-cache: false
       - run: node tools/repo-integrity.mjs
+      - run: node tools/check-actions.mjs

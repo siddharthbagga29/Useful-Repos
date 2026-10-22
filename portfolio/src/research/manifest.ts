@@ -92,7 +92,7 @@ export const NATURE_LABEL: Record<NatureKind, string> = {
   interactive: "Interactive model",
   prototype: "Prototype",
   live: "Live system",
-  "claimed-live": "Live system · not verified",
+  "claimed-live": "Live system (not verified)",
 };
 
 export interface Project {

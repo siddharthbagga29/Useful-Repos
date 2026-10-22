@@ -1,4 +1,4 @@
-import { CATEGORIES, DISTRICTS, PROJECTS, caseRoute, pending, shipped, type CategoryId } from "./manifest.ts";
+import { CATEGORIES, DISTRICTS, NATURE_LABEL, PROJECTS, caseRoute, pending, shipped, type CategoryId } from "./manifest.ts";
 import { COLORS } from "./layout.ts";
 import { EXEC } from "./City.tsx";
 import { useCityFeed } from "./feed.ts";
@@ -23,6 +23,9 @@ export function WorkIndex() {
                     <a href={caseRoute(p.id)} data-testid={`work-${p.id}`}>
                       <span className="wi-k">{DISTRICTS[p.district]}</span>
                       <b>{p.title}</b>
+                      <span className="wi-nat" data-testid={`work-nature-${p.id}`}>
+                        {p.nature.map((n) => NATURE_LABEL[n.kind]).join(" · ")}
+                      </span>
                       <span className="wi-sum">{p.summary}</span>
                       <span className="wi-meta">
                         {shipped(p).length}/{p.milestones.length} milestones with evidence · {pending(p).length} planned
