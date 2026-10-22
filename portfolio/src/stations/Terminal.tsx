@@ -244,7 +244,7 @@ export function Terminal() {
           <span>{owner ? "SB TERMINAL · OWNER · MAC LINKED" : "SB TERMINAL · CONSOLE"}</span>
           <span>COMMAND OR QUESTION, PRESS &lt;GO&gt;</span>
         </div>
-        <div className="tb" ref={log} data-testid="term-log">
+        <div className="tb" ref={log} role="log" aria-label="Terminal output" tabIndex={0} data-testid="term-log">
           {lines.map((l, i) => (
             <TermLine key={i} l={l} />
           ))}

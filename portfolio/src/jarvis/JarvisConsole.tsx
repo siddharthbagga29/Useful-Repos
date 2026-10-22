@@ -252,7 +252,7 @@ function Pulse() {
     ["ANSWERED", String(p.answered)],
   ];
   return (
-    <div className="jx-pulse" aria-label="System pulse">
+    <div className="jx-pulse" role="group" aria-label="System pulse" tabIndex={0}>
       {cells.map(([k, v]) => (
         <span key={k}>
           <i>{k}</i>

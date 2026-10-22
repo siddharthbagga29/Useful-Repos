@@ -532,3 +532,6 @@ a.chip { text-decoration: none; }
   body > * { display: none !important; }
   body::after { content: "This page is view-only. Contact Siddharth Bagga for a copy of his résumé."; display: block; padding: 48px; font: 16px/1.5 system-ui, sans-serif; color: #000; }
 }
+
+/* keyboard focus for scrollable regions (Terminal log, Jarvis status strip) */
+.term .tb:focus-visible, .jx-pulse:focus-visible { outline: 2px solid var(--hot); outline-offset: -2px; }

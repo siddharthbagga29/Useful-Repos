@@ -199,3 +199,7 @@
 .city-stage .city-hud { padding-right: 170px; }
 .city.explore .city-stage .city-hud { padding-right: 240px; }
 @media (max-width: 560px) { .city-stage .city-hud { padding-right: 14px; padding-top: 50px; } }
+
+/* the explorer dialog takes focus itself on open; its controls show their own focus rings */
+.city-x:focus { outline: none; }
+.ds-tabs button:focus-visible { outline: 2px solid var(--rc-cyan); outline-offset: 2px; }

@@ -116,7 +116,7 @@ export function BrainConsole() {
               </tr>
             </tbody>
           </table>
-          <div className="bc-folds" aria-label="Sharpe ratio by fold">
+          <div className="bc-folds" role="group" aria-label="Sharpe ratio by fold">
             {c.is.folds.map((f, i) => (
               <div key={i}>
                 <i style={{ height: `${Math.min(100, Math.max(4, (Math.abs(f) / 3) * 100))}%` }} className={f >= 0 ? "pos" : "neg"} />

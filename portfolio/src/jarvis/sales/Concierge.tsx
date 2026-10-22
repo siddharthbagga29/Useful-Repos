@@ -373,7 +373,7 @@ export function Concierge({ station }: { station: string }) {
         <motion.section
           key="concierge"
           className="greet concierge"
-          aria-label="Jarvis"
+          aria-label="Jarvis greeting"
           initial={{ opacity: 0, y: 16, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10 }}

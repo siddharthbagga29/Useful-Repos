@@ -1,6 +1,6 @@
 # Research City 2.0: implementation log
 
-**Current phase:** iterations 1 and 2 are complete and pushed to the branch. Nothing is deployed.
+**Current phase:** iterations 1 and 2 are pushed. Iteration 3 (code integrity and accessibility) is committed locally and not pushed. Nothing is deployed.
 
 | Status | Items |
 |---|---|
@@ -100,6 +100,19 @@ The audit, risk register and baseline are in [research-city-audit.md](research-c
 | Pin GitHub Actions to commit SHAs | Done in `deploy/brain.yml`, `deploy/cloudflare-pages.yml` and `.github/workflows/jarvis.yml`. The SHAs were resolved from the action repositories and equal the current major tags, so behaviour is unchanged. Jarvis CI runs on this push and confirms the pins resolve |
 | Accessibility audit | `e2e/a11y.py` (axe-core 4.10.2, WCAG 2.0/2.1 A + AA + best practice). Before: 2 rules failing on research pages (nested landmark; keyboard-unreachable scroll regions). After: **0 violations** on /research/ and all 8 case pages, desktop and phone. Colour contrast passes |
 | Regression | `npm run test:city` 24/24; city e2e (research_city, research_and_lab, city_explorer) 0 failing; `tsc` clean |
+
+## Iteration 3 (2026-10-22): code integrity and accessibility
+
+| Item | Result |
+|---|---|
+| Hidden-code cleanup | Removed the 22 files that rewritten commit `efcc955` added under `.vscode/` and `public/fonts/`. They include an editor task that ran on folder open and a script disguised as a font. Details, confirmed vs unknown, are in [security/2026-10-code-integrity-review.md](security/2026-10-code-integrity-review.md) |
+| Regression guard | `tools/repo-integrity.mjs` reads every tracked file and fails on disguised code, code hidden after whitespace, editor auto-run, install hooks, a dev script running a stray file, eval combined with spawn, and Ethereum RPC lookups. It detects every variant found in history. It runs in `npm test`, first in `deploy.sh`, and in `.github/workflows/integrity.yml` (read-only, on every push) |
+| Explorer dialog | Focus moves in; the page behind is `inert`; Tab wraps; Escape closes and returns focus to the Explore button |
+| Side-panel tabs | ARIA tabs pattern: arrows and Home/End, roving tab index, tabs linked to their panel |
+| Terminal and Jarvis (home) | Terminal output is a focusable, labelled `role="log"`; the Jarvis status strip is a focusable labelled group; the greeting is named "Jarvis greeting" |
+| `e2e/a11y.py` | Default page list (research + 8 case studies), `A11Y_BASE` override, "needs review" items reported, and `--states` interactive checks (tabs, explorer focus, inert, Escape, focus return) |
+| Results | Integrity clean (765 files); `npm test` passing; build OK; e2e **205/205**; axe 0 violations on research pages at both viewports and in interactive states, with 8/8 interactive checks passing. Home page: 3 rules remain, all outside the Terminal/Jarvis scope (audit A3) |
+| Not covered | Screen readers, WebKit/Safari, zoom and reflow, manual contrast on gradient backgrounds (axe marks 11 states for review) |
 
 ## Next steps
 

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as RPointerEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as RPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   CATEGORIES,
@@ -80,6 +80,9 @@ const TONE_COLOR = { ok: "#4ade80", run: "#22d3ee", err: "#f87171", warn: "#fbbf
 const eventTone = (e: CityEvent): keyof typeof TONE_COLOR =>
   e.status === "failed" ? "err" : e.status === "started" ? "run" : e.status === "succeeded" ? "ok" : e.status === "warning" ? "warn" : "info";
 const EVENT_ICON: Record<CityEvent["status"], string> = { started: "▶", succeeded: "✓", failed: "✕", warning: "!", info: "•" };
+
+type Tab = "detail" | "timeline" | "crew";
+const TAB_ORDER: Tab[] = ["detail", "timeline", "crew"];
 
 type Sel = { type: "project"; id: ProjectId } | { type: "foundry" } | { type: "agent"; id: ProjectId; k: number };
 
@@ -519,7 +522,17 @@ export function City({ compact = false, active = true, explore = false, onClose,
   const [sel, setSel] = useState<Sel>(initial ?? { type: "project", id: CENTRE });
   const [focused, setFocused] = useState(false);
   const [rot, setRot] = useState(0);
-  const [tab, setTab] = useState<"detail" | "timeline" | "crew">("detail");
+  const [tab, setTab] = useState<Tab>("detail");
+  const uid = useId();
+  // ARIA tabs pattern: arrows and Home/End move between tabs; only the active tab is in the Tab order
+  const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = TAB_ORDER.indexOf(tab);
+    const n = e.key === "ArrowRight" ? (i + 1) % 3 : e.key === "ArrowLeft" ? (i + 2) % 3 : e.key === "Home" ? 0 : e.key === "End" ? 2 : -1;
+    if (n < 0) return;
+    e.preventDefault();
+    setTab(TAB_ORDER[n]!);
+    e.currentTarget.querySelectorAll<HTMLElement>("[role=tab]")[n]?.focus();
+  };
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [district, setDistrict] = useState<DistrictId | "all">("all");
@@ -842,21 +855,28 @@ export function City({ compact = false, active = true, explore = false, onClose,
         </div>
       </div>
       <div className="city-side">
-        <div className="ds-tabs" role="tablist" aria-label="Side panel">
-          <button type="button" role="tab" aria-selected={tab === "detail"} onClick={() => setTab("detail")} data-testid="tab-detail">
-            Dossier
-          </button>
-          <button type="button" role="tab" aria-selected={tab === "timeline"} onClick={() => setTab("timeline")} data-testid="tab-timeline">
-            Timeline
-          </button>
-          <button type="button" role="tab" aria-selected={tab === "crew"} onClick={() => setTab("crew")} data-testid="tab-crew">
-            Bots · {bots.length}
-          </button>
+        <div className="ds-tabs" role="tablist" aria-label="Side panel" onKeyDown={onTabKey}>
+          {TAB_ORDER.map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              id={`${uid}-tab-${k}`}
+              aria-selected={tab === k}
+              aria-controls={`${uid}-panel`}
+              tabIndex={tab === k ? 0 : -1}
+              onClick={() => setTab(k)}
+              data-testid={`tab-${k}`}
+            >
+              {k === "detail" ? "Dossier" : k === "timeline" ? "Timeline" : `Bots · ${bots.length}`}
+            </button>
+          ))}
         </div>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            role="region"
-            aria-label={tab === "detail" ? "Dossier" : tab === "timeline" ? "Timeline" : "Bots"}
+            role="tabpanel"
+            id={`${uid}-panel`}
+            aria-labelledby={`${uid}-tab-${tab}`}
             key={tab === "detail" ? `d-${sel.type}-${sel.type === "foundry" ? "" : sel.id}-${sel.type === "agent" ? sel.k : ""}` : tab}
             className="dossier"
             initial={reduce ? false : { opacity: 0, x: 12 }}
@@ -884,16 +904,46 @@ export function City({ compact = false, active = true, explore = false, onClose,
   );
 }
 
+/**
+ * The city full-screen, as a proper modal: focus moves into it, everything behind it is made `inert`
+ * (unfocusable and hidden from screen readers), and closing returns focus to whatever opened it.
+ */
 function CityExplorer({ initial, onClose }: { initial: Sel; onClose: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const dialog = box.current;
+    const silenced = [...document.body.children].filter((el) => el !== dialog && !el.hasAttribute("inert"));
+    for (const el of silenced) el.setAttribute("inert", "");
+    dialog?.focus();
     return () => {
       document.body.style.overflow = prev;
+      for (const el of silenced) el.removeAttribute("inert");
+      opener?.focus();
     };
   }, []);
+  // Tab past the last control wraps to the first (and Shift+Tab the other way), so focus stays in the dialog
+  const wrap = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Tab" || !box.current) return;
+    // SVG buildings and bots have no offsetParent, so they count as visible by type
+    const shown = (el: Element) => el instanceof SVGElement || (el as HTMLElement).offsetParent !== null;
+    const items = [...box.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((el) => !el.hasAttribute("disabled") && shown(el));
+    if (!items.length) return;
+    const first = items[0]!;
+    const last = items[items.length - 1]!;
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || active === box.current)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
   return createPortal(
-    <motion.div className="city-x" role="dialog" aria-modal="true" aria-label="Research city explorer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} data-testid="city-explorer">
+    <motion.div ref={box} tabIndex={-1} onKeyDown={wrap} className="city-x" role="dialog" aria-modal="true" aria-label="Research city explorer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} data-testid="city-explorer">
       <City explore onClose={onClose} initial={initial} />
     </motion.div>,
     document.body,
