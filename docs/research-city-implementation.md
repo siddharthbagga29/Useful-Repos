@@ -1,6 +1,6 @@
 # Research City 2.0: implementation log
 
-**Current phase:** iterations 1–4 are pushed (feature branch at `17a6ea7`). Iterations 5 and 6 are committed locally and not pushed. Nothing is deployed.
+**Current phase:** deployed on 2026-10-24. Feature branch `b1f71ad` was published by `scripts/deploy.sh` as Pages commit `7990835`.
 
 | Status | Items |
 |---|---|
@@ -153,6 +153,17 @@ contrasting blocks. Same layout, data, motion rules and tests; a different drawi
 Status colours (failed red, stale amber, OK green, running cyan) are unchanged: they carry meaning.
 Project colours are shared with the case pages and the work index, so their accents shift to the same
 family. Nothing new animates.
+
+## Deployment (2026-10-24)
+
+| Check | Result |
+|---|---|
+| Deploy gates (`scripts/deploy.sh`) | Integrity clean; quality gate APPROVED 10.0/10; eval and lab-check passing; build OK |
+| Published | `siddharthbagga29.github.io` `main` at `7990835` ("Deploy portfolio b1f71ad"); the published `index.html` and `research/index.html` reference the same asset files as the local build |
+| GitHub Pages | "pages build and deployment" succeeded for `7990835` |
+| Cloudflare workflow | Ran and skipped with a visible notice: no Cloudflare secrets are set, nothing was deployed there |
+| Brain workflow (manual run 67, new pinned actions, `ref: main`) | Succeeded; committed generation 1632 (`53df8b9`) with provenance (run id, sha `7990835`, data as of 2026-09-21); no Node deprecation warnings |
+| Not verified from here | Fetching the live site in a browser (this environment's network policy blocks it); a real iPhone/Safari |
 
 ## Next steps
 
