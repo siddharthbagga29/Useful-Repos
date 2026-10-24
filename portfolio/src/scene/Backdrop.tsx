@@ -46,7 +46,7 @@ export function Backdrop() {
     const veil = () => {
       if (!layout) return;
       const [x, y, r] = layout;
-      const hole = r * (matchMedia("(max-width: 760px)").matches ? 1.05 : 1.62);
+      const hole = r * (matchMedia("(max-width: 760px)").matches ? 1.05 : 1.75); // backdrop.css --win
       const range = document.createRange();
       let clash = false;
       for (const el of document.querySelectorAll<HTMLElement>(TEXT)) {

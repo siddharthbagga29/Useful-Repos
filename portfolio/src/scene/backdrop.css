@@ -6,19 +6,23 @@
 /* Atelier "Subtract": a wash over the scene with a circular window punched where the brain floats.
    The window closes as you leave the opening station, so later stations read on a calm ground. */
 .den-scrim {
-  --hole: calc(var(--den-r, 0px) * 1.62 * var(--den-open, 1));
+  --win: 1.75; /* window radius / brain radius: wide enough that the whole brain sits in the sharp area */
+  --hole: calc(var(--den-r, 0px) * var(--win) * var(--den-open, 1));
   --mask: radial-gradient(circle var(--hole) at var(--den-x, 72%) var(--den-y, 50%), transparent 99.2%, #000 100%);
   position: absolute; inset: 0;
   background: rgba(8, 6, 22, calc(0.46 + 0.22 * (1 - var(--den-open, 1))));
   -webkit-mask-image: var(--mask); mask-image: var(--mask);
 }
-/* No backdrop blur here: it softened every particle outside the brain's window all the time, and the
-   whole brain whenever the window closed. Softening is now scroll-linked, on the canvas alone
-   (Backdrop.tsx, scrollBlur.ts), so the brain starts sharp. */
+/* The blend: everything outside the brain's window is softened and washed, so the tunnel reads as a
+   calm ground behind the copy while the brain inside the window stays sharp. As you scroll the window
+   closes (the iris), and the brain itself softens with scroll too (Backdrop.tsx, scrollBlur.ts). */
+@media (min-width: 1025px) and (hover: hover) {
+  .den-scrim { -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+}
 /* Atelier "Ellipse 2": a hairline ring, 1.6 x the window, fading from 30% white to nothing. */
 .den-ring {
   position: absolute; left: var(--den-x, 72%); top: var(--den-y, 50%);
-  width: calc(var(--den-r, 200px) * 1.62 * 3.21); height: calc(var(--den-r, 200px) * 1.62 * 3.21);
+  width: calc(var(--den-r, 200px) * 1.75 * 3.21); height: calc(var(--den-r, 200px) * 1.75 * 3.21);
   max-width: none; transform: translate(-50%, -50%);
   opacity: calc(var(--den-open, 1) * 0.9); transition: opacity .2s linear;
 }
@@ -32,11 +36,13 @@ html:not(.den-live) .den-ring { opacity: 0; }
   }
   .den-ring { width: calc(var(--den-r, 200px) * 1.05 * 2.4); height: calc(var(--den-r, 200px) * 1.05 * 2.4); }
 }
-.den-live .sub, .den-live .hud, .den-live .avail { text-shadow: 0 1px 14px rgba(5, 2, 15, 0.9); }
+/* Copy over the live scene: a tight shadow for crisp edges plus a soft halo for separation. */
+.den-live .sub, .den-live .hud, .den-live .avail { text-shadow: 0 1px 2px rgba(5, 2, 15, 0.95), 0 0 16px rgba(5, 2, 15, 0.85); }
 
-/* Readability guard (set by Backdrop when the brain's window would sit behind hero text, on any
-   screen): the window closes, the ring hides and the veil deepens. The brain still glows through. */
-.den-veil .den-scrim { -webkit-mask-image: none; mask-image: none; background: rgba(8, 6, 22, 0.8); }
+/* Readability guard (set by Backdrop when the brain's full window would sit behind hero text): the
+   window narrows to the brain's core rather than closing, so the brain stays sharp, and the wash deepens
+   around it. */
+.den-veil .den-scrim { --win: 1; background: rgba(8, 6, 22, 0.72); }
 .den-veil .den-ring { opacity: 0; }
 @media (max-width: 760px) { .den-veil .den-scrim { background: rgba(8, 6, 22, 0.84); } }
 /* Past the opening station, phones and tablets get a near-solid ground so long copy reads cleanly. */
@@ -48,22 +54,24 @@ html:not(.den-live) .den-ring { opacity: 0; }
   .den-scrim { -webkit-mask-image: none; mask-image: none; background: rgba(8, 6, 22, 0.94); }
   .den-ring { display: none; }
 }
-/* Secondary copy brightens a step when it sits over the live scene. */
-.den-live #hero .sub { color: #b4b0a5; }
+/* Secondary copy brightens over the live scene (#d8d5cb on the wash is well above 7:1), and the
+   availability pill gets its own dark ground. */
+.den-live #hero .sub { color: #d8d5cb; }
+.den-live #hero .avail { background: rgba(6, 18, 13, 0.78); }
 .den-live .sub b, .den-live .sub strong { color: var(--bone); }
 
 /* Phones and tablets (last, so it wins): readability can't depend on the masked veil above. On
    iPhone Safari the mask over the live WebGL layer didn't dim it, and the tunnel showed at full
    strength behind the experience section. So here the scene itself is dimmed: present behind the
    name in the opening view, then down to a faint texture once the content starts. Plain opacity on
-   the canvas, which every browser composites the same way. At the top the brain is the focus (canvas
-   0.8, wash 0.4); once the content starts it returns to the old faint texture (0.12 under 0.85). */
+   the canvas, which every browser composites the same way. At the top the brain is visible (canvas
+   0.66 under a 0.5 wash); once the content starts it returns to the old faint texture (0.12 under 0.85). */
 @media (max-width: 1024px), (hover: none) {
   .den-scrim, .den-veil .den-scrim {
     -webkit-mask-image: none; mask-image: none;
-    background: rgba(8, 6, 22, calc(0.4 + 0.45 * (1 - var(--den-open, 1))));
+    background: rgba(8, 6, 22, calc(0.5 + 0.35 * (1 - var(--den-open, 1))));
   }
   .den-ring { display: none; }
-  .den-live .den-canvas { opacity: calc(0.12 + 0.68 * var(--den-open, 1)); transition: opacity .35s linear; }
-  .den-live #hero .sub, .den-live #hero .avail { text-shadow: 0 1px 2px rgba(5, 2, 15, 0.95), 0 0 18px rgba(5, 2, 15, 0.9); }
+  .den-live .den-canvas { opacity: calc(0.12 + 0.54 * var(--den-open, 1)); transition: opacity .35s linear; }
+  .den-live #hero .sub, .den-live #hero .avail { text-shadow: 0 1px 2px rgba(5, 2, 15, 0.95), 0 0 18px rgba(5, 2, 15, 0.9), 0 0 4px rgba(5, 2, 15, 0.9); }
 }

@@ -45,13 +45,23 @@ const Z = 6.2;
 const P = 15;
 const iso = (x: number, y: number, z = 0): [number, number] => [(x - y) * C, (x + y) * S - z * Z];
 const pts = (...ps: [number, number, number][]) => ps.map(([x, y, z]) => iso(x, y, z).join(",")).join(" ");
+/** A circle on the ground plane (an ellipse on screen), as SVG points. */
+const ring = (cx: number, cy: number, r: number, z = 0, n = 48) =>
+  Array.from({ length: n }, (_, k) => {
+    const t = (k / n) * Math.PI * 2;
+    return iso(cx + r * Math.cos(t), cy + r * Math.sin(t), z).join(",");
+  }).join(" ");
+/** The board's centre: the hub every district ring sits around. */
+const HUB: [number, number] = [1.5 * P, 1.5 * P];
+const PLOT_R = 6.6;
+const plotRing = (i: number, j: number, r = PLOT_R) => ring(i * P + P / 2, j * P + P / 2, r);
 
 export const KIND_COLOR: Record<AgentKind, string> = {
-  scheduled: "#22d3ee",
-  ci: "#4ade80",
-  deploy: "#fbbf24",
-  script: "#ff8a5c",
-  local: "#c084fc",
+  scheduled: "#2bf0ff",
+  ci: "#7dffd9",
+  deploy: "#a78bff",
+  script: "#6fb4ff",
+  local: "#f0a8ff",
 };
 
 const FLOOR = 2.4;
@@ -63,7 +73,7 @@ const VIEWBOX = (() => {
   const g = [iso(-3, -3), iso(3 * P + 3, -3), iso(3 * P + 3, 3 * P + 3), iso(-3, 3 * P + 3)];
   const minX = Math.min(...g.map((q) => q[0])) - 6;
   const maxX = Math.max(...g.map((q) => q[0])) + 6;
-  const top = iso(1.5 * P, 1.5 * P, 36 + 3.5)[1] - 58;
+  const top = iso(1.5 * P, 1.5 * P, 36 + 3.5)[1] - 72;
   const bottom = Math.max(...g.map((q) => q[1])) + 6;
   return `${minX} ${top} ${maxX - minX} ${bottom - top}`;
 })();
@@ -122,11 +132,12 @@ function Box({ x, y, z, w, d, h, color, look = "solid" }: { x: number; y: number
         <polygon points={top} fill={shade(color, 0.35)} fillOpacity={0.35} />
       </g>
     );
+  // glass: translucent faces with lit edges, as on the Perspective Engine board
   return (
-    <g>
-      <polygon points={left} fill={shade(color, 0.42)} />
-      <polygon points={right} fill={shade(color, 0.28)} />
-      <polygon points={top} fill={shade(color, 0.7)} />
+    <g className="glass" stroke={color}>
+      <polygon points={left} fill={color} fillOpacity={0.17} />
+      <polygon points={right} fill={color} fillOpacity={0.09} />
+      <polygon points={top} fill={color} fillOpacity={0.32} />
     </g>
   );
 }
@@ -169,7 +180,7 @@ function PlotPulse({ i, j, tone, k }: { i: number; j: number; tone: keyof typeof
     <motion.polygon
       key={k}
       className="rc-pulse"
-      points={pts([i * P + 1, j * P + 1, 0], [i * P + P - 1, j * P + 1, 0], [i * P + P - 1, j * P + P - 1, 0], [i * P + 1, j * P + P - 1, 0])}
+      points={plotRing(i, j, PLOT_R + 0.9)}
       stroke={TONE_COLOR[tone]}
       initial={{ opacity: 0 }}
       animate={{ opacity: [0, 1, 0.6, 1, 0] }}
@@ -248,10 +259,10 @@ function Building({ p, plot, state, selected, dim, pulse, reduce, onSelect }: Bu
       data-testid={`bld-${p.id}`}
       data-exec={state?.execution}
     >
-      <polygon className="plot" points={pts([i * P + 2, j * P + 2, 0], [i * P + P - 2, j * P + 2, 0], [i * P + P - 2, j * P + P - 2, 0], [i * P + 2, j * P + P - 2, 0])} style={{ stroke: selected ? color : undefined }} />
-      {failed && <polygon className="plot-fail" points={pts([i * P + 1.4, j * P + 1.4, 0], [i * P + P - 1.4, j * P + 1.4, 0], [i * P + P - 1.4, j * P + P - 1.4, 0], [i * P + 1.4, j * P + P - 1.4, 0])} />}
+      <polygon className="plot" points={plotRing(i, j)} style={{ stroke: selected ? color : undefined }} />
+      {failed && <polygon className="plot-fail" points={plotRing(i, j, PLOT_R + 0.6)} />}
       {pulse && !reduce && <PlotPulse i={i} j={j} tone={eventTone(pulse)} k={pulse.eventId} />}
-      {pulse && reduce && <polygon className="rc-pulse static" stroke={TONE_COLOR[eventTone(pulse)]} points={pts([i * P + 1, j * P + 1, 0], [i * P + P - 1, j * P + 1, 0], [i * P + P - 1, j * P + P - 1, 0], [i * P + 1, j * P + P - 1, 0])} />}
+      {pulse && reduce && <polygon className="rc-pulse static" stroke={TONE_COLOR[eventTone(pulse)]} points={plotRing(i, j, PLOT_R + 0.9)} />}
       <polygon className="bld-shadow" points={pts([x + 0.8, y + 0.8, 0], [x + w + 1.6, y + 0.8, 0], [x + w + 1.6, y + d + 1.6, 0], [x + 0.8, y + d + 1.6, 0])} />
       {p.milestones.map((m, k) => {
         const look = floorLook(m.evidence);
@@ -295,6 +306,26 @@ function Building({ p, plot, state, selected, dim, pulse, reduce, onSelect }: Bu
   );
 }
 
+/**
+ * A dotted sphere around the hub's core: the board's "brain" made of points (a Fibonacci sphere,
+ * projected once). Static: it never moves on its own.
+ */
+const SPHERE: [number, number, number][] = (() => {
+  const [ox, oy] = iso(1.5 * P, 1.5 * P, 36 + 3.5); // the core orb on the centre tower
+  const n = 220;
+  const rho = 24; // screen radius in SVG units
+  const out: [number, number, number][] = [];
+  for (let k = 0; k < n; k++) {
+    const yy = 1 - (2 * (k + 0.5)) / n;
+    const rr = Math.sqrt(1 - yy * yy);
+    const t = k * Math.PI * (3 - Math.sqrt(5));
+    const dx = Math.cos(t) * rr;
+    const dz = Math.sin(t) * rr; // depth: nearer points are brighter
+    out.push([ox + rho * dx, oy - rho * yy * 0.92, 0.18 + 0.62 * ((dz + 1) / 2)]);
+  }
+  return out;
+})();
+
 /** The centre: Strategy Lab and the Brain. Its bands move only while a Brain run is verifiably running or a new run event arrives. */
 function CentreTower({ p, state, gen, unavailable, selected, dim, pulse, reduce, onSelect }: Omit<BuildingProps, "plot"> & { gen: number | null; unavailable: boolean }) {
   const [i, j] = PLOTS[CENTRE];
@@ -318,11 +349,16 @@ function CentreTower({ p, state, gen, unavailable, selected, dim, pulse, reduce,
       data-testid={`bld-${p.id}`}
       data-exec={state?.execution}
     >
-      <polygon className="plot" points={pts([i * P + 2, j * P + 2, 0], [i * P + P - 2, j * P + 2, 0], [i * P + P - 2, j * P + P - 2, 0], [i * P + 2, j * P + P - 2, 0])} />
-      {failed && <polygon className="plot-fail" points={pts([i * P + 1.4, j * P + 1.4, 0], [i * P + P - 1.4, j * P + 1.4, 0], [i * P + P - 1.4, j * P + P - 1.4, 0], [i * P + 1.4, j * P + P - 1.4, 0])} />}
+      <polygon className="plot" points={plotRing(i, j)} />
+      {failed && <polygon className="plot-fail" points={plotRing(i, j, PLOT_R + 0.6)} />}
       {pulse && !reduce && <PlotPulse i={i} j={j} tone={eventTone(pulse)} k={pulse.eventId} />}
-      <Box x={cx - 4.5} y={cy - 4.5} z={0} w={9} d={9} h={3} color="#1e293b" />
-      <Box x={cx - 2.2} y={cy - 2.2} z={3} w={4.4} d={4.4} h={h - 3} color="#0e7490" />
+      <Box x={cx - 4.5} y={cy - 4.5} z={0} w={9} d={9} h={3} color="#8fe6ff" />
+      <Box x={cx - 2.2} y={cy - 2.2} z={3} w={4.4} d={4.4} h={h - 3} color="#2bf0ff" />
+      <g className="hub-sphere" aria-hidden="true">
+        {SPHERE.map(([sx, sy, a], k) => (
+          <circle key={k} cx={sx} cy={sy} r={0.8} opacity={a} />
+        ))}
+      </g>
       {Array.from({ length: 10 }, (_, k) => (
         <motion.polygon
           key={k}
@@ -335,7 +371,7 @@ function CentreTower({ p, state, gen, unavailable, selected, dim, pulse, reduce,
       ))}
       <circle cx={ox} cy={oy} r={9} fill="url(#core)" />
       {live && <motion.circle cx={ox} cy={oy} r={9} className="core-pulse" initial={{ r: 9, opacity: 0.6 }} animate={{ r: [9, 17, 9], opacity: [0.6, 0, 0.6] }} transition={{ duration: 2, repeat: state?.execution === "running" ? Infinity : 1 }} />}
-      <g className="sign brain-sign" transform={`translate(${ox},${oy - 22})`}>
+      <g className="sign brain-sign" transform={`translate(${ox},${oy - 34})`}>
         <rect x={-62} y={-20} width={124} height={27} rx={5} />
         <text y={-8} textAnchor="middle" className="sign-n">
           STRATEGY LAB · BRAIN
@@ -359,11 +395,11 @@ function Foundry({ plot, selected, dim, stale, asOf, onSelect }: { plot: [number
   const key = (e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect());
   return (
     <g className={`bld${selected ? " sel" : ""}${dim ? " recede" : ""}`} role="button" tabIndex={0} aria-pressed={selected} aria-label={`Data Foundry: weekly ETF data as of ${asOf}${stale ? ", stale" : ""}`} onClick={onSelect} onKeyDown={key} data-testid="bld-foundry">
-      <polygon className="plot" points={pts([i * P + 2, j * P + 2, 0], [i * P + P - 2, j * P + 2, 0], [i * P + P - 2, j * P + P - 2, 0], [i * P + 2, j * P + P - 2, 0])} />
-      <Box x={x} y={y + 3} z={0} w={9} d={5} h={3.5} color="#64748b" />
+      <polygon className="plot" points={plotRing(i, j)} />
+      <Box x={x} y={y + 3} z={0} w={9} d={5} h={3.5} color="#8fe6ff" />
       {[0, 1, 2].map((k) => (
         <g key={k}>
-          <Box x={x + 0.6 + k * 3} y={y} z={0} w={2.2} d={2.2} h={7 + k} color="#94a3b8" />
+          <Box x={x + 0.6 + k * 3} y={y} z={0} w={2.2} d={2.2} h={7 + k} color="#8fe6ff" />
           <polygon className="silo-cap" points={pts([x + 0.6 + k * 3, y, 7 + k], [x + 2.8 + k * 3, y, 7 + k], [x + 2.8 + k * 3, y + 2.2, 7 + k], [x + 0.6 + k * 3, y + 2.2, 7 + k])} />
         </g>
       ))}
@@ -669,16 +705,21 @@ export function City({ compact = false, active = true, explore = false, onClose,
   const selId: ProjectId | "foundry" = sel.type === "foundry" ? "foundry" : sel.id;
   const dimOf = (id: ProjectId | "foundry") => (focused && selId !== id) || (filtering && (id === "foundry" || !visible.has(id)));
 
-  const roads = [];
-  for (let k = 0; k <= 3; k++) {
-    roads.push(<line key={`a${k}`} className="road" x1={iso(k * P, 0)[0]} y1={iso(k * P, 0)[1]} x2={iso(k * P, 3 * P)[0]} y2={iso(k * P, 3 * P)[1]} />);
-    roads.push(<line key={`b${k}`} className="road" x1={iso(0, k * P)[0]} y1={iso(0, k * P)[1]} x2={iso(3 * P, k * P)[0]} y2={iso(3 * P, k * P)[1]} />);
-  }
-  // district grounds: a faint tint under each project's plot
-  const grounds = PROJECTS.map((p) => {
-    const [i, j] = plotOf(p.id);
-    return <polygon key={`g-${p.id}`} className="district-ground" fill={DISTRICT_COLORS[p.district]} points={pts([i * P, j * P, 0], [i * P + P, j * P, 0], [i * P + P, j * P + P, 0], [i * P, j * P + P, 0])} />;
-  });
+  // the board: a polar grid around the hub, one colour family, so the projects carry the contrast
+  const board = (
+    <g className="board" aria-hidden="true">
+      <polygon className="board-disc" points={ring(HUB[0], HUB[1], 2.15 * P, 0, 96)} />
+      {[0.55, 1.05, 1.55, 2.15].map((r) => (
+        <polygon key={r} className="board-ring" points={ring(HUB[0], HUB[1], r * P, 0, 96)} />
+      ))}
+      {Array.from({ length: 16 }, (_, k) => {
+        const t = (k / 16) * Math.PI * 2;
+        const [x1, y1] = iso(HUB[0] + 0.55 * P * Math.cos(t), HUB[1] + 0.55 * P * Math.sin(t));
+        const [x2, y2] = iso(HUB[0] + 2.15 * P * Math.cos(t), HUB[1] + 2.15 * P * Math.sin(t));
+        return <line key={k} className="board-spoke" x1={x1} y1={y1} x2={x2} y2={y2} />;
+      })}
+    </g>
+  );
   // the data conduit: Foundry → Strategy Lab. Amber and dashed while its data is stale.
   const lab = feed.states[CENTRE];
   const [fi, fj] = foundryPlot;
@@ -808,6 +849,11 @@ export function City({ compact = false, active = true, explore = false, onClose,
           {...handlers}
         >
           <defs>
+            <radialGradient id="rc-board" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stopColor="#2bf0ff" stopOpacity=".22" />
+              <stop offset=".6" stopColor="#1b8fa8" stopOpacity=".1" />
+              <stop offset="1" stopColor="#0a0524" stopOpacity="0" />
+            </radialGradient>
             <radialGradient id="core">
               <stop offset="0" stopColor="#e0fbff" />
               <stop offset=".45" stopColor="#22d3ee" />
@@ -815,13 +861,11 @@ export function City({ compact = false, active = true, explore = false, onClose,
             </radialGradient>
             <pattern id="rc-hatch" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
               <rect width="3" height="3" fill="rgba(255,255,255,.02)" />
-              <line x1="0" y1="0" x2="0" y2="3" stroke="rgba(255,255,255,.28)" strokeWidth="1" />
+              <line x1="0" y1="0" x2="0" y2="3" stroke="rgba(194,173,255,.42)" strokeWidth="1" />
             </pattern>
           </defs>
           <g transform={`translate(${cam.x} ${cam.y}) scale(${cam.k})`} data-testid="city-cam" data-k={cam.k.toFixed(2)}>
-            <polygon className="ground" points={pts([-3, -3, 0], [3 * P + 3, -3, 0], [3 * P + 3, 3 * P + 3, 0], [-3, 3 * P + 3, 0])} />
-            {grounds}
-            {roads}
+            {board}
             <polyline className={`conduit${lab?.dataStale ? " stale" : ""}`} points={conduit.map((p) => p.join(",")).join(" ")} />
             {order.map(({ k }) => {
               if (k === "foundry")

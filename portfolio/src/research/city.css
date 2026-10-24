@@ -1,7 +1,7 @@
 /* Research city — isometric districts, bots and the centre tower. Uses the site's tokens plus the
    research tokens below. Nothing here animates on its own: motion comes from events (City.tsx). */
 :root {
-  --rc-bg: #070a17;
+  --rc-bg: #0a0524;
   --rc-panel: #0c1124;
   --rc-edge: #1b2442;
   --rc-cyan: #22d3ee;
@@ -22,12 +22,13 @@
 }
 .t-ok { color: var(--rc-ok); } .t-run { color: var(--rc-run); } .t-err { color: var(--rc-err); } .t-warn { color: var(--rc-warn); } .t-idle { color: var(--rc-idle); } .t-info { color: var(--rc-violet); }
 .city { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 16px; width: 100%; max-width: 1240px; min-height: 0; }
-.city-stage { position: relative; border: 1px solid var(--rc-edge); border-radius: 14px; background:
-  radial-gradient(ellipse at 50% 38%, rgba(34, 211, 238, .10), transparent 58%),
-  radial-gradient(ellipse at 80% 90%, rgba(167, 139, 250, .08), transparent 55%),
-  linear-gradient(rgba(96, 165, 250, .04) 1px, transparent 1px) 0 0 / 24px 24px,
-  linear-gradient(90deg, rgba(96, 165, 250, .04) 1px, transparent 1px) 0 0 / 24px 24px,
-  var(--rc-bg); overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+/* The stage reads as the Perspective Engine board: deep indigo, a teal haze pooled under the board and
+   a violet bloom above the hub. No square grid: the board draws its own polar grid. */
+.city-stage { position: relative; border: 1px solid #1d1a4a; border-radius: 14px; background:
+  radial-gradient(ellipse 62% 42% at 50% 66%, rgba(43, 240, 255, .17), transparent 72%),
+  radial-gradient(ellipse 50% 40% at 50% 28%, rgba(122, 60, 255, .16), transparent 70%),
+  radial-gradient(ellipse 90% 50% at 50% 115%, rgba(16, 120, 140, .38), transparent 70%),
+  #0a0524; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
 .city-svg { width: 100%; height: auto; display: block; flex: 1; min-height: 0; }
 .city-hud { list-style: none; margin: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 14px 0; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--rc-dim); }
 .city-hud b { color: var(--rc-cyan); font-weight: 500; }
@@ -40,7 +41,7 @@
 @media (max-width: 760px) { .city-pick button { font-size: 12px; padding: 6px 10px; } }
 .city-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 0 14px 10px; font-family: var(--mono); font-size: 10px; color: var(--dim); }
 .city-legend i { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-right: 5px; vertical-align: 1px; }
-.city-legend .lg-solid { background: #8fb7ff; }
+.city-legend .lg-solid { background: rgba(43, 240, 255, .35); outline: 1px solid rgba(43, 240, 255, .8); }
 .city-legend .lg-hatch { background: repeating-linear-gradient(45deg, rgba(255, 255, 255, .5) 0 1px, transparent 1px 3px); outline: 1px solid rgba(255, 255, 255, .4); }
 .city-shapes { display: block; margin: 0; padding-top: 0; line-height: 1.5; }
 .city-legend .lg-wire { outline: 1px dashed rgba(255, 255, 255, .5); background: none; }
@@ -67,12 +68,13 @@
 .tl-title { font-size: 12.5px; color: var(--rc-text); line-height: 1.4; }
 .tl-detail { margin: 2px 0 0; font-size: 11.5px; color: #b9bfd8; line-height: 1.45; }
 
-.ground { fill: rgba(96, 165, 250, .02); stroke: rgba(96, 165, 250, .10); }
-.district-ground { opacity: .08; }
+.board-disc { fill: url(#rc-board); stroke: none; }
+.board-ring { fill: none; stroke: rgba(43, 240, 255, .16); stroke-width: .6; }
+.board-spoke { stroke: rgba(43, 240, 255, .09); stroke-width: .5; }
 .conduit { fill: none; stroke: rgba(34, 211, 238, .5); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .conduit.stale { stroke: var(--rc-warn); stroke-dasharray: 3 3; opacity: .8; }
-.plot { fill: rgba(255, 255, 255, .025); stroke: rgba(255, 255, 255, .07); stroke-width: .8; transition: stroke .2s; }
-.road { stroke: rgba(148, 163, 255, .07); stroke-width: 12; stroke-linecap: round; }
+/* each project stands on a glowing ring */
+.plot { fill: rgba(43, 240, 255, .05); stroke: rgba(43, 240, 255, .62); stroke-width: 1.1; filter: drop-shadow(0 0 2.5px rgba(43, 240, 255, .75)); transition: stroke .2s; }
 
 .bld { cursor: pointer; outline: none; transition: opacity var(--rc-fast); }
 .bld.recede { opacity: .32; }
@@ -83,19 +85,22 @@
 .rc-pulse.static { opacity: .9; }
 .rc-tag rect { fill: rgba(7, 10, 23, .94); stroke-width: .7; }
 .rc-tag text { font-family: var(--mono); font-size: 7.4px; letter-spacing: .06em; font-weight: 600; }
-.bld:hover .plot, .bld:focus-visible .plot { stroke: var(--bone); }
-.bld.sel .plot { stroke-width: 1.6; fill: rgba(255, 255, 255, .05); }
-.wire polygon { fill: rgba(255, 255, 255, .015); stroke-width: .5; stroke-dasharray: 1.6 1.6; opacity: .55; }
-.win { fill: #e8f6ff; opacity: .72; }
-.sign rect:first-child { fill: rgba(7, 10, 23, .9); stroke: rgba(148, 163, 255, .22); stroke-width: .6; }
-.sign-n { font-family: var(--mono); font-size: 10px; fill: var(--bone); letter-spacing: .04em; }
-.sign-s { font-family: var(--mono); font-size: 8px; fill: #22d3ee; }
+.bld:hover .plot, .bld:focus-visible .plot { stroke: #e9fdff; }
+.bld.sel .plot { stroke-width: 1.8; fill: rgba(43, 240, 255, .1); }
+.wire polygon { fill: rgba(43, 240, 255, .02); stroke-width: .5; stroke-dasharray: 1.6 1.6; opacity: .6; }
+.glass polygon { stroke-width: .45; stroke-opacity: .7; stroke-linejoin: round; }
+.win { fill: #bff8ff; opacity: .4; }
+/* labels: dark pills, bold mono capitals */
+.sign rect:first-child { fill: rgba(10, 5, 36, .9); stroke: rgba(43, 240, 255, .42); stroke-width: .6; }
+.sign-n { font-family: var(--mono); font-size: 8.6px; font-weight: 700; fill: #f2f7ff; letter-spacing: .09em; text-transform: uppercase; }
+.sign-s { font-family: var(--mono); font-size: 7.6px; fill: #8fe6ff; }
 .sign-bar { fill: rgba(255, 255, 255, .12); }
 .bld.sel .sign rect:first-child { stroke: var(--bone); }
 .brain-band { fill: #67e8f9; }
 .ring { fill: none; stroke: #22d3ee; stroke-width: .9; }
 .core-pulse { fill: none; stroke: #67e8f9; stroke-width: 1; }
-.silo-cap { fill: #cbd5e1; }
+.silo-cap { fill: rgba(191, 248, 255, .55); }
+.hub-sphere circle { fill: #8ff6ff; }
 
 .bot-shadow { fill: rgba(0, 0, 0, .45); }
 .bot-body { fill: #d6d3c8; }
@@ -206,7 +211,7 @@
 .ds-tabs button:focus-visible { outline: 2px solid var(--rc-cyan); outline-offset: 2px; }
 
 /* massing and district labels: static shapes that carry hierarchy, no motion */
-.bld-shadow { fill: rgba(2, 4, 14, .55); }
+.bld-shadow { fill: rgba(43, 240, 255, .07); }
 .bld-edge { stroke-width: .7; opacity: .7; }
 .bld-roof { fill: none; stroke-width: .6; opacity: .85; }
 .bld-antenna line { stroke-width: .8; }

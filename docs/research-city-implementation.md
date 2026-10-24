@@ -1,6 +1,6 @@
 # Research City 2.0: implementation log
 
-**Current phase:** iterations 1–4 are pushed (feature branch at `17a6ea7`). Iteration 5 (shape legend, kind labels in the work index, action-pin check) is committed locally and not pushed. Nothing is deployed.
+**Current phase:** iterations 1–4 are pushed (feature branch at `17a6ea7`). Iterations 5 and 6 are committed locally and not pushed. Nothing is deployed.
 
 | Status | Items |
 |---|---|
@@ -134,6 +134,25 @@ The audit, risk register and baseline are in [research-city-audit.md](research-c
 | Kind labels in the work index | The plain project list shows each project's kinds too, so the labels match on the city, the dossier, the case pages and the index |
 | `tools/check-actions.mjs` | Fails if any `uses:` in `.github/workflows/` or `portfolio/deploy/` is not a full commit SHA followed by a version comment. Runs in `npm test` and in the integrity workflow. Tested against a tag pin and a SHA without a comment (both rejected) |
 | Results | `npm test` passing; build OK; e2e **205/205** (idle stillness passes); axe 0 violations, 8/8 interactive checks; quality gate APPROVED 10.0/10 |
+
+## Iteration 6 (2026-10-24): the city as a board
+
+The owner asked for the city to look like the Perspective Engine board rather than a city of
+contrasting blocks. Same layout, data, motion rules and tests; a different drawing.
+
+| Element | Before | Now |
+|---|---|---|
+| Ground | Square tiles, roads and a coloured tint per district | A polar board around the hub: a teal glow, four concentric rings and sixteen spokes |
+| Plots | Square tiles | Glowing cyan rings |
+| Buildings | Solid blocks in eight contrasting colours | Translucent glass with lit edges, one cyan-to-violet family. Floors still equal milestones; hatched (claimed) and wireframe (planned) floors are unchanged |
+| Hub | A dark tower with a glowing orb | A glass tower, its orb inside a static dotted sphere (220 points), the board's brain |
+| Labels | Dark plates | Dark pills, bold mono capitals |
+| Stage | Navy with a square grid | Deep indigo (#0a0524) with a teal haze under the board and a violet bloom above the hub |
+| Job colours | Cyan, green, amber, orange, purple | Cyan, mint, violet, azure, orchid |
+
+Status colours (failed red, stale amber, OK green, running cyan) are unchanged: they carry meaning.
+Project colours are shared with the case pages and the work index, so their accents shift to the same
+family. Nothing new animates.
 
 ## Next steps
 

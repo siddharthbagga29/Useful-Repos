@@ -378,7 +378,16 @@ def brain_blur(browser) -> None:
         page.wait_for_function("document.documentElement.classList.contains('den-live')", timeout=60000)
         b0 = settled_blur(page, 0)
         check(f"brain blur ({name}): sharp at the top", b0[0] == 0 and b0[2] == "none", str(b0))
-        check(f"brain blur ({name}): the scrim adds no blur of its own", page.evaluate("getComputedStyle(document.querySelector('.den-scrim')).backdropFilter") in ("none", ""))
+        # desktop: the backdrop softens the tunnel around the brain, never the brain (it sits inside the
+        # open window); phones: no backdrop filter at all (unreliable over WebGL on iOS)
+        scrim = page.evaluate("""(() => { const s = getComputedStyle(document.querySelector('.den-scrim')), r = document.documentElement;
+          return [s.backdropFilter, parseFloat(s.getPropertyValue('--hole')) || 0, parseFloat(r.style.getPropertyValue('--den-r')), r.classList.contains('den-veil')]; })()""")
+        if mob:
+            check("brain blur (phone): no backdrop filter over the scene", scrim[0] in ("none", ""), str(scrim))
+        else:
+            hole = 1.75 * scrim[2]
+            check("brain blur (desktop): the background blends behind a sharp window that holds the whole brain",
+                  scrim[0] == "blur(5px)" and not scrim[3] and hole >= 1.7 * scrim[2], str(scrim))
         seq = [settled_blur(page, y)[0] for y in (150, 400, 700, 2000)]
         check(f"brain blur ({name}): rises with scroll", all(a < b for a, b in zip(seq, seq[1:-1])) and seq[0] > 0, str(seq))
         check(f"brain blur ({name}): tops out at {top:g}px", seq[-1] == top, str(seq))

@@ -16,20 +16,22 @@ export const PLOTS: Record<ProjectId, [number, number]> = {
 };
 export const FOUNDRY: [number, number] = [0, 0];
 
+// One cool family (cyan to violet), as on the Perspective Engine board: identity by hue within the
+// family, never by contrasting colours. Status colours (failed, stale, running) live in City.tsx.
 export const COLORS: Record<ProjectId, string> = {
-  "strategy-lab": "#22d3ee",
-  dcf: "#34d399",
-  "risk-tolerance": "#5eead4",
-  "deal-lab": "#fbbf24",
-  "twin-engine": "#f472b6",
-  sentinel: "#a78bfa",
-  jarvis: "#60a5fa",
-  "high-properties": "#818cf8",
+  "strategy-lab": "#2bf0ff",
+  dcf: "#5ee6f0",
+  "risk-tolerance": "#45cbe6",
+  "deal-lab": "#8fe6ff",
+  "twin-engine": "#a78bff",
+  sentinel: "#c2adff",
+  jarvis: "#6fb4ff",
+  "high-properties": "#9f8cff",
 };
 
 export const DISTRICT_COLORS: Record<DistrictId, string> = {
-  "capital-markets": "#22d3ee",
-  "investment-underwriting": "#fbbf24",
-  "risk-reliability": "#a78bfa",
-  "automation-product": "#60a5fa",
+  "capital-markets": "#2bf0ff",
+  "investment-underwriting": "#8fe6ff",
+  "risk-reliability": "#c2adff",
+  "automation-product": "#9f8cff",
 };
