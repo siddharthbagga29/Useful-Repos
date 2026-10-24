@@ -349,7 +349,80 @@ def den_scene(p) -> None:
     page.goto(BASE)
     page.wait_for_timeout(2500)
     check("den: skipped under automation without ?scene", not page.evaluate("document.documentElement.classList.contains('den-live')"))
+    page.close()  # one software-WebGL scene at a time, or the next ones starve
+    brain_blur(browser)
     browser.close()
+
+
+# the canvas's settled blur; frames are slow under software WebGL, so wait for a few to pass first
+BLUR = "(() => { const c = document.querySelector('.den-canvas'); return [parseFloat(c.dataset.blur), parseFloat(c.dataset.blurTarget), getComputedStyle(c).filter]; })()"
+FRAMES = "new Promise(r => { let n = 0; const f = () => (++n >= 3 ? r(0) : requestAnimationFrame(f)); requestAnimationFrame(f); })"
+
+
+def settled_blur(page: Page, y: int) -> tuple[float, float, str]:
+    page.evaluate(f"window.scrollTo(0, {y})")
+    page.evaluate(FRAMES)
+    page.wait_for_function("(() => { const c = document.querySelector('.den-canvas'); return c.dataset.blur === c.dataset.blurTarget; })()", timeout=30000)
+    return tuple(page.evaluate(BLUR))  # type: ignore[return-value]
+
+
+def brain_blur(browser) -> None:
+    # The hero brain starts sharp and softens in proportion to scroll; only the scene canvas is filtered.
+    for name, vp, mob, top in [("desktop", {"width": 1440, "height": 900}, False, 8.0), ("phone", {"width": 390, "height": 844}, True, 5.0)]:
+        ctx = browser.new_context(viewport=vp, device_scale_factor=3 if mob else 1, is_mobile=mob, has_touch=mob)
+        # record every blur value the page ever applies, from the first frame
+        ctx.add_init_script("""new MutationObserver((ms) => { for (const m of ms) (window['__' + m.attributeName] ||= []).push(m.target.getAttribute(m.attributeName)); })
+          .observe(document, { subtree: true, attributes: true, attributeFilter: ['data-blur', 'data-dpr'] });""")
+        page = ctx.new_page()
+        page.goto(BASE + "?scene=1")
+        page.wait_for_function("document.documentElement.classList.contains('den-live')", timeout=60000)
+        b0 = settled_blur(page, 0)
+        check(f"brain blur ({name}): sharp at the top", b0[0] == 0 and b0[2] == "none", str(b0))
+        check(f"brain blur ({name}): the scrim adds no blur of its own", page.evaluate("getComputedStyle(document.querySelector('.den-scrim')).backdropFilter") in ("none", ""))
+        seq = [settled_blur(page, y)[0] for y in (150, 400, 700, 2000)]
+        check(f"brain blur ({name}): rises with scroll", all(a < b for a, b in zip(seq, seq[1:-1])) and seq[0] > 0, str(seq))
+        check(f"brain blur ({name}): tops out at {top:g}px", seq[-1] == top, str(seq))
+        back = [settled_blur(page, y)[0] for y in (400, 150)]
+        check(f"brain blur ({name}): eases back on the way up", back[0] == seq[1] and back[1] == seq[0], f"{back} vs {seq}")
+        # at full blur, nothing visible but the scene canvas is blurred. (Panels that have left the
+        # viewport carry their entrance animation's hidden state, opacity 0 + blur(4px); they're not
+        # visible, so only on-screen, non-transparent elements count.)
+        settled_blur(page, 2000)
+        page.wait_for_timeout(2000)  # let the in-view panel's entrance animation finish
+        blurred = page.evaluate("""[...document.querySelectorAll('body *')].filter(e => {
+            const f = getComputedStyle(e).filter, m = f.match(/blur\\(([\\d.]+)px\\)/);
+            if (!m || parseFloat(m[1]) === 0) return false;
+            const r = e.getBoundingClientRect();
+            let o = 1; for (let a = e; a; a = a.parentElement) o *= parseFloat(getComputedStyle(a).opacity);
+            return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth && r.width && o > 0.01;
+          }).map(e => e.className || e.tagName)""")
+        check(f"brain blur ({name}): only the scene canvas is blurred; text and navigation stay sharp", blurred == ["den-canvas"], str(blurred))
+        b_end = settled_blur(page, 0)
+        check(f"brain blur ({name}): sharp again at the top", b_end[0] == 0 and b_end[2] == "none", str(b_end))
+        if mob:
+            # starts at 2x (was 1.25x, upscaled 2.4x on a 3x screen); steps down only if frames are slow,
+            # which they are under software WebGL here, so both outcomes are checked against the reason
+            dprs = page.evaluate("window['__data-dpr'] || []")
+            px = page.evaluate("(() => { const c = document.querySelector('.den-canvas'); return [c.width / c.clientWidth, c.dataset.dprReason || ''] })()")
+            check("brain blur (phone): the scene starts at 2x", bool(dprs) and dprs[0] == "2", str(dprs))
+            check("brain blur (phone): it stays at 2x unless frames are measured slow", abs(px[0] - 2) < 0.01 or (abs(px[0] - 1.25) < 0.01 and px[1] == "slow"), str(px))
+        # reload part-way down: the browser restores the position, and the brain still starts sharp
+        page.evaluate("window.scrollTo(0, 700)")
+        page.wait_for_timeout(300)
+        page.reload()
+        page.wait_for_function("document.documentElement.classList.contains('den-live')", timeout=60000)
+        b_restored = settled_blur(page, int(page.evaluate("scrollY")))
+        first = page.evaluate("(window['__data-blur'] || [])[0]")
+        check(f"brain blur ({name}): a restored scroll starts sharp, then eases to its position", page.evaluate("scrollY") > 0 and first == "0.00" and b_restored[0] == b_restored[1] > 0, f"first={first} settled={b_restored}")
+        ctx.close()
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+    page = ctx.new_page()
+    page.goto(BASE + "?scene=1")
+    page.wait_for_function("document.documentElement.classList.contains('den-live')", timeout=60000)
+    page.evaluate("window.scrollTo(0, 900)")
+    page.wait_for_timeout(1500)
+    check("brain blur: reduced motion keeps the brain unfiltered", page.evaluate(BLUR)[2] == "none")
+    ctx.close()
 
 
 def research_and_lab(p) -> None:

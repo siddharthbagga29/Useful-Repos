@@ -6,7 +6,9 @@
 // lean toward the cursor, part around it, pulse with "neural" waves and ripple while Jarvis talks.
 //
 // Two deliberate, output-neutral changes from the spec, both for a page that has to stay fast:
-//  - devicePixelRatio is capped (2 on desktop, 1.25 on phones) and the tunnel grid is thinner on phones.
+//  - devicePixelRatio is capped at 2, and the tunnel grid is thinner on phones. Phones start at 2 so the
+//    brain is crisp on 3x screens (1.25 was upscaled 2.4x and looked blurred); if a phone can't hold
+//    ~40 fps over its first few seconds, it steps down to 1.25.
 //  - The spec's torus composer renders camera layer 1, which nothing in the spec is on, so its texture
 //    is always black. It is kept as a uniform (black) but not rendered. The bloom composer is rendered
 //    and is where the brain lives, so only the brain blooms.
@@ -179,6 +181,8 @@ export interface DenOptions {
   onLayout?: (x: number, y: number, r: number) => void;
 }
 
+const LOW_DPR = 1.25;
+
 export class Den {
   private renderer: THREE.WebGL1Renderer;
   private scene = new THREE.Scene();
@@ -215,11 +219,14 @@ export class Den {
   private _dir = new THREE.Vector3();
   private _tgt = new THREE.Vector3();
   private _v = new THREE.Vector3();
+  /** resolution cap; a phone that can't keep up drops it once to LOW_DPR */
+  private dprCap = 2;
+  private perf = { n: 0, sum: 0 };
 
   constructor(opts: DenOptions) {
     this.opts = opts;
     const { canvas, mobile } = opts;
-    const dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
     this.renderer = new THREE.WebGL1Renderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(innerWidth, innerHeight, false);
@@ -528,8 +535,23 @@ void main(){ float d = length(vUv * 2.0 - 1.0); gl_FragColor = vec4(uColor, uAlp
     this.opts.onLayout?.(cx, cy, radius);
   }
 
+  /** Phones only: skip start-up frames, average the next 90, and step down once if under ~40 fps. */
+  private watchFrameRate(dt: number) {
+    const p = this.perf;
+    if (!this.opts.mobile || this.dprCap === LOW_DPR || p.n >= 120) return;
+    p.n++;
+    if (p.n <= 30) return;
+    p.sum += dt;
+    if (p.n === 120 && p.sum / 90 > 1 / 40 && (window.devicePixelRatio || 1) > LOW_DPR) {
+      this.dprCap = LOW_DPR;
+      this.opts.canvas.dataset.dprReason = "slow";
+      this.resize();
+    }
+  }
+
   resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, this.opts.mobile ? 1.25 : 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
+    this.opts.canvas.dataset.dpr = String(dpr);
     const w = innerWidth;
     const h = innerHeight;
     this.renderer.setPixelRatio(dpr);
@@ -575,6 +597,7 @@ void main(){ float d = length(vUv * 2.0 - 1.0); gl_FragColor = vec4(uColor, uAlp
     const t = performance.now() / 1000;
     const dt = Math.min(0.05, t - this.t0);
     this.t0 = t;
+    this.watchFrameRate(dt);
     const u = this.uniforms;
     u.uTime!.value = t;
     this.camera.position.set(m.x * 0.12, m.y * 0.12, 20 - scroll * 34);

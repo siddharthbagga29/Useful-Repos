@@ -12,9 +12,9 @@
   background: rgba(8, 6, 22, calc(0.46 + 0.22 * (1 - var(--den-open, 1))));
   -webkit-mask-image: var(--mask); mask-image: var(--mask);
 }
-@media (min-width: 761px) and (hover: hover) {
-  .den-scrim { -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
-}
+/* No backdrop blur here: it softened every particle outside the brain's window all the time, and the
+   whole brain whenever the window closed. Softening is now scroll-linked, on the canvas alone
+   (Backdrop.tsx, scrollBlur.ts), so the brain starts sharp. */
 /* Atelier "Ellipse 2": a hairline ring, 1.6 x the window, fading from 30% white to nothing. */
 .den-ring {
   position: absolute; left: var(--den-x, 72%); top: var(--den-y, 50%);
@@ -56,13 +56,14 @@ html:not(.den-live) .den-ring { opacity: 0; }
    iPhone Safari the mask over the live WebGL layer didn't dim it, and the tunnel showed at full
    strength behind the experience section. So here the scene itself is dimmed: present behind the
    name in the opening view, then down to a faint texture once the content starts. Plain opacity on
-   the canvas, which every browser composites the same way. */
+   the canvas, which every browser composites the same way. At the top the brain is the focus (canvas
+   0.8, wash 0.4); once the content starts it returns to the old faint texture (0.12 under 0.85). */
 @media (max-width: 1024px), (hover: none) {
   .den-scrim, .den-veil .den-scrim {
     -webkit-mask-image: none; mask-image: none;
-    background: rgba(8, 6, 22, calc(0.58 + 0.27 * (1 - var(--den-open, 1))));
+    background: rgba(8, 6, 22, calc(0.4 + 0.45 * (1 - var(--den-open, 1))));
   }
   .den-ring { display: none; }
-  .den-live .den-canvas { opacity: calc(0.12 + 0.3 * var(--den-open, 1)); transition: opacity .35s linear; }
+  .den-live .den-canvas { opacity: calc(0.12 + 0.68 * var(--den-open, 1)); transition: opacity .35s linear; }
   .den-live #hero .sub, .den-live #hero .avail { text-shadow: 0 1px 2px rgba(5, 2, 15, 0.95), 0 0 18px rgba(5, 2, 15, 0.9); }
 }

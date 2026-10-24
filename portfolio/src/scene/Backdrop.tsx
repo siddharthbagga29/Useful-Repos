@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useJarvis } from "../jarvis/JarvisProvider.tsx";
+import { MAX_BLUR, MOBILE_MAX_WIDTH, approach, blurFor, blurRange, filterFor } from "./scrollBlur.ts";
 import "./backdrop.css";
 
 // The page's living ground: the Den scene (tunnel + Jarvis's particle brain) behind everything, and,
@@ -9,6 +10,11 @@ import "./backdrop.css";
 // Readability rule, for every screen size: if the brain's window would sit behind any hero text
 // (tablets in portrait, phones, short laptop windows, big zoom), the window closes and the veil
 // deepens, so text always reads on a calm ground. Wide screens keep the open window.
+//
+// Depth on scroll: the brain is sharp at the top and softens, in proportion to scroll, as the visitor
+// moves into the next section (up to 8px, 5px on phones); scrolling back sharpens it again. Only the
+// scene canvas is filtered. The value eases toward its target each frame, so a restored scroll
+// position starts sharp and settles rather than appearing pre-blurred. Reduced motion: no blur.
 //
 // three.js is loaded after first paint so it never delays the page. Without WebGL, or under automated
 // testing without ?scene=1, the static gradient ground stays and nothing else changes.
@@ -76,19 +82,61 @@ export function Backdrop() {
     };
     const idle = (window as Window & { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
     const id = idle ? idle(() => void go(), { timeout: 1500 }) : window.setTimeout(() => void go(), 600);
+    // scroll-linked softening of the brain layer (no React state: nothing re-renders on scroll)
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const phone = matchMedia(`(max-width: ${MOBILE_MAX_WIDTH}px)`);
+    let blur = 0;
+    let target = 0;
+    let blurRaf = 0;
+    let range = innerHeight;
+    const measure = () => {
+      const hero = document.getElementById("hero");
+      range = blurRange(hero ? hero.getBoundingClientRect().bottom + scrollY : innerHeight, innerHeight);
+    };
+    let last = 0;
+    const tick = (now: number) => {
+      blurRaf = 0;
+      blur = approach(blur, target, last ? Math.min(100, now - last) : 16.7);
+      last = blur === target ? 0 : now;
+      el.style.filter = filterFor(blur);
+      el.dataset.blur = blur.toFixed(2);
+      if (blur !== target) blurRaf = requestAnimationFrame(tick);
+    };
+    const updateBlur = () => {
+      if (reduced) return;
+      target = blurFor(scrollY, range, phone.matches ? MAX_BLUR.mobile : MAX_BLUR.desktop);
+      el.dataset.blurTarget = target.toFixed(2);
+      if (!blurRaf) blurRaf = requestAnimationFrame(tick);
+    };
+    const remeasure = () => {
+      measure();
+      updateBlur();
+    };
+    el.dataset.blur = "0.00";
+    el.dataset.blurTarget = "0.00";
     // the window closes as you leave the opening station, so the content reads on a calm ground
     const onScroll = () => {
       const h = root.scrollHeight - innerHeight;
       const p = h > 0 ? scrollY / h : 0;
       root.style.setProperty("--den-open", String(Math.max(0, 1 - p / 0.06)));
       if (p < 0.08) veil();
+      updateBlur();
     };
+    measure();
     onScroll();
     addEventListener("scroll", onScroll, { passive: true });
+    addEventListener("resize", remeasure);
+    addEventListener("load", remeasure);
+    addEventListener("pageshow", remeasure); // back/forward cache: the old value is recomputed, never reused
     return () => {
       cancelled = true;
       if (!idle) clearTimeout(id);
+      cancelAnimationFrame(blurRaf);
       removeEventListener("scroll", onScroll);
+      removeEventListener("resize", remeasure);
+      removeEventListener("load", remeasure);
+      removeEventListener("pageshow", remeasure);
+      el.style.filter = "";
       den.current?.dispose();
       root.classList.remove("den-live", "den-veil");
     };
