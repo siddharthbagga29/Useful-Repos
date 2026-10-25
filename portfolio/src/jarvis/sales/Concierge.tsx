@@ -338,6 +338,22 @@ export function Concierge({ station }: { station: string }) {
     if (j.open) setOpen(false);
   }, [j.open]);
 
+  // Phones: his card spans the screen width and about half its height, so once the visitor scrolls on
+  // by more than half a screen he steps aside instead of riding along over the content. The launcher
+  // stays, so he is one tap away. The tour scrolls the page itself and is left alone.
+  useEffect(() => {
+    if (!open || tour !== null || !matchMedia("(max-width: 760px)").matches) return;
+    const y0 = scrollY;
+    const onScroll = () => {
+      if (Math.abs(scrollY - y0) < innerHeight * 0.5) return;
+      setOpen(false);
+      engine.current?.setEngaged(false);
+      latest.current.j.stopSpeaking();
+    };
+    addEventListener("scroll", onScroll, { passive: true });
+    return () => removeEventListener("scroll", onScroll);
+  }, [open, tour]);
+
   const close = () => {
     stopTour();
     setOpen(false);

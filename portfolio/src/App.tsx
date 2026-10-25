@@ -197,7 +197,8 @@ export default function App() {
         )}
       </main>
 
-      <Analyst act={act} doing={doing} energy={energy} />
+      {/* phones: the desk is fixed over the page, so it keeps to the opening view instead of covering copy */}
+      {(wide || station.id === "hero") && <Analyst act={act} doing={doing} energy={energy} />}
 
       <nav className="dots" aria-label="Stations">
         {STATIONS.map((s, i) => (

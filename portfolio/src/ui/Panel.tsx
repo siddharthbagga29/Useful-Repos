@@ -22,7 +22,10 @@ export function Panel({ id, label, children, className = "" }: { id: string; lab
       variants={container}
       initial="hidden"
       whileInView="show"
-      viewport={{ amount: 0.35, once: false }}
+      // Reveal once any of the station is 15% into the screen. A fixed share of the station (it was 35%)
+      // can't be met when a station is taller than ~3 screens, as the research city is on phones, and
+      // its content then stayed invisible.
+      viewport={{ amount: "some", margin: "0px -12% -15% 0px", once: false }}
     >
       {children}
     </motion.section>

@@ -576,6 +576,37 @@ def mobile(p) -> None:
     page.locator("#model").scroll_into_view_if_needed()
     page.wait_for_timeout(700)
     page.screenshot(path=f"{SHOTS}/mobile-model.png")
+    # every station reveals its content on a phone, however tall it grows (the research city stacks
+    # to over three screens; a reveal at 35% of a station could never fire there)
+    hidden = []
+    for sid in page.evaluate("[...document.querySelectorAll('[data-station]')].map(e => e.id)"):
+        page.evaluate(f"document.getElementById('{sid}').scrollIntoView({{block: 'start'}})")
+        page.wait_for_timeout(1200)
+        if page.evaluate(f"[...document.getElementById('{sid}').children].some(k => parseFloat(getComputedStyle(k).opacity) < 0.5)"):
+            hidden.append(sid)
+    check("mobile: every station's content is visible", not hidden, str(hidden))
+    page.locator("#research").scroll_into_view_if_needed()
+    page.wait_for_timeout(2500)
+    check("mobile: the research city renders on the home page", page.locator("#research [data-testid^=bld-]").count() == 9 and page.locator("#research .city-svg").is_visible())
+    page.screenshot(path=f"{SHOTS}/mobile-research.png")
+    check("mobile: the desk keeps to the opening view", page.locator(".desk").count() == 0)
+    browser.close()
+
+    # a fresh phone visit: the greeting steps aside once the visitor scrolls on
+    browser = p.chromium.launch(executable_path=CHROME)
+    c2 = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+    c2.add_init_script(FAKE_VOICE)
+    page = c2.new_page()
+    page.goto(BASE)
+    page.wait_for_selector("[data-testid=greeting]", timeout=8000)
+    check("mobile: the desk is in the opening view", page.locator(".desk").count() == 1)
+    page.mouse.wheel(0, 300)
+    page.wait_for_timeout(800)
+    check("mobile: a small scroll leaves the greeting open", page.locator("[data-testid=greeting]").count() == 1)
+    page.mouse.wheel(0, 900)
+    page.wait_for_timeout(1200)
+    check("mobile: scrolling on closes the greeting so it doesn't cover the page", page.locator("[data-testid=greeting]").count() == 0)
+    check("mobile: Jarvis stays one tap away", page.locator(".launcher").is_visible())
     browser.close()
 
 
