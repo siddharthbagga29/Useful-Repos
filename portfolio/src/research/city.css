@@ -205,6 +205,14 @@
 .city-stage .city-hud { padding-right: 170px; }
 .city.explore .city-stage .city-hud { padding-right: 240px; }
 @media (max-width: 560px) { .city-stage .city-hud { padding-right: 14px; padding-top: 50px; } }
+/* phone explorer: the board gets the room. The stats are on the page behind it, and the filters fit on
+   one row, so the city isn't squeezed into a sliver under them. */
+@media (max-width: 760px) {
+  .city.explore .city-hud { display: none; }
+  .city.explore .city-filters { flex-wrap: nowrap; padding-top: 56px; }
+  .city.explore .city-filters input { width: 38vw; min-width: 0; }
+  .city.explore .city-filters select { max-width: 24vw; min-width: 0; }
+}
 
 /* the explorer dialog takes focus itself on open; its controls show their own focus rings */
 .city-x:focus { outline: none; }
@@ -225,3 +233,12 @@
 .nature-claimed-live b { border-style: dashed; color: #f2c46d; border-color: #b8913f; }
 .nature-prototype b, .nature-simulation b, .nature-backtest b { color: #c9d2ff; }
 @media (max-width: 560px) { .nature-b { grid-template-columns: 1fr; gap: 2px; } .nature-b b { justify-self: start; } }
+
+/* phones, home page: one button under the board opens the explorer at the selection */
+.city-details { display: grid; gap: 3px; width: 100%; text-align: left; padding: 12px 14px; border: 1px solid rgba(43, 240, 255, .45); border-radius: 12px; background: rgba(10, 5, 36, .9); color: #f2f7ff; font-family: var(--mono); font-size: 13px; letter-spacing: .04em; cursor: pointer; min-height: 44px; }
+.city-details small { font-size: 11px; color: var(--rc-dim); letter-spacing: 0; }
+.city-details:focus-visible { outline: 2px solid var(--rc-cyan); outline-offset: 2px; }
+
+/* visually hidden but read aloud (labels, live announcements). Here, not only in hq.css, because the
+   city also renders on the home page, where hq.css isn't loaded. */
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

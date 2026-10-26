@@ -37,7 +37,8 @@ button { font: inherit; color: inherit; }
 .vp { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; display: flex; align-items: center; }
 .film { display: flex; will-change: transform; }
 .panel { flex: none; width: 100vw; height: 100vh; height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: 96px var(--gutter) 200px; gap: 14px; min-width: 0; }
-.stack .panel { width: 100%; height: auto; min-height: 92svh; padding: 56px 16px 170px; }
+/* bottom padding clears the fixed Jarvis launcher (the desk figure keeps to the opening view on phones) */
+.stack .panel { width: 100%; height: auto; min-height: 92svh; padding: 56px 16px 112px; }
 .panel-jarvis { justify-content: flex-start; padding-top: 96px; overflow-y: auto; }
 .stack .panel-jarvis { overflow: visible; }
 

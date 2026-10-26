@@ -605,6 +605,16 @@ export function City({ compact = false, active = true, explore = false, onClose,
   const [rot, setRot] = useState(0);
   const [tab, setTab] = useState<Tab>("detail");
   const uid = useId();
+  // Phones, home page: the board alone (the side panel stacked under it made the station three screens
+  // long). Picking anything opens the full-screen explorer at that selection, where the dossier lives.
+  const [narrow, setNarrow] = useState(() => typeof matchMedia !== "undefined" && matchMedia("(max-width: 760px)").matches);
+  useEffect(() => {
+    const mq = matchMedia("(max-width: 760px)");
+    const f = () => setNarrow(mq.matches);
+    mq.addEventListener("change", f);
+    return () => mq.removeEventListener("change", f);
+  }, []);
+  const brief = compact && narrow;
   // ARIA tabs pattern: arrows and Home/End move between tabs; only the active tab is in the Tab order
   const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
     const i = TAB_ORDER.indexOf(tab);
@@ -701,6 +711,7 @@ export function City({ compact = false, active = true, explore = false, onClose,
     setSel(s);
     setFocused(true);
     setTab("detail");
+    if (brief) setOpen(true);
   };
   const selId: ProjectId | "foundry" = sel.type === "foundry" ? "foundry" : sel.id;
   const dimOf = (id: ProjectId | "foundry") => (focused && selId !== id) || (filtering && (id === "foundry" || !visible.has(id)));
@@ -952,6 +963,12 @@ export function City({ compact = false, active = true, explore = false, onClose,
           ))}
         </p>
       </div>
+      {brief ? (
+        <button type="button" className="city-details" onClick={() => setOpen(true)} data-testid="city-details">
+          Details: {sel.type === "foundry" ? "Data Foundry" : byId(sel.id).title} <span aria-hidden="true">→</span>
+          <small>Tap any building or bot for its dossier</small>
+        </button>
+      ) : (
       <div className="city-side">
         <div className="ds-tabs" role="tablist" aria-label="Side panel" onKeyDown={onTabKey}>
           {TAB_ORDER.map((k) => (
@@ -997,6 +1014,7 @@ export function City({ compact = false, active = true, explore = false, onClose,
           </motion.div>
         </AnimatePresence>
       </div>
+      )}
       {open && <CityExplorer initial={sel} onClose={() => setOpen(false)} />}
     </div>
   );

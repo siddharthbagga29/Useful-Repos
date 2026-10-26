@@ -590,6 +590,19 @@ def mobile(p) -> None:
     check("mobile: the research city renders on the home page", page.locator("#research [data-testid^=bld-]").count() == 9 and page.locator("#research .city-svg").is_visible())
     page.screenshot(path=f"{SHOTS}/mobile-research.png")
     check("mobile: the desk keeps to the opening view", page.locator(".desk").count() == 0)
+    # the home city on a phone is the board alone; the dossier opens in the explorer
+    h = page.evaluate("document.getElementById('research').getBoundingClientRect().height")
+    check("mobile: the research station stays under two screens", page.locator("#research .city-side").count() == 0 and h < 2 * 844, str(h))
+    page.locator("#research [data-testid=bld-sentinel]").tap()
+    page.wait_for_timeout(1200)
+    title = page.locator("[data-testid=city-explorer] [data-testid=dossier] h3").first.inner_text() if page.get_by_test_id("city-explorer").count() else ""
+    check("mobile: tapping a building opens its dossier in the explorer", title.lower() == "sentinel", title)
+    svg_h = page.evaluate("document.querySelector('[data-testid=city-explorer] .city-svg').getBoundingClientRect().height")
+    check("mobile: the explorer gives the board room", svg_h > 300, str(svg_h))
+    check("mobile: hidden labels stay hidden", page.evaluate("[...document.querySelectorAll('.vh')].every(e => e.getBoundingClientRect().width <= 2)"))
+    page.get_by_test_id("city-close").click()
+    page.wait_for_timeout(600)
+    check("mobile: closing the explorer returns to the page", page.get_by_test_id("city-explorer").count() == 0 and "Sentinel" in page.get_by_test_id("city-details").inner_text())
     browser.close()
 
     # a fresh phone visit: the greeting steps aside once the visitor scrolls on
