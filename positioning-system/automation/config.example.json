@@ -1,0 +1,25 @@
+{
+  "spreadsheet_id": "1CximFWly4sb8l8YtFq-bXMXNcBxHeWLUfgJFydcfEEY",
+  "service_account_file": "~/.positioning-os/service-account.json",
+  "state_dir": "~/.positioning-os/state",
+  "census_year": "2022",
+  "counties": [
+    {"fips": "061", "name": "Hamilton"},
+    {"fips": "017", "name": "Butler"},
+    {"fips": "165", "name": "Warren"},
+    {"fips": "025", "name": "Clermont"}
+  ],
+  "naics_rotation": ["5617", "5613", "5614", "5616", "5619", "5611", "5615"],
+  "watch_sources": [
+    {"id": "roebling-team",   "kind": "team",   "org": "Roebling Capital Partners", "url": "https://roeblingcp.com/team/"},
+    {"id": "rccapital-team",  "kind": "team",   "org": "RC Capital",                "url": "https://rccf.com/team/"},
+    {"id": "northcreek-team", "kind": "team",   "org": "Northcreek Mezzanine",      "url": "https://www.northcreekmezzanine.com/about-us/"},
+    {"id": "silverstone-team","kind": "team",   "org": "Silverstone Capital Advisors","url": "https://silverstoneadv.com/team/"},
+    {"id": "reag-team",       "kind": "team",   "org": "REAG",                      "url": "https://reag.com/team/"},
+    {"id": "acg-cincy-events","kind": "events", "org": "ACG Cincinnati",            "url": "https://www.acg.org/cincinnati/events"},
+    {"id": "cfa-cincy-events","kind": "events", "org": "CFA Society Cincinnati",    "url": "https://www.cfasociety.org/cincinnati/upcoming-events"},
+    {"id": "goering-events",  "kind": "events", "org": "UC Goering Center",         "url": "https://www.business.uc.edu/about/centers-partnerships/goering.html"}
+  ],
+  "max_consecutive_failures_before_escalation": 3,
+  "user_agent": "Positioning OS research (siddharthbagga29@gmail.com)"
+}

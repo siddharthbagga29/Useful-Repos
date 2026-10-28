@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.positioningos.daily</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__VENV__/bin/python</string>
+    <string>__REPO__/positioning-system/automation/src/run_daily.py</string>
+  </array>
+  <key>WorkingDirectory</key><string>__REPO__</string>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>15</integer></dict>
+  <!-- If the Mac was asleep at 07:15, run as soon as it wakes. Without this a
+       closed laptop silently skips the day. -->
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>__HOME__/.positioning-os/logs/daily.out</string>
+  <key>StandardErrorPath</key><string>__HOME__/.positioning-os/logs/daily.err</string>
+</dict>
+</plist>
