@@ -13,13 +13,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from automation.src.config import load
-from automation.src.sheets import Book, AGENT_LOG, ESCALATIONS, AGENT_MEMORY
+from automation.src.sheets import Book, HEADERS, AGENT_LOG, ESCALATIONS, AGENT_MEMORY
 
 REPORT_TAB = "Weekly Report"
-REPORT_HEADERS = ["Week ending", "Runs", "Census pulls", "Establishments logged",
+HEADERS[REPORT_TAB] = ["Week ending", "Runs", "Census pulls", "Establishments logged",
                   "Form D filings", "Sources watched", "Changes detected",
-                  "Open escalations (HIGH)", "Open escalations (MEDIUM)",
-                  "Dead sources", "Narrative", "Emailed"]
+                        "Open escalations (HIGH)", "Open escalations (MEDIUM)",
+                        "Dead sources", "Narrative", "Emailed"]
 
 
 def _recent(rows, field, days):
@@ -38,9 +38,15 @@ def main() -> int:
     cfg = load()
     book = Book(cfg)
 
-    logs = _recent(book.read(AGENT_LOG), "Timestamp", 7)
-    escs = [e for e in book.read(ESCALATIONS) if str(e.get("Status", "")).upper() == "OPEN"]
-    mems = book.read(AGENT_MEMORY)
+    def safe(tab):
+        try:
+            return book.read(tab)
+        except Exception:
+            return []
+
+    logs = _recent(safe(AGENT_LOG), "Timestamp", 7)
+    escs = [e for e in safe(ESCALATIONS) if str(e.get("Status", "")).upper() == "OPEN"]
+    mems = safe(AGENT_MEMORY)
 
     runs = len({r.get("Run ID") for r in logs if r.get("Run ID")})
     census_rows = [r for r in logs if r.get("Module") == "census" and r.get("Result") == "OK"]
@@ -70,14 +76,11 @@ def main() -> int:
                else f"{high} HIGH escalation(s) need a decision from you.")
         )
 
-    book.tab(REPORT_TAB)
-    if not book.read(REPORT_TAB):
-        book.tab(REPORT_TAB).update([REPORT_HEADERS], "A1")
-
     book.append(REPORT_TAB, [[
         dt.date.today().isoformat(), runs, len(census_rows), estabs, formd,
         len(mems), changes, high, med, len(dead), narrative, "NO",
     ]])
+    book.flush()
     print(f"weekly report written: {runs} runs, {high} HIGH, {med} MEDIUM open")
     return 0
 

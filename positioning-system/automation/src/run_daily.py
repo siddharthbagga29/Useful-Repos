@@ -145,7 +145,14 @@ def main() -> int:
 
     book.log(run_id, "run", "daily complete", "OK", escalations, "", time.time() - t0,
              f"{escalations} escalations raised")
-    print(f"run {run_id}: done, {escalations} escalations")
+
+    # One POST for the whole run. A failure here is loud and keeps the rows.
+    try:
+        res = book.flush()
+        print(f"run {run_id}: wrote {res.get('written', 0)} rows, {escalations} escalations")
+    except Exception as e:
+        print(f"run {run_id}: FLUSH FAILED — {e}", file=sys.stderr)
+        return 1
     return 0
 
 

@@ -1,2 +1,5 @@
 sentinel/src/bust-baked.jpg
 sentinel/src/reel-preview.jpg
+
+# Positioning OS — local secrets, never committed
+positioning-system/automation/config.json

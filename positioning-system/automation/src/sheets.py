@@ -1,18 +1,20 @@
 """
-Google Sheets access.
+Sheet access via the Apps Script Web App.
 
-Deliberately append-only for agent output. The agent never edits a cell a human
-wrote; it adds rows to its own tabs. That makes every automated change trivially
-reviewable and impossible to confuse with your own edits.
+WHY NOT THE SHEETS API: Google's Secure-by-Default org policy
+(iam.disableServiceAccountKeyCreation) blocks service-account key downloads on
+consumer accounts, so the standard gspread path is unavailable. Apps Script
+already holds full access to this workbook and has never failed, so the Mac
+posts to it instead. No Google Cloud project, no OAuth consent screen, no key
+file on disk.
+
+Writes are append-only: the agent adds rows to its own tabs and never edits a
+cell a human wrote.
 """
 from __future__ import annotations
 import datetime as dt
-import gspread
-from google.oauth2.service_account import Credentials
+import requests
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-
-# Tabs the agent owns. Created on first run if absent.
 AGENT_LOG = "Agent Log"
 ESCALATIONS = "Escalations"
 AGENT_MEMORY = "Agent Memory"
@@ -33,39 +35,62 @@ def _now() -> str:
     return dt.datetime.now().isoformat(timespec="seconds")
 
 
+class SheetError(RuntimeError):
+    pass
+
+
 class Book:
+    """Buffers writes and flushes them in one POST. Fewer round trips, and a
+    partial run cannot leave half a batch behind."""
+
     def __init__(self, cfg: dict):
-        creds = Credentials.from_service_account_file(
-            cfg["service_account_file"], scopes=SCOPES)
-        self.gc = gspread.authorize(creds)
-        self.ss = self.gc.open_by_key(cfg["spreadsheet_id"])
-        self._cache: dict[str, gspread.Worksheet] = {}
+        self.url = cfg["ingest_url"].strip()
+        self.token = cfg["ingest_token"].strip()
+        if not self.url.startswith("https://script.google.com/"):
+            raise SheetError(
+                f"ingest_url does not look like an Apps Script Web App URL: {self.url!r}\n"
+                "Deploy Ingest.gs as a Web App and paste the /exec URL."
+            )
+        self._pending: dict[str, list[list]] = {}
 
-    def tab(self, name: str) -> gspread.Worksheet:
-        if name in self._cache:
-            return self._cache[name]
+    # ---- reads -------------------------------------------------------------
+
+    def read(self, tab: str) -> list[dict]:
         try:
-            ws = self.ss.worksheet(name)
-        except gspread.WorksheetNotFound:
-            cols = len(HEADERS.get(name, [])) or 20
-            ws = self.ss.add_worksheet(title=name, rows=2000, cols=cols)
-            if name in HEADERS:
-                ws.update([HEADERS[name]], "A1")
-                ws.format("A1:Z1", {"textFormat": {"bold": True}})
-        self._cache[name] = ws
-        return ws
+            r = requests.get(self.url, params={"token": self.token, "tab": tab}, timeout=60)
+            r.raise_for_status()
+            data = r.json()
+        except Exception as e:
+            raise SheetError(f"read {tab!r} failed: {e}") from e
+        if not data.get("ok"):
+            raise SheetError(f"read {tab!r} refused: {data.get('error')}")
+        return data.get("rows", [])
 
-    def append(self, tab_name: str, rows: list[list]) -> int:
+    # ---- buffered writes ---------------------------------------------------
+
+    def append(self, tab: str, rows: list[list]) -> int:
         if not rows:
             return 0
-        self.tab(tab_name).append_rows(rows, value_input_option="USER_ENTERED")
+        self._pending.setdefault(tab, []).extend([[("" if c is None else c) for c in r] for r in rows])
         return len(rows)
 
-    def read(self, tab_name: str) -> list[dict]:
+    def flush(self) -> dict:
+        if not self._pending:
+            return {"ok": True, "written": 0}
+        writes = [{"tab": t, "headers": HEADERS.get(t, []), "rows": rows}
+                  for t, rows in self._pending.items()]
         try:
-            return self.tab(tab_name).get_all_records()
-        except Exception:
-            return []
+            r = requests.post(self.url, json={"token": self.token, "writes": writes}, timeout=120)
+            r.raise_for_status()
+            data = r.json()
+        except Exception as e:
+            raise SheetError(
+                f"flush failed ({sum(len(v) for v in self._pending.values())} rows held): {e}"
+            ) from e
+        if not data.get("ok"):
+            raise SheetError(f"flush refused: {data.get('error')}")
+        self._pending.clear()
+        return data
 
     # ---- agent-owned writes ------------------------------------------------
 
@@ -74,8 +99,16 @@ class Book:
                                  items, url, round(secs, 1), notes]])
 
     def escalate(self, run_id, severity, category, what, why, suggested, url="", notes=""):
-        """severity: HIGH (email immediately) | MEDIUM (weekly) | LOW (log only)"""
+        """severity: HIGH (same-day email) | MEDIUM (weekly) | LOW (sheet only)"""
         eid = f"ESC-{run_id}-{category[:12].replace(' ', '')}"
         self.append(ESCALATIONS, [[eid, _now(), severity, category, what, why,
                                    suggested, url, "OPEN", "", notes]])
         return eid
+
+    def selftest(self) -> dict:
+        """Proves the endpoint, token and sheet are all reachable before a real run."""
+        self.append(AGENT_LOG, [[
+            "SELFTEST", _now(), "selftest", "connectivity check", "OK", 1, "", 0,
+            "If you can read this row, the Mac can write to the sheet.",
+        ]])
+        return self.flush()

@@ -20,52 +20,80 @@ Google's servers. Nothing in Python touches your email credentials.
 
 ---
 
-## Step 1 — Google service account (10 min, once)
+## Step 1 — Apps Script ingest endpoint (5 min, no Google Cloud)
 
-The sheet needs a non-human identity to write to it.
+Google's Secure-by-Default policy (`iam.disableServiceAccountKeyCreation`)
+blocks service-account key downloads on consumer accounts, so the normal Sheets
+API path is unavailable. We skip Google Cloud entirely: the Mac posts to an
+Apps Script Web App, which already has full access to the workbook.
 
-1. <https://console.cloud.google.com/> → create a project, call it `positioning-os`.
-2. **APIs & Services → Library** → enable **Google Sheets API**.
-3. **APIs & Services → Credentials → Create credentials → Service account**.
-   Name it `positioning-os-writer`. Skip the optional role steps.
-4. Open the service account → **Keys → Add key → Create new key → JSON**. It downloads.
-5. `mkdir -p ~/.positioning-os && mv ~/Downloads/positioning-os-*.json ~/.positioning-os/service-account.json`
-6. Open that JSON, copy the `client_email` value (looks like
-   `positioning-os-writer@…iam.gserviceaccount.com`).
-7. Open your **Positioning OS** sheet → **Share** → paste that address → **Editor** → Send.
+In your sheet → **Extensions → Apps Script**:
 
-⚠️ Step 7 is the one people miss. Without it every write fails with a 403.
+1. **+ → Script**, name it `Ingest`, paste `apps-script/Ingest.gs`. Save.
+2. Run **`setupIngestToken`** once. Authorise. It shows a long token — copy it.
+3. **Deploy → New deployment → ⚙ → Web app**
+   - *Execute as:* **Me**
+   - *Who has access:* **Anyone**
+   - **Deploy**, authorise, and copy the **Web app URL** (ends `/exec`).
 
-## Step 2 — Install (5 min)
+⚠️ *"Anyone"* means anyone **with the URL** can reach it — that is why every
+request carries the token, which is checked before anything is written. Keep the
+URL and token out of the repo; `config.json` is gitignored.
+
+If you later change `Ingest.gs`, use **Deploy → Manage deployments → ✏️ → New
+version**, or the `/exec` URL keeps serving the old code.
+
+## Step 2 — Install on the Mac (5 min)
 
 ```bash
 git clone -b claude/private-markets-positioning-system-b5twgr \
   https://github.com/siddharthbagga29/Useful-Repos.git ~/positioning-os
 cd ~/positioning-os/positioning-system/automation
 cp config.example.json config.json
+```
+
+Edit `config.json` and paste the two values from step 1 into `ingest_url` and
+`ingest_token`. Then:
+
+```bash
 ./install.sh
 ```
 
-`install.sh` creates a venv at `~/.positioning-os/venv`, installs Playwright and
-Chromium, writes both launchd jobs with your real paths, and loads them.
+That creates `~/.positioning-os/venv`, installs Playwright and Chromium, writes
+both launchd jobs with your real paths, and loads them.
 
-## Step 3 — Test before trusting it
+## Step 3 — Self-test before trusting the schedule
 
 ```bash
-~/.positioning-os/venv/bin/python ~/positioning-os/positioning-system/automation/src/run_daily.py
+~/.positioning-os/venv/bin/python \
+  ~/positioning-os/positioning-system/automation/src/selftest.py
 ```
 
-Expect `run 20261028-1130: done, N escalations`. Then open the sheet — there
-should be new rows in **Agent Log**, **Investment Research**, **Agent Memory**,
-and probably **Escalations**.
+It checks config → endpoint → token → a real row landing in the sheet → Census
+→ Playwright, and names the fix for anything that fails. Expect:
 
-If it fails it says exactly which module and why. Common ones:
+```
+config ...................... OK
+apps script endpoint ........ OK (wrote 1 row)
+census api .................. OK (NAICS 5617, 1,2xx establishments)
+playwright .................. OK
+
+ALL GREEN — scheduled runs will work.
+```
+
+Confirm the **SELFTEST** row appears in the *Agent Log* tab. Then do a real run:
+
+```bash
+~/.positioning-os/venv/bin/python \
+  ~/positioning-os/positioning-system/automation/src/run_daily.py
+```
 
 | Error | Fix |
 |---|---|
-| `403` from Sheets | Step 1.7 — share the sheet with the service account |
+| `flush refused: bad token` | Token in `config.json` ≠ `setupIngestToken` output |
+| `ingest_url does not look like…` | Paste the `/exec` URL, not the editor URL |
 | `Executable doesn't exist` | `~/.positioning-os/venv/bin/python -m playwright install chromium` |
-| Census `HTTP 404` | Census retired that vintage; set `census_year` to the prior year in `config.json` |
+| Census `HTTP 404` | Census retired that vintage — lower `census_year` in `config.json` |
 
 ## Step 4 — Apps Script side (5 min)
 

@@ -19,14 +19,14 @@ def load(path: str | None = None) -> dict:
         )
     cfg = json.loads(cfg_path.read_text())
 
-    sa = _expand(cfg["service_account_file"])
-    if not sa.exists():
-        sys.exit(
-            f"Service account key not found at {sa}.\n"
-            f"See automation/README.md step 2 — this is the Google credential, "
-            f"and nothing can read or write the sheet without it."
-        )
-    cfg["service_account_file"] = str(sa)
+    for key in ("ingest_url", "ingest_token"):
+        val = str(cfg.get(key, "")).strip()
+        if not val or val.startswith("PASTE_"):
+            sys.exit(
+                f"config.json is missing {key}.\n"
+                f"Deploy apps-script/Ingest.gs as a Web App, run setupIngestToken, "
+                f"and paste both values. See automation/README.md step 1."
+            )
 
     state = _expand(cfg.get("state_dir", "~/.positioning-os/state"))
     state.mkdir(parents=True, exist_ok=True)
