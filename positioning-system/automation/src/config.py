@@ -28,6 +28,16 @@ def load(path: str | None = None) -> dict:
                 f"and paste both values. See automation/README.md step 1."
             )
 
+    key = str(cfg.get("census_api_key", "") or "").strip()
+    if not key or key.startswith("PASTE_"):
+        cfg["census_api_key"] = ""
+        print("WARNING: no census_api_key in config.json. The Census API now "
+              "throttles unkeyed callers, so pulls will start failing. "
+              "Request one free at https://api.census.gov/data/key_signup.html",
+              file=sys.stderr)
+    else:
+        cfg["census_api_key"] = key
+
     state = _expand(cfg.get("state_dir", "~/.positioning-os/state"))
     state.mkdir(parents=True, exist_ok=True)
     cfg["state_dir"] = str(state)

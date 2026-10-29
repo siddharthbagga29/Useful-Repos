@@ -19,6 +19,7 @@ from automation.src.sheets import Book
 
 def main() -> int:
     cfg = load()
+    run_t0 = time.time()
     run_id = dt.datetime.now().strftime("%Y%m%d-%H%M")
     book = Book(cfg)
     mem = Memory(book)
@@ -71,9 +72,25 @@ def main() -> int:
                 "Read the filing; if it is a buyout or credit fund in range, source the team page.",
                 dt.date.today().isoformat(), "No", "No", "OPEN", fil["url"],
             ]])
-        book.log(run_id, "edgar", "Form D OH/KY/IN",
+        note = "; ".join(f["errors"])[:360]
+        if f.get("dropped"):
+            note = f"{f['dropped']} hit(s) outside OH/KY/IN dropped. " + note
+        book.log(run_id, "edgar", "Form D OH/KY/IN (state read back from response)",
                  "OK" if f["filings"] else "EMPTY", len(f["filings"]), "",
-                 time.time() - t0, "; ".join(f["errors"])[:400])
+                 time.time() - t0, note[:400])
+
+        if not f.get("shape_ok") and f["errors"] and not f["filings"]:
+            book.escalate(run_id, "HIGH", "Form D screening disabled",
+                          "EDGAR returned hits with no location field, so no filing "
+                          "could be confirmed as OH/KY/IN.",
+                          "Rather than label filings with a state it cannot verify, the "
+                          "agent wrote none. Writing them would have filled Opportunities "
+                          "with out-of-region filings that look exactly like real leads.",
+                          "Open the EDGAR search by hand and check whether the response "
+                          "field names changed, then update _STATE_KEYS in edgar.py.",
+                          notes="; ".join(f["errors"])[:360])
+            escalations += 1
+
         if f["filings"]:
             book.escalate(run_id, "MEDIUM", "New fund close",
                           f"{len(f['filings'])} new Form D filings in OH/KY/IN.",
@@ -122,11 +139,14 @@ def main() -> int:
                 escalations += 1
 
             for pers in r.get("people", [])[:6]:
+                title = pers.get("title_as_printed") or "(title not resolved)"
+                where = pers.get("title_position", "")
                 book.append("Agent Log", [[
                     run_id, dt.datetime.now().isoformat(timespec="seconds"), "scrape",
                     "person candidate", "UNVERIFIED — confirm title on the page before use",
                     1, s["url"], 0,
-                    f"{pers['name']} — {pers['title_as_printed']} — {s['org']}",
+                    f"{pers['name']} — {title} — {s['org']}"
+                    + (f" [title taken from the {where}]" if where else ""),
                 ]])
 
             mem.record(s, ok=bool(r.get("ok")), items=items, content_hash=r.get("hash", ""),
@@ -143,8 +163,8 @@ def main() -> int:
                       notes=str(e)[:300])
         escalations += 1
 
-    book.log(run_id, "run", "daily complete", "OK", escalations, "", time.time() - t0,
-             f"{escalations} escalations raised")
+    book.log(run_id, "run", "daily complete", "OK", escalations, "",
+             time.time() - run_t0, f"{escalations} escalations raised")
 
     # One POST for the whole run. A failure here is loud and keeps the rows.
     try:

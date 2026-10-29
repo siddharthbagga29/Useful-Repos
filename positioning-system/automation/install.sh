@@ -29,9 +29,23 @@ for job in daily weekly; do
   echo "    loaded com.positioningos.$job"
 done
 
+AUTO="$REPO/positioning-system/automation"
+
 echo
-echo "Done. Remaining manual step: put the Google service-account key at"
-echo "  $BASE/service-account.json"
-echo "and copy config.example.json -> config.json (see automation/README.md)."
+if [ -f "$AUTO/config.json" ]; then
+  echo "config.json is present."
+else
+  echo "REMAINING STEP: create $AUTO/config.json"
+  echo "  cp config.example.json config.json   # then fill in:"
+  echo "    ingest_url      the Apps Script Web App /exec URL"
+  echo "    ingest_token    printed by setupIngestToken in the Execution log"
+  echo "    census_api_key  https://api.census.gov/data/key_signup.html"
+  echo
+  echo "There is no service-account key. That path is gone: Google enforces"
+  echo "iam.disableServiceAccountKeyCreation on consumer accounts, so the key"
+  echo "could never be created. Writes go through the Apps Script endpoint."
+fi
+
 echo
-echo "Then test:  $VENV/bin/python $REPO/positioning-system/automation/src/run_daily.py"
+echo "Then verify the whole chain:"
+echo "  $VENV/bin/python $AUTO/src/selftest.py"

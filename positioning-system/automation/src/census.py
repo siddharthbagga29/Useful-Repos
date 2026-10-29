@@ -23,10 +23,19 @@ def _rotation_index(state_dir: str, length: int) -> int:
     return i % length
 
 
-def url_for(year: str, naics: str, county_fips: str) -> str:
+def url_for(year: str, naics: str, county_fips: str, api_key: str = "") -> str:
+    """The key is required for sustained use now; without one the API starts
+    returning 403 after a handful of calls rather than failing on the first."""
     return (f"https://api.census.gov/data/{year}/cbp"
             f"?get=ESTAB,EMP,NAICS2017_LABEL"
-            f"&for=county:{county_fips}&in=state:39&NAICS2017={naics}")
+            f"&for=county:{county_fips}&in=state:39&NAICS2017={naics}"
+            + (f"&key={api_key}" if api_key else ""))
+
+
+def _redact(url: str, api_key: str) -> str:
+    """The URL is written into the sheet so any figure can be re-checked. The
+    key must not travel with it."""
+    return url.replace(f"&key={api_key}", "") if api_key else url
 
 
 def pull(cfg: dict) -> dict:
@@ -34,16 +43,18 @@ def pull(cfg: dict) -> dict:
     naics = naics_list[_rotation_index(cfg["state_dir"], len(naics_list))]
     out = {"naics": naics, "label": "", "rows": [], "errors": [], "total": 0}
 
+    key = str(cfg.get("census_api_key", "") or "").strip()
     for c in cfg["counties"]:
-        u = url_for(cfg["census_year"], naics, c["fips"])
+        u = url_for(cfg["census_year"], naics, c["fips"], key)
+        shown = _redact(u, key)
         try:
             r = requests.get(u, timeout=30, headers={"User-Agent": cfg["user_agent"]})
             if r.status_code != 200:
-                out["errors"].append(f"{c['name']}: HTTP {r.status_code} — {u}")
+                out["errors"].append(f"{c['name']}: HTTP {r.status_code} — {shown}")
                 continue
             data = r.json()
             if not data or len(data) < 2:
-                out["errors"].append(f"{c['name']}: no rows — {u}")
+                out["errors"].append(f"{c['name']}: no rows — {shown}")
                 continue
             head = data[0]
             ei, mi = head.index("ESTAB"), head.index("EMP")
@@ -55,8 +66,8 @@ def pull(cfg: dict) -> dict:
                 if li >= 0 and not out["label"]:
                     out["label"] = row[li]
             out["total"] += estab
-            out["rows"].append({"county": c["name"], "estab": estab, "emp": emp, "url": u})
+            out["rows"].append({"county": c["name"], "estab": estab, "emp": emp, "url": shown})
         except Exception as e:
-            out["errors"].append(f"{c['name']}: {e} — {u}")
+            out["errors"].append(f"{c['name']}: {e} — {shown}")
         time.sleep(0.4)   # be polite to a public API
     return out
