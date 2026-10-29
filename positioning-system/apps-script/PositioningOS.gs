@@ -325,45 +325,83 @@ function emailDailyReport() {
     return String(e.Status).toUpperCase() === 'OPEN'; });
   var high = escs.filter(function (e) { return String(e.Severity).toUpperCase() === 'HIGH'; });
 
-  var estab = 0, pulls = 0, changed = 0, failed = 0, people = 0, macRan = false;
+  var estab = 0, pulls = 0, changed = 0, failed = 0, people = 0, filings = 0,
+      macRan = false;
   logs.forEach(function (r) {
     if (r.Module === 'census' && r.Result === 'OK') { pulls++; estab += Number(r.Items) || 0; }
+    if (r.Module === 'edgar' && r.Result === 'OK') filings += Number(r.Items) || 0;
     if (r.Result === 'CHANGED') changed++;
     if (r.Result === 'FAILED' || r.Result === 'EXCEPTION') failed++;
     if (r.Action === 'person candidate') people++;
     if (String(r['Run ID']).indexOf('AS-') !== 0) macRan = true;
   });
 
-  var cnt = function (t) { var s = sh_(t); return s ? Math.max(s.getLastRow() - 1, 0) : 0; };
+  // getLastRow() counts every pre-formatted blank row, so People CRM reported
+  // 998 contacts when there were 4. Count non-empty values in the key column,
+  // which is what the Dashboard formulas already do.
+  var plural = function (n, one, many) { return n + ' ' + (n === 1 ? one : many); };
+
+  var cnt = function (tab, col) {
+    var sheet = sh_(tab);
+    if (!sheet || sheet.getLastRow() < 2) return 0;
+    var vals = sheet.getRange(2, col, sheet.getLastRow() - 1, 1).getValues();
+    var n = 0;
+    for (var i = 0; i < vals.length; i++) if (String(vals[i][0]).trim()) n++;
+    return n;
+  };
 
   var html = '<h2>Positioning OS — ' + Utilities.formatDate(now_(), tz, 'EEEE d MMMM') + '</h2>' +
     (macRan ? '' : '<p style="color:#b02a37"><b>The Mac did not run in the last 24 hours.</b> ' +
       'Browser research paused; Census still ran on Google. Check ~/.positioning-os/logs/daily.err.</p>') +
     '<h3>What was done</h3><ul>' +
-      '<li><b>' + pulls + '</b> Census pulls → <b>' + estab + '</b> establishments logged</li>' +
-      '<li><b>' + changed + '</b> watched pages changed</li>' +
-      '<li><b>' + people + '</b> person candidates (UNVERIFIED — confirm titles before use)</li>' +
-      '<li><b>' + failed + '</b> module failures</li></ul>' +
+      '<li><b>' + plural(pulls, 'Census pull', 'Census pulls') + '</b> → <b>'
+        + plural(estab, 'establishment', 'establishments') + '</b> logged</li>' +
+      '<li><b>' + plural(filings, 'new Form D filing', 'new Form D filings')
+        + '</b> in OH/KY/IN'
+        + (filings ? ' — a manager that just closed a vehicle has capital to '
+                   + 'deploy, and small firms add junior headcount when they do'
+                   : '') + '</li>' +
+      '<li><b>' + plural(changed, 'watched page', 'watched pages') + '</b> changed</li>' +
+      '<li><b>' + plural(people, 'person candidate', 'person candidates')
+        + '</b> (UNVERIFIED — confirm titles before use)</li>' +
+      '<li><b>' + plural(failed, 'module failure', 'module failures') + '</b></li></ul>' +
     '<h3>KPIs</h3><ul>' +
-      '<li>Contacts in CRM: <b>' + cnt(T.PEOPLE) + '</b></li>' +
-      '<li>Companies on radar: <b>' + cnt(T.COS) + '</b></li>' +
-      '<li>Research entries: <b>' + cnt(T.RESEARCH) + '</b></li>' +
+      '<li>Contacts in CRM: <b>' + cnt(T.PEOPLE, 2) + '</b></li>' +
+      '<li>Companies on radar: <b>' + cnt(T.COS, 2) + '</b></li>' +
+      '<li>Research entries: <b>' + cnt(T.RESEARCH, 1) + '</b></li>' +
+      '<li>Open opportunities: <b>' + cnt(T.OPPS, 1) + '</b></li>' +
       '<li>Open escalations: <b>' + escs.length + '</b> (' + high.length + ' HIGH)</li></ul>';
 
+  // Previously only HIGH was listed, so a MEDIUM was counted in the KPIs and
+  // then contradicted by "Nothing needs you today" on the next line. An email
+  // that argues with itself is one you stop reading.
+  var render = function (list) {
+    return '<ul>' + list.map(function (e) {
+      return '<li><b>' + esc_(e.Category) + ':</b> ' + esc_(e['What happened']) +
+        '<br><i>' + esc_(e['Why it needs you']) + '</i><br>→ ' + esc_(e['Suggested action']) +
+        (e['Source URL'] ? ' <a href="' + esc_(e['Source URL']) + '">open</a>' : '') + '</li>';
+    }).join('') + '</ul>';
+  };
+  var med = escs.filter(function (e) { return String(e.Severity).toUpperCase() !== 'HIGH'; });
+
   if (high.length) {
-    html += '<h3 style="color:#b02a37">Needs a decision from you</h3><ul>' +
-      high.map(function (e) {
-        return '<li><b>' + esc_(e.Category) + ':</b> ' + esc_(e['What happened']) +
-          '<br><i>' + esc_(e['Why it needs you']) + '</i><br>→ ' + esc_(e['Suggested action']) +
-          (e['Source URL'] ? ' <a href="' + esc_(e['Source URL']) + '">open</a>' : '') + '</li>';
-      }).join('') + '</ul>';
-  } else { html += '<p>Nothing needs you today.</p>'; }
+    html += '<h3 style="color:#b02a37">Needs a decision from you</h3>' + render(high);
+  }
+  if (med.length) {
+    html += '<h3>Worth a look</h3>' + render(med);
+  }
+  if (!escs.length) {
+    html += '<p>Nothing is open. Every source answered and nothing changed.</p>';
+  }
 
   html += '<hr><p><a href="' + ss.getUrl() + '">Open the workbook</a></p>';
 
   MailApp.sendEmail({ to: Session.getActiveUser().getEmail(),
     subject: 'Positioning OS — ' + Utilities.formatDate(now_(), tz, 'EEE d MMM') +
-      ' — ' + estab + ' establishments, ' + changed + ' changes, ' + high.length + ' need you',
+      ' — ' + plural(estab, 'establishment', 'establishments') + ', '
+      + plural(filings, 'filing', 'filings') + ', '
+      + (high.length ? high.length + (high.length === 1 ? ' needs' : ' need') + ' you'
+         : escs.length ? escs.length + ' to review' : 'nothing open'),
     htmlBody: html });
 }
 
