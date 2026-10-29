@@ -137,6 +137,15 @@ function doPost(e) {
     // approved opportunity as queued so the next run does not redo the work.
     // It appends to the Notes cell rather than replacing it, and touches no
     // other column.
+    // Decisions coming back from whatever surface showed them — Nexus, a
+    // Telegram button, anything. The caller does not need to know the sheet
+    // layout, only the Opp ID it was given.
+    var decided = [];
+    (body.decide || []).forEach(function (d) {
+      var r = decide_(d.id, d.decision, d.by || 'api', d.note || '');
+      decided.push({ id: d.id, applied: r });
+    });
+
     var marked = 0;
     (body.marks || []).forEach(function (m) {
       var sheet = sh_(m.tab || T.OPPS);
@@ -175,7 +184,8 @@ function doPost(e) {
       s.getRange(s.getLastRow() + 1, 1, padded.length, width).setValues(padded);
       written += padded.length;
     });
-    return out({ ok: true, written: written, marked: marked, tabs_created: created });
+    return out({ ok: true, written: written, marked: marked,
+                 decided: decided, tabs_created: created });
   } catch (err) {
     return out({ ok: false, error: String(err) });
   }
@@ -188,7 +198,14 @@ function doGet(e) {
   };
   try {
     var expected = PropertiesService.getScriptProperties().getProperty(TOKEN_PROP);
-    if (!e || !e.parameter || e.parameter.token !== expected) return out({ ok: false, error: 'bad token' });
+    if (!e || !e.parameter || e.parameter.token !== expected) {
+      return out({ ok: false, error: 'bad token' });
+    }
+    var action = e.parameter.action || 'tab';
+    if (action === 'digest')  return out(digest_(e.parameter.since || ''));
+    if (action === 'pending') return out({ ok: true, pending: pending_(e.parameter.claim === '1') });
+    if (action === 'ping')    return out({ ok: true, system: 'positioning-os',
+                                           sheet: book_().getName(), url: book_().getUrl() });
     if (!e.parameter.tab) return out({ ok: false, error: 'no tab' });
     return out({ ok: true, rows: rows_(e.parameter.tab) });
   } catch (err) {
@@ -625,6 +642,14 @@ function tgSend_(text, keyboard) {
 /* ---------------- the daily message + approval queue ---------------- */
 
 function notifyTelegram() {
+  // Default is 'nexus': Nexus owns the bot and does the messaging, and this
+  // system is a data source it reads. Set TELEGRAM_MODE to 'direct' only if
+  // Positioning OS is given a bot of its own.
+  var mode = props_().getProperty('TELEGRAM_MODE') || 'nexus';
+  if (mode !== 'direct') {
+    Logger.log('TELEGRAM_MODE=' + mode + ' — Nexus handles messaging. Nothing sent.');
+    return;
+  }
   if (!props_().getProperty(TG_CHAT)) { Logger.log('Telegram not set up; skipped.'); return; }
 
   var cut = new Date(Date.now() - 864e5);
@@ -756,4 +781,130 @@ function findOppRow_(oppId) {
     if (String(ids[i][0]) === oppId) return i + 2;
   }
   return -1;
+}
+
+
+/* ==================== READ API (for Nexus Control Center) ====================
+ * Positioning OS does not own a Telegram bot. Nexus does, and one bot can hold
+ * one webhook, so a second system registering its own would silently cut the
+ * first one off. Instead this exposes what Nexus needs and accepts decisions
+ * back, which also means every other surface — a phone, a dashboard, a cron —
+ * works through the same contract.
+ *
+ *   GET  ?token=T&action=ping
+ *   GET  ?token=T&action=digest[&since=ISO8601]
+ *   GET  ?token=T&action=pending[&claim=1]
+ *   POST {token:T, decide:[{id, decision:"APPROVED"|"SKIPPED", by, note}]}
+ *
+ * Full contract: positioning-system/NEXUS-INTEGRATION.md
+ */
+
+var OPP_STATUS_COL = 13, OPP_NOTES_COL = 14;
+
+function digest_(since) {
+  var tz = book_().getSpreadsheetTimeZone();
+  var cut = new Date(Date.now() - 864e5);
+  var logs = rows_(T.LOG).filter(function (r) {
+    return r.Timestamp && new Date(r.Timestamp) >= cut; });
+
+  var d = { establishments: 0, form_d: 0, changes: 0, people: 0,
+            failures: 0, mac_ran: false };
+  logs.forEach(function (r) {
+    if (r.Module === 'census' && r.Result === 'OK') d.establishments += Number(r.Items) || 0;
+    if (r.Module === 'edgar'  && r.Result === 'OK') d.form_d += Number(r.Items) || 0;
+    if (r.Result === 'CHANGED') d.changes++;
+    if (r.Result === 'FAILED' || r.Result === 'EXCEPTION') d.failures++;
+    if (r.Action === 'person candidate') d.people++;
+    if (String(r['Run ID']).indexOf('AS-') !== 0) d.mac_ran = true;
+  });
+
+  var escs = rows_(T.ESC).filter(function (e) {
+    if (String(e.Status).toUpperCase() !== 'OPEN') return false;
+    return !since || String(e.Raised || '') > since;
+  }).slice(0, 25).map(function (e) {
+    return { id: e['Escalation ID'], severity: e.Severity, category: e.Category,
+             what: e['What happened'], why: e['Why it needs you'],
+             action: e['Suggested action'], url: e['Source URL'], raised: e.Raised };
+  });
+
+  return {
+    ok: true, system: 'positioning-os',
+    generated: Utilities.formatDate(now_(), tz, "yyyy-MM-dd'T'HH:mm:ssXXX"),
+    sheet_url: book_().getUrl(),
+    today: d,
+    counts: {
+      contacts: colCount_(T.PEOPLE, 2), companies: colCount_(T.COS, 2),
+      research: colCount_(T.RESEARCH, 1), opportunities: colCount_(T.OPPS, 1),
+      awaiting_decision: countStatus_(T.OPPS, OPP_STATUS_COL, 'PENDING')
+    },
+    escalations: escs,
+    pending: pending_(false)
+  };
+}
+
+function colCount_(tab, col) {
+  var sheet = sh_(tab);
+  if (!sheet || sheet.getLastRow() < 2) return 0;
+  var v = sheet.getRange(2, col, sheet.getLastRow() - 1, 1).getValues();
+  var n = 0;
+  for (var i = 0; i < v.length; i++) if (String(v[i][0]).trim()) n++;
+  return n;
+}
+
+/** Opportunities awaiting a decision.
+ *  claim=true flips OPEN to PENDING, so whichever surface shows an item takes
+ *  ownership of it and no other surface shows it again. Without that, Nexus
+ *  and any second reader would both present the same filing. */
+function pending_(claim) {
+  var sheet = sh_(T.OPPS);
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  var last = sheet.getLastRow();
+  var vals = sheet.getRange(2, 1, last - 1, OPP_NOTES_COL).getValues();
+  var out = [];
+  for (var i = 0; i < vals.length; i++) {
+    var st = String(vals[i][OPP_STATUS_COL - 1]).toUpperCase();
+    if (st !== 'OPEN' && !(st === 'PENDING' && !claim)) continue;
+    out.push({
+      id: String(vals[i][0]), type: vals[i][1], title: vals[i][2],
+      organization: vals[i][4], why: vals[i][7], next_action: vals[i][8],
+      authorization_cleared: vals[i][10], counsel_reviewed: vals[i][11],
+      status: st, source: vals[i][OPP_NOTES_COL - 1],
+      actions: ['APPROVED', 'SKIPPED']
+    });
+    if (claim && st === 'OPEN') sheet.getRange(i + 2, OPP_STATUS_COL).setValue('PENDING');
+  }
+  return out;
+}
+
+/** Records a decision. Returns 'ok', 'not found' or 'bad decision'. */
+function decide_(oppId, decision, by, note) {
+  var want = String(decision || '').toUpperCase();
+  if (want !== 'APPROVED' && want !== 'SKIPPED') return 'bad decision';
+  var row = findOppRow_(oppId);
+  if (row < 1) return 'not found';
+  var sheet = sh_(T.OPPS);
+  sheet.getRange(row, OPP_STATUS_COL).setValue(want);
+  var cur = String(sheet.getRange(row, OPP_NOTES_COL).getValue() || '');
+  var stamp = want + ' via ' + (by || 'api') + ' ' +
+    Utilities.formatDate(now_(), book_().getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm') +
+    (note ? ' — ' + note : '');
+  sheet.getRange(row, OPP_NOTES_COL).setValue(cur ? cur + ' | ' + stamp : stamp);
+  return 'ok';
+}
+
+/** Prints everything Nexus needs, ready to paste into its config. */
+function nexusCredentials() {
+  var url = ScriptApp.getService().getUrl();
+  var tok = PropertiesService.getScriptProperties().getProperty(TOKEN_PROP);
+  if (!url) { Logger.log('Deploy as a Web App first.'); return; }
+  Logger.log('base_url : ' + url);
+  Logger.log('token    : ' + tok);
+  Logger.log('');
+  Logger.log('digest   : ' + url + '?token=' + tok + '&action=digest');
+  Logger.log('pending  : ' + url + '?token=' + tok + '&action=pending&claim=1');
+  Logger.log('ping     : ' + url + '?token=' + tok + '&action=ping');
+  Logger.log('');
+  Logger.log('decide   : POST ' + url);
+  Logger.log('           {"token":"' + tok + '","decide":[{"id":"OPP-…",'
+             + '"decision":"APPROVED","by":"nexus"}]}');
 }
