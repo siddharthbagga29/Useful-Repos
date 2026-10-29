@@ -72,6 +72,7 @@ function onOpen() {
     .addItem('Email me the weekly report', 'emailWeeklyReport')
     .addSeparator()
     .addItem('Send me a Telegram now', 'notifyTelegram')
+    .addItem('Telegram: check the bot first', 'telegramStatus')
     .addItem('Telegram: find my chat ID', 'telegramFindChatId')
     .addItem('Telegram: register webhook', 'telegramRegisterWebhook')
     .addItem('Telegram: send a test', 'telegramTest')
@@ -517,8 +518,56 @@ function tg_(method, payload) {
   return body.result;
 }
 
+/** Run this BEFORE anything else.
+ *
+ *  Telegram allows exactly one webhook per bot. If this bot already serves
+ *  another project, registering ours takes it over silently and the other one
+ *  simply stops receiving updates — no error, on either side. A bot costs
+ *  nothing and takes thirty seconds to create, so sharing one is a bad trade.
+ */
+function telegramStatus() {
+  var me = tg_('getMe', {});
+  Logger.log('Bot: @' + me.username + '  (' + me.first_name + ')');
+
+  var info = tg_('getWebhookInfo', {});
+  if (info.url) {
+    Logger.log('');
+    Logger.log('⚠️  THIS BOT ALREADY HAS A WEBHOOK:');
+    Logger.log('    ' + info.url);
+    Logger.log('    pending updates: ' + (info.pending_update_count || 0));
+    if (info.last_error_message) {
+      Logger.log('    last error: ' + info.last_error_message);
+    }
+    Logger.log('');
+    if (info.url.indexOf('script.google.com') === 0) {
+      Logger.log('It points at Apps Script, so it is most likely ours already.');
+      Logger.log('Safe to continue.');
+    } else {
+      Logger.log('It points somewhere else — another project is using this bot.');
+      Logger.log('Running telegramRegisterWebhook WILL break that project.');
+      Logger.log('Create a separate bot in @BotFather (/newbot) and use its token here.');
+    }
+  } else {
+    Logger.log('');
+    Logger.log('No webhook set. Nothing to break — safe to continue.');
+    Logger.log('Next: message the bot from your phone, then run telegramFindChatId.');
+  }
+  return info;
+}
+
 /** Message the bot once from your phone, then run this. */
 function telegramFindChatId() {
+  // getUpdates and a webhook are mutually exclusive; without this the call
+  // just fails with a message that does not explain why.
+  var info = tg_('getWebhookInfo', {});
+  if (info.url) {
+    Logger.log('This bot has a webhook set, so getUpdates cannot read messages.');
+    Logger.log('Webhook: ' + info.url);
+    Logger.log('Run telegramStatus to see whether it is ours or another project\'s.');
+    Logger.log('If it is ours, the chat id is already stored: '
+               + (props_().getProperty(TG_CHAT) || '(none yet)'));
+    return;
+  }
   var ups = tg_('getUpdates', {});
   if (!ups.length) {
     Logger.log('No messages yet. Open Telegram, send your bot any message, then run this again.');
@@ -540,6 +589,14 @@ function telegramFindChatId() {
 
 /** Points Telegram at this Web App so button taps come back here. */
 function telegramRegisterWebhook() {
+  var existing = tg_('getWebhookInfo', {});
+  if (existing.url && existing.url.indexOf('script.google.com') !== 0) {
+    throw new Error(
+      'This bot already has a webhook pointing at ' + existing.url +
+      ' — another project is using it. Registering ours would silently break ' +
+      'that one. Create a separate bot with /newbot in @BotFather and run ' +
+      'setupTelegram with its token instead.');
+  }
   var url = ScriptApp.getService().getUrl();
   if (!url) throw new Error('Deploy as a Web App first (Execute as Me, Access Anyone).');
   var secret = props_().getProperty(TG_SECRET);
