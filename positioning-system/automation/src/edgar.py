@@ -8,9 +8,31 @@ public proxy for a PitchBook fund-close screen, and it is free.
 """
 from __future__ import annotations
 import datetime as dt
+import json
+from pathlib import Path
 import requests
 
 EFTS = "https://efts.sec.gov/LATEST/search-index"
+
+
+def _seen_path(cfg: dict) -> Path:
+    return Path(cfg["state_dir"]) / "seen_filings.json"
+
+
+def _load_seen(cfg: dict) -> list:
+    try:
+        return list(json.loads(_seen_path(cfg).read_text()))
+    except Exception:
+        return []
+
+
+def _save_seen(cfg: dict, ids: list) -> None:
+    # Newest last, capped. A filing drops out of the 7-day window long before
+    # it drops out of this list, so it can never reappear as new.
+    try:
+        _seen_path(cfg).write_text(json.dumps(ids[-800:]))
+    except Exception:
+        pass
 
 
 def recent_form_d(cfg: dict, states=("OH", "KY", "IN"), days: int = 7) -> dict:
@@ -24,7 +46,15 @@ def recent_form_d(cfg: dict, states=("OH", "KY", "IN"), days: int = 7) -> dict:
     since = (dt.date.today() - dt.timedelta(days=days)).isoformat()
     headers = {"User-Agent": cfg["user_agent"], "Accept": "application/json"}
 
-    seen = set()
+    # Each run asks for the last seven days, so without a record that survives
+    # between runs the same filing is written to Opportunities every day for a
+    # week. Seven near-identical rows for one fund close is not a pipeline, it
+    # is noise, and it is the tab the owner is told to act on.
+    remembered = _load_seen(cfg)
+    seen = set(remembered)
+    fresh = []
+    out["repeats"] = 0
+
     for st in states:
         # `locationCodes` (plural) filters on principal place of business. The
         # singular `locationCode` is silently ignored and returns every Form D
@@ -52,9 +82,12 @@ def recent_form_d(cfg: dict, states=("OH", "KY", "IN"), days: int = 7) -> dict:
                 if not any(l.strip().endswith(f", {st}") for l in locs):
                     continue
                 adsh = (h.get("_id") or "").split(":")[0].replace("-", "")
-                if adsh in seen:          # one hit per document, not per filing
+                if adsh in seen:          # same doc this run, or seen on an earlier run
+                    if adsh in remembered:
+                        out["repeats"] += 1
                     continue
                 seen.add(adsh)
+                fresh.append(adsh)
                 cik = (src.get("ciks") or [""])[0]
                 link = (f"https://www.sec.gov/Archives/edgar/data/{cik.lstrip('0')}/{adsh}/"
                         if cik and adsh else "https://www.sec.gov/edgar/search/")
@@ -67,6 +100,8 @@ def recent_form_d(cfg: dict, states=("OH", "KY", "IN"), days: int = 7) -> dict:
                 })
         except Exception as e:
             out["errors"].append(f"{st}: {e} — {url}")
+
+    _save_seen(cfg, remembered + fresh)
 
     if out["located"] == 0 and out["unlocated"] > 0:
         out["errors"].append(

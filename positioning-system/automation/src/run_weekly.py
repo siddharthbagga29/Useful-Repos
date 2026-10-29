@@ -38,15 +38,28 @@ def main() -> int:
     cfg = load()
     book = Book(cfg)
 
+    read_errors = []
+
     def safe(tab):
         try:
             return book.read(tab)
-        except Exception:
+        except Exception as e:
+            read_errors.append(f"{tab}: {str(e)[:160]}")
             return []
 
     logs = _recent(safe(AGENT_LOG), "Timestamp", 7)
     escs = [e for e in safe(ESCALATIONS) if str(e.get("Status", "")).upper() == "OPEN"]
-    mems = safe(AGENT_MEMORY)
+    mem_rows = safe(AGENT_MEMORY)
+    # Agent Memory is append-only: one row per source per run. Counting the raw
+    # rows reported "sources watched: 2920" after a year, and kept a source in
+    # the dead list forever on the strength of one bad week. Collapse to the
+    # newest row per Source ID first - that is the current state.
+    mems_by_id = {}
+    for r in mem_rows:
+        sid = r.get("Source ID")
+        if sid:
+            mems_by_id[sid] = r
+    mems = list(mems_by_id.values())
 
     runs = len({r.get("Run ID") for r in logs if r.get("Run ID")})
     census_rows = [r for r in logs if r.get("Module") == "census" and r.get("Result") == "OK"]
@@ -60,7 +73,14 @@ def main() -> int:
     cats = Counter(e.get("Category", "?") for e in escs)
     top = ", ".join(f"{k} ({v})" for k, v in cats.most_common(4)) or "none"
 
-    if runs == 0:
+    if read_errors:
+        # Saying "no runs completed" when the truth is "the sheet could not be
+        # read" sends the reader to launchd for a problem that is not there.
+        narrative = ("This report is incomplete: the sheet could not be read. "
+                     + "; ".join(read_errors)
+                     + " Every number below may understate the week. Check the Web "
+                       "App deployment and token, then re-run src/selftest.py.")
+    elif runs == 0:
         narrative = ("No runs completed this week. The Mac was asleep, launchd did not "
                      "fire, or the script errored before writing. Check "
                      "~/.positioning-os/logs/daily.err.")

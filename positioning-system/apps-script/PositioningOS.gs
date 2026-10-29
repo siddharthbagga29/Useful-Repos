@@ -71,6 +71,11 @@ function onOpen() {
     .addItem('Email me the daily report', 'emailDailyReport')
     .addItem('Email me the weekly report', 'emailWeeklyReport')
     .addSeparator()
+    .addItem('Send me a Telegram now', 'notifyTelegram')
+    .addItem('Telegram: find my chat ID', 'telegramFindChatId')
+    .addItem('Telegram: register webhook', 'telegramRegisterWebhook')
+    .addItem('Telegram: send a test', 'telegramTest')
+    .addSeparator()
     .addItem('Repair Dashboard formulas', 'repairDashboard')
     .addItem('Show ingest token', 'setupIngestToken')
     .addItem('Test ingest endpoint', 'testIngestLocally')
@@ -83,6 +88,7 @@ function setupEverything() {
   ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('dailyRun_').timeBased().atHour(7).everyDays(1).create();
   ScriptApp.newTrigger('emailDailyReport').timeBased().atHour(8).everyDays(1).create();
+  ScriptApp.newTrigger('notifyTelegram').timeBased().atHour(8).everyDays(1).create();
   ScriptApp.newTrigger('emailWeeklyReport').timeBased()
     .onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(18).create();
   var tok = setupIngestToken();
@@ -115,11 +121,37 @@ function doPost(e) {
       .setMimeType(ContentService.MimeType.JSON);
   };
   try {
+    // Telegram cannot send our JSON token, and Apps Script cannot read request
+    // headers, so the webhook carries its secret in the query string instead.
+    if (e && e.parameter && e.parameter.tg) return handleTelegram_(e);
+
     if (!e || !e.postData || !e.postData.contents) return out({ ok: false, error: 'empty body' });
     var body = JSON.parse(e.postData.contents);
     var expected = PropertiesService.getScriptProperties().getProperty(TOKEN_PROP);
     if (!expected) return out({ ok: false, error: 'no token configured' });
     if (body.token !== expected) return out({ ok: false, error: 'bad token' });
+
+    // Writes are append-only on purpose: the agent must never overwrite a cell
+    // a human filled in. The one exception is its own bookkeeping — marking an
+    // approved opportunity as queued so the next run does not redo the work.
+    // It appends to the Notes cell rather than replacing it, and touches no
+    // other column.
+    var marked = 0;
+    (body.marks || []).forEach(function (m) {
+      var sheet = sh_(m.tab || T.OPPS);
+      if (!sheet || sheet.getLastRow() < 2 || !m.id) return;
+      var ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+      for (var i = 0; i < ids.length; i++) {
+        if (String(ids[i][0]) !== String(m.id)) continue;
+        var cell = sheet.getRange(i + 2, m.col || 14);
+        var cur = String(cell.getValue() || '');
+        if (cur.indexOf(m.text) === -1) {
+          cell.setValue(cur ? cur + ' | ' + m.text : m.text);
+          marked++;
+        }
+        break;
+      }
+    });
 
     var written = 0, created = [];
     (body.writes || []).forEach(function (w) {
@@ -142,7 +174,7 @@ function doPost(e) {
       s.getRange(s.getLastRow() + 1, 1, padded.length, width).setValues(padded);
       written += padded.length;
     });
-    return out({ ok: true, written: written, tabs_created: created });
+    return out({ ok: true, written: written, marked: marked, tabs_created: created });
   } catch (err) {
     return out({ ok: false, error: String(err) });
   }
@@ -439,4 +471,232 @@ function emailWeeklyReport() {
     return;
   }
   Logger.log('Latest weekly row already emailed.');
+}
+
+
+/* ======================= TELEGRAM =======================
+ * Email is the record; Telegram is the tap on the shoulder. The same run
+ * produces both, and both are sent by Google rather than the Mac, so they
+ * arrive with the laptop shut.
+ *
+ * Opportunities arrive as decisions, not reading. Each new one is sent with
+ * Approve / Skip buttons; the tap writes straight back into the sheet, so the
+ * pipeline is worked from a phone instead of a spreadsheet.
+ */
+
+var TG_TOKEN = 'TELEGRAM_TOKEN', TG_CHAT = 'TELEGRAM_CHAT_ID',
+    TG_SECRET = 'TELEGRAM_SECRET', TG_LAST = 'TELEGRAM_LAST_ESC';
+
+function props_() { return PropertiesService.getScriptProperties(); }
+
+/** Paste the token from @BotFather below, run once, then blank it again and
+ *  save. The token lives in Script Properties, never in the file or in git. */
+function setupTelegram() {
+  var TOKEN = 'PASTE_YOUR_BOT_TOKEN_HERE';
+  if (TOKEN.indexOf('PASTE_') === 0) {
+    Logger.log('Edit TOKEN inside setupTelegram first, then run it again.');
+    return;
+  }
+  var p = props_();
+  p.setProperty(TG_TOKEN, TOKEN.trim());
+  if (!p.getProperty(TG_SECRET)) {
+    p.setProperty(TG_SECRET, Utilities.getUuid().replace(/-/g, ''));
+  }
+  Logger.log('Token stored. Next: message your bot once, then run telegramFindChatId.');
+}
+
+function tg_(method, payload) {
+  var token = props_().getProperty(TG_TOKEN);
+  if (!token) throw new Error('No Telegram token. Run setupTelegram first.');
+  var r = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/' + method, {
+    method: 'post', contentType: 'application/json',
+    payload: JSON.stringify(payload || {}), muteHttpExceptions: true
+  });
+  var body = JSON.parse(r.getContentText() || '{}');
+  if (!body.ok) throw new Error(method + ' failed: ' + (body.description || r.getContentText()));
+  return body.result;
+}
+
+/** Message the bot once from your phone, then run this. */
+function telegramFindChatId() {
+  var ups = tg_('getUpdates', {});
+  if (!ups.length) {
+    Logger.log('No messages yet. Open Telegram, send your bot any message, then run this again.');
+    return;
+  }
+  var seen = {};
+  ups.forEach(function (u) {
+    var m = u.message || u.edited_message || (u.callback_query || {}).message;
+    if (m && m.chat) seen[m.chat.id] = (m.chat.title || m.chat.first_name || m.chat.type);
+  });
+  Object.keys(seen).forEach(function (id) {
+    Logger.log('chat ' + id + '  —  ' + seen[id]);
+    props_().setProperty(TG_CHAT, id);   // one chat is the normal case
+  });
+  Logger.log('Stored chat id: ' + props_().getProperty(TG_CHAT));
+  Logger.log('Next: Deploy > Manage deployments > Edit > New version > Deploy,');
+  Logger.log('then run telegramRegisterWebhook.');
+}
+
+/** Points Telegram at this Web App so button taps come back here. */
+function telegramRegisterWebhook() {
+  var url = ScriptApp.getService().getUrl();
+  if (!url) throw new Error('Deploy as a Web App first (Execute as Me, Access Anyone).');
+  var secret = props_().getProperty(TG_SECRET);
+  if (!secret) throw new Error('Run setupTelegram first.');
+  var hook = url + '?tg=' + secret;
+  tg_('setWebhook', { url: hook, allowed_updates: ['message', 'callback_query'] });
+  Logger.log('Webhook registered.');
+  Logger.log('IMPORTANT: re-run this after every new deployment — the /exec URL changes.');
+}
+
+function telegramTest() {
+  tgSend_('Positioning OS is connected. You will get one message a day: what was '
+        + 'done, and anything that needs a decision.');
+  Logger.log('Sent. Check Telegram.');
+}
+
+function tgSend_(text, keyboard) {
+  var chat = props_().getProperty(TG_CHAT);
+  if (!chat) throw new Error('No chat id. Run telegramFindChatId first.');
+  var payload = { chat_id: chat, text: text, parse_mode: 'HTML',
+                  disable_web_page_preview: true };
+  if (keyboard) payload.reply_markup = { inline_keyboard: keyboard };
+  return tg_('sendMessage', payload);
+}
+
+/* ---------------- the daily message + approval queue ---------------- */
+
+function notifyTelegram() {
+  if (!props_().getProperty(TG_CHAT)) { Logger.log('Telegram not set up; skipped.'); return; }
+
+  var cut = new Date(Date.now() - 864e5);
+  var logs = rows_(T.LOG).filter(function (r) {
+    return r.Timestamp && new Date(r.Timestamp) >= cut; });
+
+  var estab = 0, filings = 0, changed = 0, failed = 0, people = 0, macRan = false;
+  logs.forEach(function (r) {
+    if (r.Module === 'census' && r.Result === 'OK') estab += Number(r.Items) || 0;
+    if (r.Module === 'edgar' && r.Result === 'OK') filings += Number(r.Items) || 0;
+    if (r.Result === 'CHANGED') changed++;
+    if (r.Result === 'FAILED' || r.Result === 'EXCEPTION') failed++;
+    if (r.Action === 'person candidate') people++;
+    if (String(r['Run ID']).indexOf('AS-') !== 0) macRan = true;
+  });
+
+  var msg = '<b>Positioning OS</b> — ' +
+    Utilities.formatDate(now_(), book_().getSpreadsheetTimeZone(), 'EEE d MMM') + '\n\n' +
+    estab + ' establishments · ' + filings + ' Form D · ' + changed + ' page changes · ' +
+    people + ' people' + (failed ? ' · <b>' + failed + ' failures</b>' : '');
+  if (!macRan) msg += '\n\n⚠️ The Mac did not run. Browser research paused.';
+  var waiting = countStatus_(T.OPPS, 13, 'PENDING');
+  if (waiting) msg += '\n\n' + waiting + ' awaiting your decision.';
+  tgSend_(msg);
+
+  pushEscalations_();
+  pushApprovals_();
+}
+
+/** HIGH and MEDIUM escalations raised since the last push. */
+function pushEscalations_() {
+  var since = props_().getProperty(TG_LAST) || '';
+  var newest = since;
+  var fresh = rows_(T.ESC).filter(function (e) {
+    var raised = String(e.Raised || '');
+    if (String(e.Status).toUpperCase() !== 'OPEN') return false;
+    if (since && raised <= since) return false;
+    if (raised > newest) newest = raised;
+    return true;
+  });
+  fresh.slice(0, 10).forEach(function (e) {
+    tgSend_((String(e.Severity).toUpperCase() === 'HIGH' ? '🔴 ' : '🟡 ') +
+      '<b>' + esc_(e.Category) + '</b>\n' + esc_(e['What happened']) +
+      '\n\n<i>' + esc_(e['Why it needs you']) + '</i>\n\n→ ' + esc_(e['Suggested action']) +
+      (e['Source URL'] ? '\n' + esc_(e['Source URL']) : ''));
+  });
+  if (newest) props_().setProperty(TG_LAST, newest);
+}
+
+/** Opportunities still marked OPEN become one message each, with buttons.
+ *  Sending flips OPEN to PENDING so nothing is ever asked twice. */
+function pushApprovals_() {
+  var sheet = sh_(T.OPPS);
+  if (!sheet || sheet.getLastRow() < 2) return;
+  var last = sheet.getLastRow();
+  var vals = sheet.getRange(2, 1, last - 1, 14).getValues();
+  var sent = 0;
+
+  for (var i = 0; i < vals.length && sent < 8; i++) {
+    if (String(vals[i][12]).toUpperCase() !== 'OPEN') continue;   // M = Status
+    var id = String(vals[i][0]);
+    tgSend_(
+      '🏦 <b>' + esc_(vals[i][1] || 'Opportunity') + '</b>\n' + esc_(vals[i][2]) +
+      '\n\n<i>' + esc_(vals[i][7]) + '</i>' +
+      (vals[i][13] ? '\n\n' + esc_(vals[i][13]) : '') +
+      '\n\n<b>Not work authorization advice.</b> Approving queues research only.',
+      [[{ text: '✅ Research this', callback_data: 'ok|' + id },
+        { text: '✖️ Skip', callback_data: 'no|' + id }]]);
+    sheet.getRange(i + 2, 13).setValue('PENDING');
+    sent++;
+  }
+  if (sent) Logger.log('Sent ' + sent + ' approval request(s).');
+}
+
+/* ---------------- inbound: button taps ---------------- */
+
+function handleTelegram_(e) {
+  var ok = ContentService.createTextOutput('ok').setMimeType(ContentService.MimeType.TEXT);
+  try {
+    if (e.parameter.tg !== props_().getProperty(TG_SECRET)) return ok;   // not Telegram
+    var u = JSON.parse(e.postData.contents);
+    var cq = u.callback_query;
+    if (!cq) return ok;
+
+    var parts = String(cq.data || '').split('|');
+    var decision = parts[0] === 'ok' ? 'APPROVED' : 'SKIPPED';
+    var oppId = parts.slice(1).join('|');
+    var row = findOppRow_(oppId);
+
+    if (row > 0) {
+      var sheet = sh_(T.OPPS);
+      sheet.getRange(row, 13).setValue(decision);
+      var note = String(sheet.getRange(row, 14).getValue() || '');
+      sheet.getRange(row, 14).setValue(
+        (note ? note + ' | ' : '') + decision + ' via Telegram ' +
+        Utilities.formatDate(now_(), book_().getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm'));
+    }
+
+    tg_('answerCallbackQuery', { callback_query_id: cq.id,
+         text: row > 0 ? decision : 'Row not found — open the sheet' });
+    if (cq.message) {
+      tg_('editMessageText', {
+        chat_id: cq.message.chat.id, message_id: cq.message.message_id,
+        text: cq.message.text + '\n\n' + (decision === 'APPROVED' ? '✅ ' : '✖️ ') + decision,
+        parse_mode: 'HTML', disable_web_page_preview: true });
+    }
+  } catch (err) {
+    Logger.log('telegram: ' + err);
+  }
+  return ok;
+}
+
+function countStatus_(tab, col, want) {
+  var sheet = sh_(tab);
+  if (!sheet || sheet.getLastRow() < 2) return 0;
+  var v = sheet.getRange(2, col, sheet.getLastRow() - 1, 1).getValues();
+  var n = 0;
+  for (var i = 0; i < v.length; i++) {
+    if (String(v[i][0]).toUpperCase() === want) n++;
+  }
+  return n;
+}
+
+function findOppRow_(oppId) {
+  var sheet = sh_(T.OPPS);
+  if (!sheet || sheet.getLastRow() < 2) return -1;
+  var ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+  for (var i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === oppId) return i + 2;
+  }
+  return -1;
 }

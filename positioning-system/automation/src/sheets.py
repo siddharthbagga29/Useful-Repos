@@ -52,6 +52,8 @@ class Book:
                 "Deploy Ingest.gs as a Web App and paste the /exec URL."
             )
         self._pending: dict[str, list[list]] = {}
+        self._marks: list[dict] = []
+        self._esc_n = 0
 
     # ---- reads -------------------------------------------------------------
 
@@ -74,13 +76,20 @@ class Book:
         self._pending.setdefault(tab, []).extend([[("" if c is None else c) for c in r] for r in rows])
         return len(rows)
 
+    def mark_opportunity(self, opp_id: str, text: str, col: int = 14) -> None:
+        """Append a marker to one cell the agent owns. Sent with the next flush."""
+        if opp_id and text:
+            self._marks.append({"tab": "Opportunities", "id": opp_id,
+                                "col": col, "text": text})
+
     def flush(self) -> dict:
-        if not self._pending:
+        if not self._pending and not self._marks:
             return {"ok": True, "written": 0}
         writes = [{"tab": t, "headers": HEADERS.get(t, []), "rows": rows}
                   for t, rows in self._pending.items()]
         try:
-            r = requests.post(self.url, json={"token": self.token, "writes": writes}, timeout=120)
+            r = requests.post(self.url, json={"token": self.token, "writes": writes,
+                                              "marks": self._marks}, timeout=120)
             r.raise_for_status()
             data = r.json()
         except Exception as e:
@@ -90,6 +99,7 @@ class Book:
         if not data.get("ok"):
             raise SheetError(f"flush refused: {data.get('error')}")
         self._pending.clear()
+        self._marks.clear()
         return data
 
     # ---- agent-owned writes ------------------------------------------------
@@ -100,7 +110,10 @@ class Book:
 
     def escalate(self, run_id, severity, category, what, why, suggested, url="", notes=""):
         """severity: HIGH (same-day email) | MEDIUM (weekly) | LOW (sheet only)"""
-        eid = f"ESC-{run_id}-{category[:12].replace(' ', '')}"
+        # Two sources retiring in one run produced the same ID, which made the
+        # rows indistinguishable in the sheet and in any later lookup.
+        self._esc_n += 1
+        eid = f"ESC-{run_id}-{self._esc_n:02d}-{category[:12].replace(' ', '')}"
         self.append(ESCALATIONS, [[eid, _now(), severity, category, what, why,
                                    suggested, url, "OPEN", "", notes]])
         return eid

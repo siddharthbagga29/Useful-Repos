@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from automation.src import census, edgar, scrape
+from automation.src import approvals, census, edgar, scrape
 from automation.src.config import load
 from automation.src.memory import Memory
 from automation.src.sheets import Book
@@ -24,6 +24,20 @@ def main() -> int:
     book = Book(cfg)
     mem = Memory(book)
     escalations = 0
+
+    if mem.degraded:
+        # Without stored hashes nothing can register as changed, so the run
+        # would complete, report zero changes, and look exactly like a quiet
+        # day. Say so instead.
+        book.escalate(run_id, "HIGH", "Agent memory unreadable",
+                      "The Agent Memory tab could not be read, so this run has no "
+                      "stored hashes to compare against.",
+                      "Change detection is the system's highest-value output and it "
+                      "is off today. A quiet report today means nothing.",
+                      "Check the Web App deployment is still live and the token still "
+                      "matches, then re-run src/selftest.py.",
+                      notes=mem.degraded)
+        escalations += 1
 
     # ---- 1. Census: the deliverable that cannot fail for browser reasons ----
     t0 = time.time()
@@ -94,6 +108,22 @@ def main() -> int:
             escalations += 1
     except Exception as e:
         book.log(run_id, "edgar", "Form D", "EXCEPTION", 0, "", time.time() - t0, str(e)[:400])
+
+    # ---- 2b. Approvals you gave from Telegram become CRM records ------------
+    t0 = time.time()
+    try:
+        a = approvals.process(book, run_id)
+        if a["queued"]:
+            book.log(run_id, "approvals", "approved opportunities actioned", "OK",
+                     a["queued"], "", time.time() - t0,
+                     "Added to Target Companies: " + ", ".join(a["names"])[:300])
+            escalations += a["queued"]
+        elif a["errors"]:
+            book.log(run_id, "approvals", "read Opportunities", "FAILED", 0, "",
+                     time.time() - t0, "; ".join(a["errors"])[:300])
+    except Exception as e:
+        book.log(run_id, "approvals", "process", "EXCEPTION", 0, "",
+                 time.time() - t0, str(e)[:400])
 
     # ---- 3. Watch sources: change detection + candidate extraction ----------
     t0 = time.time()

@@ -32,13 +32,20 @@ class Memory:
     def __init__(self, book: Book):
         self.book = book
         self.latest: dict[str, dict] = {}
+        self.degraded = ""      # non-empty when the read failed, not when empty
+
+        # A missing tab is NOT an exception here: doGet answers ok with no rows.
+        # So any exception means the read genuinely failed, and treating that as
+        # "first run" silently empties the agent's memory - no stored hashes, so
+        # nothing can register as changed, and retired sources come back to
+        # life. The system would look healthy and detect nothing.
         try:
-            for r in book.read(AGENT_MEMORY):          # oldest → newest
+            for r in book.read(AGENT_MEMORY):          # oldest -> newest
                 sid = r.get("Source ID")
                 if sid:
                     self.latest[sid] = r               # last write wins
-        except Exception:
-            self.latest = {}                           # first run: tab absent
+        except Exception as e:
+            self.degraded = str(e)[:300]
 
     def get(self, sid: str) -> dict:
         return self.latest.get(sid, {})
