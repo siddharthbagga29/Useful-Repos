@@ -1,5 +1,2 @@
-# Playwright 1.48 has no wheel that builds on Python 3.13+/3.14, which is what
-# ships on a current macOS. Floor rather than hard pin so a newer patch release
-# is picked up; pip fails loudly and lists what exists if this floor is wrong.
-playwright>=1.58
-requests>=2.32.3
+playwright==1.58.0
+requests==2.32.3

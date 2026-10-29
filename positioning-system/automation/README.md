@@ -53,7 +53,13 @@ cp config.example.json config.json
 ```
 
 Edit `config.json` and paste the two values from step 1 into `ingest_url` and
-`ingest_token`. Then:
+`ingest_token`. Census now refuses keyless requests (it redirects to
+`missing_key.html`), so also request a free key at
+<https://api.census.gov/data/key_signup.html> and paste it into
+`census_api_key`. `config.load()` refuses to run without it. The key is sent
+with every Census request but stripped from the Source URL written to the sheet
+— the query is still reproducible in one click, and the credential does not end
+up in a document you share. Then:
 
 ```bash
 ./install.sh
@@ -93,6 +99,7 @@ Confirm the **SELFTEST** row appears in the *Agent Log* tab. Then do a real run:
 | `flush refused: bad token` | Token in `config.json` ≠ `setupIngestToken` output |
 | `ingest_url does not look like…` | Paste the `/exec` URL, not the editor URL |
 | `Executable doesn't exist` | `~/.positioning-os/venv/bin/python -m playwright install chromium` |
+| `census api key ... FAILED` (invalid or not yet activated) | Paste the emailed key into `census_api_key` (activate it from the email first) |
 | Census `HTTP 404` | Census retired that vintage — lower `census_year` in `config.json` |
 
 ## Step 4 — Apps Script side (5 min)

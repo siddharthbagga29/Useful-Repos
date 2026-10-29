@@ -62,32 +62,27 @@ def main() -> int:
     t0 = time.time()
     try:
         f = edgar.recent_form_d(cfg)
-        for fil in f["filings"][:10]:
+        for i, fil in enumerate(f["filings"][:10], 1):
             book.append("Opportunities", [[
-                f"OPP-{run_id}-{fil['state']}", "Deal",
-                f"New Form D filing: {fil['name']} ({fil['state']}), filed {fil['filed']}",
+                f"OPP-{run_id}-{fil['state']}-{i}", "Deal",
+                f"New Form D filing: {fil['name']} ({fil['location']}), filed {fil['filed']}",
                 "", fil["name"], "Identified", "",
                 "A manager that just closed a vehicle must deploy it, and small firms "
                 "add junior headcount when they do. These seats are never posted.",
                 "Read the filing; if it is a buyout or credit fund in range, source the team page.",
                 dt.date.today().isoformat(), "No", "No", "OPEN", fil["url"],
             ]])
-        note = "; ".join(f["errors"])[:360]
-        if f.get("dropped"):
-            note = f"{f['dropped']} hit(s) outside OH/KY/IN dropped. " + note
-        book.log(run_id, "edgar", "Form D OH/KY/IN (state read back from response)",
+        book.log(run_id, "edgar", "Form D OH/KY/IN",
                  "OK" if f["filings"] else "EMPTY", len(f["filings"]), "",
-                 time.time() - t0, note[:400])
-
-        if not f.get("shape_ok") and f["errors"] and not f["filings"]:
+                 time.time() - t0, "; ".join(f["errors"])[:400])
+        if f.get("unlocated") and not f.get("located"):
             book.escalate(run_id, "HIGH", "Form D screening disabled",
-                          "EDGAR returned hits with no location field, so no filing "
-                          "could be confirmed as OH/KY/IN.",
-                          "Rather than label filings with a state it cannot verify, the "
-                          "agent wrote none. Writing them would have filled Opportunities "
-                          "with out-of-region filings that look exactly like real leads.",
-                          "Open the EDGAR search by hand and check whether the response "
-                          "field names changed, then update _STATE_KEYS in edgar.py.",
+                          "EDGAR returned hits but none carried a location field.",
+                          "No filing could be confirmed as OH/KY/IN, so the agent wrote "
+                          "none. Writing them would have filled Opportunities with "
+                          "out-of-region filings that look exactly like real leads.",
+                          "Open the EDGAR search by hand and check whether biz_locations "
+                          "was renamed, then update edgar.py.",
                           notes="; ".join(f["errors"])[:360])
             escalations += 1
 
@@ -139,14 +134,14 @@ def main() -> int:
                 escalations += 1
 
             for pers in r.get("people", [])[:6]:
-                title = pers.get("title_as_printed") or "(title not resolved)"
-                where = pers.get("title_position", "")
                 book.append("Agent Log", [[
                     run_id, dt.datetime.now().isoformat(timespec="seconds"), "scrape",
                     "person candidate", "UNVERIFIED — confirm title on the page before use",
                     1, s["url"], 0,
-                    f"{pers['name']} — {title} — {s['org']}"
-                    + (f" [title taken from the {where}]" if where else ""),
+                    f"{pers['name']} — "
+                    f"{pers['title_as_printed'] or '(title not extracted)'} — {s['org']}"
+                    + (f" [{pers['title_position']}]"
+                       if pers.get("title_position") else ""),
                 ]])
 
             mem.record(s, ok=bool(r.get("ok")), items=items, content_hash=r.get("hash", ""),

@@ -23,32 +23,55 @@ def _rotation_index(state_dir: str, length: int) -> int:
     return i % length
 
 
-def url_for(year: str, naics: str, county_fips: str, api_key: str = "") -> str:
-    """The key is required for sustained use now; without one the API starts
-    returning 403 after a handful of calls rather than failing on the first."""
+KEY_HELP = ("set census_api_key in config.json and activate it from the signup email "
+            "(free: https://api.census.gov/data/key_signup.html)")
+
+
+def url_for(year: str, naics: str, county_fips: str, key: str) -> str:
     return (f"https://api.census.gov/data/{year}/cbp"
             f"?get=ESTAB,EMP,NAICS2017_LABEL"
             f"&for=county:{county_fips}&in=state:39&NAICS2017={naics}"
-            + (f"&key={api_key}" if api_key else ""))
+            f"&key={key}")
 
 
-def _redact(url: str, api_key: str) -> str:
-    """The URL is written into the sheet so any figure can be re-checked. The
-    key must not travel with it."""
-    return url.replace(f"&key={api_key}", "") if api_key else url
+def public_url(url: str, key: str) -> str:
+    """The same query with the key stripped.
+
+    The Source URL goes into a cell so any figure can be re-checked in one
+    click, and the sheet gets shared. A Census key is cheap to replace but it
+    is still a credential, and the URL without it names the query exactly —
+    whoever opens it can use their own key. Reproducibility costs nothing here.
+    """
+    return url.replace(f"&key={key}", "") if key else url
+
+
+def key_problem(r: requests.Response) -> str:
+    """Census answers a bad key with a 302 to missing_key.html / invalid_key.html
+    rather than an error status. Returns a description, or '' if the key is fine."""
+    loc = r.headers.get("Location", "")
+    if "missing_key" in loc:
+        return "Census API key missing"
+    if r.headers.get("X-DataWebAPI-KeyError") or "invalid_key" in loc:
+        return "Census API key invalid or not yet activated"
+    return ""
 
 
 def pull(cfg: dict) -> dict:
     naics_list = cfg["naics_rotation"]
     naics = naics_list[_rotation_index(cfg["state_dir"], len(naics_list))]
     out = {"naics": naics, "label": "", "rows": [], "errors": [], "total": 0}
+    key = str(cfg["census_api_key"]).strip()
 
-    key = str(cfg.get("census_api_key", "") or "").strip()
     for c in cfg["counties"]:
         u = url_for(cfg["census_year"], naics, c["fips"], key)
-        shown = _redact(u, key)
+        shown = public_url(u, key)
         try:
-            r = requests.get(u, timeout=30, headers={"User-Agent": cfg["user_agent"]})
+            r = requests.get(u, timeout=30, headers={"User-Agent": cfg["user_agent"]},
+                             allow_redirects=False)
+            problem = key_problem(r)
+            if problem:
+                out["errors"].append(f"{c['name']}: {problem} — {KEY_HELP}")
+                continue
             if r.status_code != 200:
                 out["errors"].append(f"{c['name']}: HTTP {r.status_code} — {shown}")
                 continue

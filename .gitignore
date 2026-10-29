@@ -3,3 +3,7 @@ sentinel/src/reel-preview.jpg
 
 # Positioning OS — local secrets, never committed
 positioning-system/automation/config.json
+
+# Python bytecode
+__pycache__/
+*.pyc
