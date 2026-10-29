@@ -30,8 +30,7 @@ for job in daily weekly; do
 done
 
 echo
-echo "Done. Remaining manual step: put the Google service-account key at"
-echo "  $BASE/service-account.json"
-echo "and copy config.example.json -> config.json (see automation/README.md)."
+echo "Done. Remaining manual step: deploy apps-script/Ingest.gs as a Web App and"
+echo "copy config.example.json -> config.json with ingest_url + ingest_token (README step 1)."
 echo
-echo "Then test:  $VENV/bin/python $REPO/positioning-system/automation/src/run_daily.py"
+echo "Then test:  $VENV/bin/python $REPO/positioning-system/automation/src/selftest.py"

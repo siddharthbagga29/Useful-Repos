@@ -1,6 +1,7 @@
 {
   "ingest_url": "PASTE_THE_APPS_SCRIPT_WEB_APP_EXEC_URL_HERE",
   "ingest_token": "PASTE_THE_TOKEN_FROM_setupIngestToken_HERE",
+  "census_api_key": "PASTE_YOUR_CENSUS_API_KEY_HERE",
   "state_dir": "~/.positioning-os/state",
   "census_year": "2022",
   "counties": [
@@ -40,14 +41,14 @@
     {
       "id": "rccapital-team",
       "kind": "team",
-      "org": "RC Capital",
+      "org": "River Cities Capital",
       "url": "https://rccf.com/team/"
     },
     {
       "id": "northcreek-team",
       "kind": "team",
       "org": "Northcreek Mezzanine",
-      "url": "https://www.northcreekmezzanine.com/about-us/"
+      "url": "https://www.northcreekmezzanine.com/meet-the-team/"
     },
     {
       "id": "silverstone-team",
@@ -59,7 +60,7 @@
       "id": "reag-team",
       "kind": "team",
       "org": "REAG",
-      "url": "https://reag.com/team/"
+      "url": "https://reag.com/about-us/"
     },
     {
       "id": "acg-cincy-events",
@@ -71,13 +72,13 @@
       "id": "cfa-cincy-events",
       "kind": "events",
       "org": "CFA Society Cincinnati",
-      "url": "https://www.cfasociety.org/cincinnati/upcoming-events"
+      "url": "https://www.cfasociety.org/cincinnati/society-events/upcoming-events"
     },
     {
       "id": "goering-events",
       "kind": "events",
       "org": "UC Goering Center",
-      "url": "https://www.business.uc.edu/about/centers-partnerships/goering.html"
+      "url": "https://goeringcenter.com/calendar/"
     }
   ],
   "max_consecutive_failures_before_escalation": 3,

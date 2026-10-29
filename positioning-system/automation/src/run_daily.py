@@ -61,10 +61,10 @@ def main() -> int:
     t0 = time.time()
     try:
         f = edgar.recent_form_d(cfg)
-        for fil in f["filings"][:10]:
+        for i, fil in enumerate(f["filings"][:10], 1):
             book.append("Opportunities", [[
-                f"OPP-{run_id}-{fil['state']}", "Deal",
-                f"New Form D filing: {fil['name']} ({fil['state']}), filed {fil['filed']}",
+                f"OPP-{run_id}-{fil['state']}-{i}", "Deal",
+                f"New Form D filing: {fil['name']} ({fil['location']}), filed {fil['filed']}",
                 "", fil["name"], "Identified", "",
                 "A manager that just closed a vehicle must deploy it, and small firms "
                 "add junior headcount when they do. These seats are never posted.",

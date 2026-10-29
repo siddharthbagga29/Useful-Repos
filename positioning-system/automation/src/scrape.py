@@ -20,33 +20,57 @@ TITLE_WORDS = (
     "associate", "analyst", "founder", "president", "chief", "cfo", "coo", "ceo",
     "head of", "counsel", "controller",
 )
+# Whole words only: "partner" must not match "Partnerships".
+TITLE_RE = re.compile(r"\b(" + "|".join(re.escape(w) for w in TITLE_WORDS) + r")\b", re.I)
 NAME_RE = re.compile(r"^[A-Z][a-z'’\-]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z'’\-]+$")
+# Some firms print names in capitals ("MARK A. GREENBERG"). Kept as printed.
+CAPS_NAME_RE = re.compile(r"^[A-Z][A-Z'’\-]+(?:\s+[A-Z]\.?)?\s+[A-Z][A-Z'’\-]+$")
 
 
 def _hash(text: str) -> str:
     return hashlib.sha256(" ".join(text.split()).encode("utf-8")).hexdigest()[:16]
 
 
+def _is_title(line: str) -> bool:
+    return bool(line) and len(line) <= 90 and bool(TITLE_RE.search(line))
+
+
+def _is_name(line: str) -> bool:
+    # "Managing Director" and "VICE PRESIDENT" are name-shaped; a title word wins.
+    return (len(line) <= 40 and bool(NAME_RE.match(line) or CAPS_NAME_RE.match(line))
+            and not _is_title(line))
+
+
 def _people_candidates(lines: list[str]) -> list[dict]:
-    """Conservative: a name-looking line immediately followed by a title-looking
-    line. Misses plenty. Invents nothing."""
+    """Conservative: pairs a name-looking line with an adjacent title-looking
+    line. Misses plenty. Invents nothing.
+
+    Pages differ on whether the title sits below the name (Roebling) or above it
+    (REAG). Pairing the wrong way gives every person the *next* person's title,
+    so the layout is decided per page by which side titles appear on more
+    often. A tie means the page is ambiguous and nothing is returned."""
+    lines = [l.strip() for l in lines]
+    names = [i for i, l in enumerate(lines) if _is_name(l)]
+    after = sum(1 for i in names if i + 1 < len(lines) and _is_title(lines[i + 1]))
+    before = sum(1 for i in names if i > 0 and _is_title(lines[i - 1]))
+    if after == before:
+        return []
+    step = 1 if after > before else -1
+
     out, seen = [], set()
-    for i, line in enumerate(lines[:-1]):
-        name = line.strip()
-        if not NAME_RE.match(name) or len(name) > 40 or name in seen:
+    for i in names:
+        j = i + step
+        if not 0 <= j < len(lines) or lines[i] in seen or not _is_title(lines[j]):
             continue
-        nxt = lines[i + 1].strip()
-        if not nxt or len(nxt) > 90:
-            continue
-        if any(w in nxt.lower() for w in TITLE_WORDS):
-            seen.add(name)
-            out.append({"name": name, "title_as_printed": nxt})
+        seen.add(lines[i])
+        out.append({"name": lines[i], "title_as_printed": lines[j]})
     return out
 
 
 def _events_candidates(lines: list[str]) -> list[str]:
     pat = re.compile(
         r"\b(\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)"
+        r"|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+\d{1,2}\b"
         r"|(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2})",
         re.I)
     return [l.strip() for l in lines if pat.search(l) and 10 < len(l.strip()) < 160][:15]
@@ -63,12 +87,22 @@ def fetch(sources: list[dict], user_agent: str, timeout_ms: int = 30000) -> dict
             res = {"ok": False, "hash": "", "text_len": 0,
                    "people": [], "events": [], "error": ""}
             try:
-                page.goto(s["url"], timeout=timeout_ms, wait_until="domcontentloaded")
+                resp = page.goto(s["url"], timeout=timeout_ms, wait_until="domcontentloaded")
+                # A 404 page still has a body; hashing it would look like a live source.
+                if resp is not None and resp.status >= 400:
+                    raise RuntimeError(f"HTTP {resp.status} at {page.url}")
                 page.wait_for_timeout(1500)   # let client-side rendering settle
                 text = page.inner_text("body")
                 lines = [l for l in text.splitlines() if l.strip()]
                 res["ok"] = True
-                res["hash"] = _hash(text)
+                fingerprint = text
+                if s.get("kind") == "team":
+                    # Some team pages are image cards with the name only in the
+                    # profile link (/team/jane-doe/). Hash the links too, so an
+                    # added or removed profile registers as a change.
+                    hrefs = page.eval_on_selector_all("a[href]", "els => els.map(e => e.href)")
+                    fingerprint += "\n" + "\n".join(sorted({h.split("#")[0] for h in hrefs}))
+                res["hash"] = _hash(fingerprint)
                 res["text_len"] = len(text)
                 if s.get("kind") == "team":
                     res["people"] = _people_candidates(lines)
