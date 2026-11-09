@@ -1,0 +1,2475 @@
+{
+ "start": "2026-11-10",
+ "days": [
+  {
+   "day": 1,
+   "date": "2026-11-10",
+   "dow": "Tue",
+   "week": 1,
+   "goals": [
+    {
+     "action": "Change degree to 'M.S. Finance' on résumé, LinkedIn, bios",
+     "min": 30,
+     "deliverable": "Corrected résumé + LinkedIn",
+     "done": "Zero occurrences of 'Financial Mathematics'"
+    },
+    {
+     "action": "Run the 2 Census CBP queries (file 03 §A2); start target sheet from Ohio SFM certified-company records",
+     "min": 60,
+     "deliverable": "Target sheet with ≥25 sourced rows",
+     "done": "≥25 rows, each with source URL"
+    },
+    {
+     "action": "Email 3 immigration attorneys (AILA directory) to book a consult; attach file 08 §5 AQ1-AQ10",
+     "min": 30,
+     "deliverable": "3 emails sent",
+     "done": "3 sent; consult date requested"
+    }
+   ],
+   "total": 120
+  },
+  {
+   "day": 2,
+   "date": "2026-11-11",
+   "dow": "Wed",
+   "week": 1,
+   "goals": [
+    {
+     "action": "Apply the other résumé fixes in positioning-system/01-diagnosis.md §B",
+     "min": 40,
+     "deliverable": "Résumé v-corrected",
+     "done": "All 4 flagged claims fixed or removed"
+    },
+    {
+     "action": "Read files 02 and 03 end-to-end; write the 3 reasons to reject fire in your own words",
+     "min": 40,
+     "deliverable": "3-line note",
+     "done": "Saved"
+    },
+    {
+     "action": "Set up CRM tabs: Deal pros / Industry / Capital / Operators",
+     "min": 25,
+     "deliverable": "CRM with 4 tabs + columns",
+     "done": "Tabs exist; 0 unsourced rows"
+    }
+   ],
+   "total": 105
+  },
+  {
+   "day": 3,
+   "date": "2026-11-12",
+   "dow": "Thu",
+   "week": 1,
+   "goals": [
+    {
+     "action": "Draft 'Why sell-side M&A?' answer",
+     "min": 25,
+     "deliverable": "Answer ≤200 words",
+     "done": "Rehearsed aloud twice"
+    },
+    {
+     "action": "Case A2 worked example (file 05 §4): redo every calculation yourself without looking",
+     "min": 35,
+     "deliverable": "Your own D-table for ABM/Able",
+     "done": "Your 12.8x and 8.3x match the file"
+    },
+    {
+     "action": "Follow up with attorneys not yet replied; confirm a consult date",
+     "min": 15,
+     "deliverable": "Consult date confirmed or 2nd round sent",
+     "done": "Logged"
+    }
+   ],
+   "total": 75
+  },
+  {
+   "day": 4,
+   "date": "2026-11-13",
+   "dow": "Fri",
+   "week": 1,
+   "goals": [
+    {
+     "action": "Update LinkedIn activity: comment thoughtfully on 2 posts from target firms",
+     "min": 20,
+     "deliverable": "2 comments",
+     "done": "Posted; no claims of authorisation"
+    },
+    {
+     "action": "Industry reading: 1 trade/industry article on fire & life safety M&A; 3 bullet takeaways",
+     "min": 30,
+     "deliverable": "3 bullets in research log",
+     "done": "Logged with URL + date"
+    },
+    {
+     "action": "Write the household budget baseline together (actual last 3 months)",
+     "min": 30,
+     "deliverable": "Budget sheet with monthly total",
+     "done": "Done and noted in money log"
+    }
+   ],
+   "total": 80
+  },
+  {
+   "day": 5,
+   "date": "2026-11-14",
+   "dow": "Sat",
+   "week": 1,
+   "goals": [
+    {
+     "action": "Light: read file 04 'At a glance' table (20 min)",
+     "min": 20,
+     "deliverable": "3 bullets",
+     "done": "Logged"
+    },
+    {
+     "action": "Start the NFPA 25/72/10 + Ohio 1301:7-7-09 cheat sheet (sources: S-30, S-32)",
+     "min": 30,
+     "deliverable": "Half-page draft",
+     "done": "Saved; finish on Wed of week 2"
+    },
+    {
+     "action": "Light: 15 min — reply to messages; protect the rest of the day",
+     "min": 15,
+     "deliverable": "Inbox for contacts = 0",
+     "done": "Done"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 6,
+   "date": "2026-11-15",
+   "dow": "Sun",
+   "week": 1,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 7,
+   "date": "2026-11-16",
+   "dow": "Mon",
+   "week": 2,
+   "goals": [
+    {
+     "action": "Tailor one résumé variant (rotate: M&A / TAS / PE-backed finance)",
+     "min": 30,
+     "deliverable": "1 résumé file saved, dated",
+     "done": "File saved; no 'Financial Mathematics', no authorisation claim"
+    },
+    {
+     "action": "Case study part 1 — facts & economics: F5 Summit ← Total Life Safety (West Chester OH)",
+     "min": 45,
+     "deliverable": "Case card fields 1-8 filled",
+     "done": "Every number has a source ID or 'n/d'"
+    },
+    {
+     "action": "Identify 2 new contacts (Circle 1-3, file 09 §8) and log in CRM",
+     "min": 25,
+     "deliverable": "2 CRM rows with source URL",
+     "done": "2 rows saved with today's date"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 8,
+   "date": "2026-11-17",
+   "dow": "Tue",
+   "week": 2,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'Why sell-side M&A?'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 40 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 40 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 9,
+   "date": "2026-11-18",
+   "dow": "Wed",
+   "week": 2,
+   "goals": [
+    {
+     "action": "Research employers: FIRM-008 REAG + FIRM-009 MelCap",
+     "min": 30,
+     "deliverable": "2 employer notes (deal types, team, sector)",
+     "done": "Notes saved with source URLs"
+    },
+    {
+     "action": "Skill block: EBITDA normalisation: add-backs vs owner replacement cost",
+     "min": 45,
+     "deliverable": "1-page adjustments memo on a case",
+     "done": "Deliverable saved in /bagga-acquisition-research/notes"
+    },
+    {
+     "action": "Request 1 informational conversation (never a job ask)",
+     "min": 20,
+     "deliverable": "1 request sent",
+     "done": "Message sent and logged"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 10,
+   "date": "2026-11-19",
+   "dow": "Thu",
+   "week": 2,
+   "goals": [
+    {
+     "action": "Technical drill: 20 min LBO/accounting flashcards + 1 timed mini-model",
+     "min": 30,
+     "deliverable": "Mini-model saved",
+     "done": "Completed within 25 min"
+    },
+    {
+     "action": "Case study part 2 — verdict (questions I-J): F5 Summit ← Total Life Safety (West Chester OH)",
+     "min": 40,
+     "deliverable": "Verdict + 'what I'd negotiate'",
+     "done": "One-line lesson added to lessons log"
+    },
+    {
+     "action": "Read 07 §1-3; write your 5 operator must-haves in your own words",
+     "min": 25,
+     "deliverable": "5-line operator spec",
+     "done": "Saved"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 11,
+   "date": "2026-11-20",
+   "dow": "Fri",
+   "week": 2,
+   "goals": [
+    {
+     "action": "Update LinkedIn activity: comment thoughtfully on 2 posts from target firms",
+     "min": 20,
+     "deliverable": "2 comments",
+     "done": "Posted; no claims of authorisation"
+    },
+    {
+     "action": "Industry reading: 1 trade/industry article on fire & life safety M&A; 3 bullet takeaways",
+     "min": 30,
+     "deliverable": "3 bullets in research log",
+     "done": "Logged with URL + date"
+    },
+    {
+     "action": "Open/label a separate high-yield account for the 2-3-yr reserve",
+     "min": 30,
+     "deliverable": "Account exists, named 'Reserve'",
+     "done": "Done and noted in money log"
+    }
+   ],
+   "total": 80
+  },
+  {
+   "day": 12,
+   "date": "2026-11-21",
+   "dow": "Sat",
+   "week": 2,
+   "goals": [
+    {
+     "action": "Light: read one chapter / article on M&A process (20 min)",
+     "min": 20,
+     "deliverable": "3 bullets",
+     "done": "Logged"
+    },
+    {
+     "action": "Light: enrich 5 target rows (service lines, # locations from websites)",
+     "min": 30,
+     "deliverable": "5 enriched rows",
+     "done": "Fields filled with source URL"
+    },
+    {
+     "action": "Light: 15 min — reply to any messages; protect the rest of the day for family",
+     "min": 15,
+     "deliverable": "Inbox for contacts = 0",
+     "done": "Done"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 13,
+   "date": "2026-11-22",
+   "dow": "Sun",
+   "week": 2,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 14,
+   "date": "2026-11-23",
+   "dow": "Mon",
+   "week": 3,
+   "goals": [
+    {
+     "action": "Tailor one résumé variant (rotate: M&A / TAS / PE-backed finance)",
+     "min": 30,
+     "deliverable": "1 résumé file saved, dated",
+     "done": "File saved; no 'Financial Mathematics', no authorisation claim"
+    },
+    {
+     "action": "Case study part 1 — facts & economics: A1 Rollins ← Fox Pest Control",
+     "min": 45,
+     "deliverable": "Case card fields 1-8 filled",
+     "done": "Every number has a source ID or 'n/d'"
+    },
+    {
+     "action": "Identify 2 new contacts (Circle 1-3, file 09 §8) and log in CRM",
+     "min": 25,
+     "deliverable": "2 CRM rows with source URL",
+     "done": "2 rows saved with today's date"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 15,
+   "date": "2026-11-24",
+   "dow": "Tue",
+   "week": 3,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'Walk me through a deal you underwrote'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 50 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 50 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 16,
+   "date": "2026-11-25",
+   "dow": "Wed",
+   "week": 3,
+   "goals": [
+    {
+     "action": "Research employers: FIRM-001 Roebling + FIRM-002 RC Capital",
+     "min": 30,
+     "deliverable": "2 employer notes (deal types, team, sector)",
+     "done": "Notes saved with source URLs"
+    },
+    {
+     "action": "Skill block: Rebuild the LBO from blank: sources & uses + P&L",
+     "min": 45,
+     "deliverable": "Your own sheet matching file 06 Base S&U",
+     "done": "Deliverable saved in /bagga-acquisition-research/notes"
+    },
+    {
+     "action": "Request 1 informational conversation (never a job ask)",
+     "min": 20,
+     "deliverable": "1 request sent",
+     "done": "Message sent and logged"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 17,
+   "date": "2026-11-26",
+   "dow": "Thu",
+   "week": 3,
+   "goals": [
+    {
+     "action": "Thanksgiving — light: 10 min re-read your 30-second introduction",
+     "min": 10,
+     "deliverable": "Read once",
+     "done": "Done"
+    },
+    {
+     "action": "Light: note one thing learned this month about fire ITM",
+     "min": 10,
+     "deliverable": "1 sentence",
+     "done": "Logged"
+    },
+    {
+     "action": "Family day. Send 1 thank-you note to someone who helped you",
+     "min": 10,
+     "deliverable": "1 note",
+     "done": "Sent"
+    }
+   ],
+   "total": 30
+  },
+  {
+   "day": 18,
+   "date": "2026-11-27",
+   "dow": "Fri",
+   "week": 3,
+   "goals": [
+    {
+     "action": "Update LinkedIn activity: comment thoughtfully on 2 posts from target firms",
+     "min": 20,
+     "deliverable": "2 comments",
+     "done": "Posted; no claims of authorisation"
+    },
+    {
+     "action": "Industry reading: 1 trade/industry article on fire & life safety M&A; 3 bullet takeaways",
+     "min": 30,
+     "deliverable": "3 bullets in research log",
+     "done": "Logged with URL + date"
+    },
+    {
+     "action": "Get 2 term-life quotes for each spouse",
+     "min": 30,
+     "deliverable": "4 quotes saved",
+     "done": "Done and noted in money log"
+    }
+   ],
+   "total": 80
+  },
+  {
+   "day": 19,
+   "date": "2026-11-28",
+   "dow": "Sat",
+   "week": 3,
+   "goals": [
+    {
+     "action": "Light: read one chapter / article on M&A process (20 min)",
+     "min": 20,
+     "deliverable": "3 bullets",
+     "done": "Logged"
+    },
+    {
+     "action": "Light: enrich 5 target rows (service lines, # locations from websites)",
+     "min": 30,
+     "deliverable": "5 enriched rows",
+     "done": "Fields filled with source URL"
+    },
+    {
+     "action": "Light: 15 min — reply to any messages; protect the rest of the day for family",
+     "min": 15,
+     "deliverable": "Inbox for contacts = 0",
+     "done": "Done"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 20,
+   "date": "2026-11-29",
+   "dow": "Sun",
+   "week": 3,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 21,
+   "date": "2026-11-30",
+   "dow": "Mon",
+   "week": 4,
+   "goals": [
+    {
+     "action": "Counsel consult target date: bring files 08 + positioning-system/18",
+     "min": 60,
+     "deliverable": "Written answers or follow-up letter requested",
+     "done": "Answers saved to /06 Immigration"
+    },
+    {
+     "action": "Update file 08 §3 table with counsel's answers (permitted / not / pending)",
+     "min": 30,
+     "deliverable": "Updated table",
+     "done": "Every row has a status"
+    },
+    {
+     "action": "Flag any activity now cleared/blocked in CRM + calendar",
+     "min": 15,
+     "deliverable": "Flags updated",
+     "done": "Done"
+    }
+   ],
+   "total": 105
+  },
+  {
+   "day": 22,
+   "date": "2026-12-01",
+   "dow": "Tue",
+   "week": 4,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'How do you normalise EBITDA?'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 60 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 60 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 23,
+   "date": "2026-12-02",
+   "dow": "Wed",
+   "week": 4,
+   "goals": [
+    {
+     "action": "Research employers: FIRM-003 Brixey & Meyer + FIRM-004 Revitalize",
+     "min": 30,
+     "deliverable": "2 employer notes (deal types, team, sector)",
+     "done": "Notes saved with source URLs"
+    },
+    {
+     "action": "Skill block: Rebuild the LBO: debt schedule + DSCR",
+     "min": 45,
+     "deliverable": "Your DSCR within ±0.02x of file 06 Base",
+     "done": "Deliverable saved in /bagga-acquisition-research/notes"
+    },
+    {
+     "action": "Request 1 informational conversation (never a job ask)",
+     "min": 20,
+     "deliverable": "1 request sent",
+     "done": "Message sent and logged"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 24,
+   "date": "2026-12-03",
+   "dow": "Thu",
+   "week": 4,
+   "goals": [
+    {
+     "action": "Technical drill: 20 min LBO/accounting flashcards + 1 timed mini-model",
+     "min": 30,
+     "deliverable": "Mini-model saved",
+     "done": "Completed within 25 min"
+    },
+    {
+     "action": "Case study part 2 — verdict (questions I-J): F1 APi ← Chubb",
+     "min": 40,
+     "deliverable": "Verdict + 'what I'd negotiate'",
+     "done": "One-line lesson added to lessons log"
+    },
+    {
+     "action": "Operator pipeline: identify 1 potential operator (branch/service manager)",
+     "min": 25,
+     "deliverable": "1 operator row in CRM",
+     "done": "Row has employer, title, source URL"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 25,
+   "date": "2026-12-04",
+   "dow": "Fri",
+   "week": 4,
+   "goals": [
+    {
+     "action": "Update LinkedIn activity: comment thoughtfully on 2 posts from target firms",
+     "min": 20,
+     "deliverable": "2 comments",
+     "done": "Posted; no claims of authorisation"
+    },
+    {
+     "action": "Industry reading: 1 trade/industry article on fire & life safety M&A; 3 bullet takeaways",
+     "min": 30,
+     "deliverable": "3 bullets in research log",
+     "done": "Logged with URL + date"
+    },
+    {
+     "action": "Get 1 long-term disability quote",
+     "min": 30,
+     "deliverable": "Quote saved",
+     "done": "Done and noted in money log"
+    }
+   ],
+   "total": 80
+  },
+  {
+   "day": 26,
+   "date": "2026-12-05",
+   "dow": "Sat",
+   "week": 4,
+   "goals": [
+    {
+     "action": "Light: read one chapter / article on M&A process (20 min)",
+     "min": 20,
+     "deliverable": "3 bullets",
+     "done": "Logged"
+    },
+    {
+     "action": "Light: enrich 5 target rows (service lines, # locations from websites)",
+     "min": 30,
+     "deliverable": "5 enriched rows",
+     "done": "Fields filled with source URL"
+    },
+    {
+     "action": "Light: 15 min — reply to any messages; protect the rest of the day for family",
+     "min": 15,
+     "deliverable": "Inbox for contacts = 0",
+     "done": "Done"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 27,
+   "date": "2026-12-06",
+   "dow": "Sun",
+   "week": 4,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 28,
+   "date": "2026-12-07",
+   "dow": "Mon",
+   "week": 5,
+   "goals": [
+    {
+     "action": "Tailor one résumé variant (rotate: M&A / TAS / PE-backed finance)",
+     "min": 30,
+     "deliverable": "1 résumé file saved, dated",
+     "done": "File saved; no 'Financial Mathematics', no authorisation claim"
+    },
+    {
+     "action": "Case study part 1 — facts & economics: X1 Zips Car Wash (failure)",
+     "min": 45,
+     "deliverable": "Case card fields 1-8 filled",
+     "done": "Every number has a source ID or 'n/d'"
+    },
+    {
+     "action": "Identify 2 new contacts (Circle 1-3, file 09 §8) and log in CRM",
+     "min": 25,
+     "deliverable": "2 CRM rows with source URL",
+     "done": "2 rows saved with today's date"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 29,
+   "date": "2026-12-08",
+   "dow": "Tue",
+   "week": 5,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'What drives value in a services business?'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 70 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 70 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 30,
+   "date": "2026-12-09",
+   "dow": "Wed",
+   "week": 5,
+   "goals": [
+    {
+     "action": "Phase-1 review: résumé variants ×3 done? 12 answers drafted? (file 11 milestones)",
+     "min": 30,
+     "deliverable": "Milestone checklist",
+     "done": "Each item ✔ or reason written"
+    },
+    {
+     "action": "Phase-1 review: target list ≥60, 4 cases done, model rebuilt",
+     "min": 30,
+     "deliverable": "Acquisition milestone checklist",
+     "done": "Each item ✔ or reason written"
+    },
+    {
+     "action": "Phase-1 review: contacts in CRM ≥10, 3 conversation requests sent; reserve % recorded",
+     "min": 30,
+     "deliverable": "Network/money checklist",
+     "done": "Each item ✔ or reason written"
+    }
+   ],
+   "total": 90
+  },
+  {
+   "day": 31,
+   "date": "2026-12-10",
+   "dow": "Thu",
+   "week": 5,
+   "goals": [
+    {
+     "action": "Technical drill: 20 min LBO/accounting flashcards + 1 timed mini-model",
+     "min": 30,
+     "deliverable": "Mini-model saved",
+     "done": "Completed within 25 min"
+    },
+    {
+     "action": "Case study part 2 — verdict (questions I-J): X1 Zips Car Wash (failure)",
+     "min": 40,
+     "deliverable": "Verdict + 'what I'd negotiate'",
+     "done": "One-line lesson added to lessons log"
+    },
+    {
+     "action": "Operator pipeline: identify 1 potential operator (branch/service manager)",
+     "min": 25,
+     "deliverable": "1 operator row in CRM",
+     "done": "Row has employer, title, source URL"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 32,
+   "date": "2026-12-11",
+   "dow": "Fri",
+   "week": 5,
+   "goals": [
+    {
+     "action": "Update LinkedIn activity: comment thoughtfully on 2 posts from target firms",
+     "min": 20,
+     "deliverable": "2 comments",
+     "done": "Posted; no claims of authorisation"
+    },
+    {
+     "action": "Industry reading: 1 trade/industry article on fire & life safety M&A; 3 bullet takeaways",
+     "min": 30,
+     "deliverable": "3 bullets in research log",
+     "done": "Logged with URL + date"
+    },
+    {
+     "action": "List 3 estate attorneys for wills/POA (incl. QDOT question, file 14 §5)",
+     "min": 30,
+     "deliverable": "3 names + contact",
+     "done": "Done and noted in money log"
+    }
+   ],
+   "total": 80
+  },
+  {
+   "day": 33,
+   "date": "2026-12-12",
+   "dow": "Sat",
+   "week": 5,
+   "goals": [
+    {
+     "action": "Light: read one chapter / article on M&A process (20 min)",
+     "min": 20,
+     "deliverable": "3 bullets",
+     "done": "Logged"
+    },
+    {
+     "action": "Light: enrich 5 target rows (service lines, # locations from websites)",
+     "min": 30,
+     "deliverable": "5 enriched rows",
+     "done": "Fields filled with source URL"
+    },
+    {
+     "action": "Light: 15 min — reply to any messages; protect the rest of the day for family",
+     "min": 15,
+     "deliverable": "Inbox for contacts = 0",
+     "done": "Done"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 34,
+   "date": "2026-12-13",
+   "dow": "Sun",
+   "week": 5,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 35,
+   "date": "2026-12-14",
+   "dow": "Mon",
+   "week": 6,
+   "goals": [
+    {
+     "action": "Tailor one résumé variant (rotate: M&A / TAS / PE-backed finance)",
+     "min": 30,
+     "deliverable": "1 résumé file saved, dated",
+     "done": "File saved; no 'Financial Mathematics', no authorisation claim"
+    },
+    {
+     "action": "Case study part 1 — facts & economics: F3 + F4 CertaSite build → APi exit",
+     "min": 45,
+     "deliverable": "Case card fields 1-8 filled",
+     "done": "Every number has a source ID or 'n/d'"
+    },
+    {
+     "action": "Identify 2 new contacts (Circle 1-3, file 09 §8) and log in CRM",
+     "min": 25,
+     "deliverable": "2 CRM rows with source URL",
+     "done": "2 rows saved with today's date"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 36,
+   "date": "2026-12-15",
+   "dow": "Tue",
+   "week": 6,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'Pitch me an industry (fire ITM)'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 75 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 75 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 37,
+   "date": "2026-12-16",
+   "dow": "Wed",
+   "week": 6,
+   "goals": [
+    {
+     "action": "Research employers: FIRM-005 Northcreek + FIRM-015 Crane Group",
+     "min": 30,
+     "deliverable": "2 employer notes (deal types, team, sector)",
+     "done": "Notes saved with source URLs"
+    },
+    {
+     "action": "Skill block: QoE red flags: cash revenue, add-back inflation",
+     "min": 45,
+     "deliverable": "List of 10 red flags with tests",
+     "done": "Deliverable saved in /bagga-acquisition-research/notes"
+    },
+    {
+     "action": "Request 1 informational conversation (never a job ask)",
+     "min": 20,
+     "deliverable": "1 request sent",
+     "done": "Message sent and logged"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 38,
+   "date": "2026-12-17",
+   "dow": "Thu",
+   "week": 6,
+   "goals": [
+    {
+     "action": "Field test prep: write the 6 questions you'll ask (file 02 §6 factors)",
+     "min": 25,
+     "deliverable": "Question list",
+     "done": "Saved"
+    },
+    {
+     "action": "Field test: request 3 short calls with FIRE managers/techs (former or current)",
+     "min": 30,
+     "deliverable": "3 requests",
+     "done": "Sent & logged"
+    },
+    {
+     "action": "Field test: request 3 short calls with PEST managers/techs",
+     "min": 30,
+     "deliverable": "3 requests",
+     "done": "Sent & logged"
+    }
+   ],
+   "total": 85
+  },
+  {
+   "day": 39,
+   "date": "2026-12-18",
+   "dow": "Fri",
+   "week": 6,
+   "goals": [
+    {
+     "action": "Interview answer: 'Pitch me an industry' — draft both fire and pest versions",
+     "min": 30,
+     "deliverable": "2 pitches",
+     "done": "Saved"
+    },
+    {
+     "action": "Field test: hold/record notes from any fire or pest call; score factors 1-5",
+     "min": 45,
+     "deliverable": "Call notes + scores",
+     "done": "Scores entered in overlay sheet"
+    },
+    {
+     "action": "Follow up unanswered field-test requests",
+     "min": 15,
+     "deliverable": "Follow-ups sent",
+     "done": "Logged"
+    }
+   ],
+   "total": 90
+  },
+  {
+   "day": 40,
+   "date": "2026-12-19",
+   "dow": "Sat",
+   "week": 6,
+   "goals": [
+    {
+     "action": "Light career: update target employer list with any field-test insights",
+     "min": 20,
+     "deliverable": "List updated",
+     "done": "Saved"
+    },
+    {
+     "action": "Field test: second batch of calls/notes; update overlay scores",
+     "min": 45,
+     "deliverable": "Updated overlay",
+     "done": "data/cincinnati_overlay.csv edited with evidence"
+    },
+    {
+     "action": "Ask each contact: 'Who else should I talk to?' — log referrals",
+     "min": 20,
+     "deliverable": "Referrals logged",
+     "done": "≥1 referral or 'none'"
+    }
+   ],
+   "total": 85
+  },
+  {
+   "day": 41,
+   "date": "2026-12-20",
+   "dow": "Sun",
+   "week": 6,
+   "goals": [
+    {
+     "action": "Technical drill: 30 min",
+     "min": 30,
+     "deliverable": "Mini-model",
+     "done": "Done"
+    },
+    {
+     "action": "Field test: final calls; write a half-page per industry",
+     "min": 45,
+     "deliverable": "2 half-pages",
+     "done": "Saved"
+    },
+    {
+     "action": "Thank-you notes to everyone who spoke with you",
+     "min": 20,
+     "deliverable": "Notes sent",
+     "done": "Sent = calls held"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 42,
+   "date": "2026-12-21",
+   "dow": "Mon",
+   "week": 7,
+   "goals": [
+    {
+     "action": "Light: LinkedIn — 2 thoughtful comments",
+     "min": 15,
+     "deliverable": "2 comments",
+     "done": "Posted"
+    },
+    {
+     "action": "Re-run python3 data/score_industries.py with updated overlay",
+     "min": 40,
+     "deliverable": "New ranking output",
+     "done": "Output saved to notes"
+    },
+    {
+     "action": "Book next month's money meeting date",
+     "min": 10,
+     "deliverable": "Date set",
+     "done": "On calendar"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 43,
+   "date": "2026-12-22",
+   "dow": "Tue",
+   "week": 7,
+   "goals": [
+    {
+     "action": "Update 09 §6 résumé thesis bullet for the chosen industry",
+     "min": 20,
+     "deliverable": "Bullet updated",
+     "done": "Saved"
+    },
+    {
+     "action": "DECISION DAY: lock fire or switch to pest; write a one-page decision memo",
+     "min": 60,
+     "deliverable": "Decision memo",
+     "done": "Signed & dated; files 01/02 updated if switched"
+    },
+    {
+     "action": "Tell your spouse the decision and what it means for the next 6 months",
+     "min": 20,
+     "deliverable": "Conversation held",
+     "done": "Done"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 44,
+   "date": "2026-12-23",
+   "dow": "Wed",
+   "week": 7,
+   "goals": [
+    {
+     "action": "Interview answer refresh: 'Why this industry?'",
+     "min": 20,
+     "deliverable": "Answer",
+     "done": "Rehearsed"
+    },
+    {
+     "action": "Insurance-agency primary research (3 hrs split: 60 min today): carrier appointment & change-of-control rules",
+     "min": 60,
+     "deliverable": "Notes with sources",
+     "done": "≥3 primary sources"
+    },
+    {
+     "action": "Light: reply to messages; holiday plans",
+     "min": 10,
+     "deliverable": "Inbox clear",
+     "done": "Done"
+    }
+   ],
+   "total": 90
+  },
+  {
+   "day": 45,
+   "date": "2026-12-24",
+   "dow": "Thu",
+   "week": 7,
+   "goals": [
+    {
+     "action": "Christmas Eve — light: 10 min reading",
+     "min": 10,
+     "deliverable": "—",
+     "done": "Done"
+    },
+    {
+     "action": "Light: 10 min — note one question you still can't answer about the deal",
+     "min": 10,
+     "deliverable": "1 question",
+     "done": "Logged"
+    },
+    {
+     "action": "Family time",
+     "min": 10,
+     "deliverable": "—",
+     "done": "Done"
+    }
+   ],
+   "total": 30
+  },
+  {
+   "day": 46,
+   "date": "2026-12-25",
+   "dow": "Fri",
+   "week": 7,
+   "goals": [
+    {
+     "action": "Christmas — rest",
+     "min": 5,
+     "deliverable": "—",
+     "done": "Done"
+    },
+    {
+     "action": "Rest",
+     "min": 5,
+     "deliverable": "—",
+     "done": "Done"
+    },
+    {
+     "action": "Call parents",
+     "min": 15,
+     "deliverable": "Call",
+     "done": "Done"
+    }
+   ],
+   "total": 25
+  },
+  {
+   "day": 47,
+   "date": "2026-12-26",
+   "dow": "Sat",
+   "week": 7,
+   "goals": [
+    {
+     "action": "Light: read one chapter / article on M&A process (20 min)",
+     "min": 20,
+     "deliverable": "3 bullets",
+     "done": "Logged"
+    },
+    {
+     "action": "Light: enrich 5 target rows (service lines, # locations from websites)",
+     "min": 30,
+     "deliverable": "5 enriched rows",
+     "done": "Fields filled with source URL"
+    },
+    {
+     "action": "Light: 15 min — reply to any messages; protect the rest of the day for family",
+     "min": 15,
+     "deliverable": "Inbox for contacts = 0",
+     "done": "Done"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 48,
+   "date": "2026-12-27",
+   "dow": "Sun",
+   "week": 7,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 49,
+   "date": "2026-12-28",
+   "dow": "Mon",
+   "week": 8,
+   "goals": [
+    {
+     "action": "Tailor one résumé variant (rotate: M&A / TAS / PE-backed finance)",
+     "min": 30,
+     "deliverable": "1 résumé file saved, dated",
+     "done": "File saved; no 'Financial Mathematics', no authorisation claim"
+    },
+    {
+     "action": "Case study part 1 — facts & economics: X2 Rentokil ← Terminix",
+     "min": 45,
+     "deliverable": "Case card fields 1-8 filled",
+     "done": "Every number has a source ID or 'n/d'"
+    },
+    {
+     "action": "Identify 2 new contacts (Circle 1-3, file 09 §8) and log in CRM",
+     "min": 25,
+     "deliverable": "2 CRM rows with source URL",
+     "done": "2 rows saved with today's date"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 50,
+   "date": "2026-12-29",
+   "dow": "Tue",
+   "week": 8,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'What is DSCR and why it matters'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 85 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 85 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 51,
+   "date": "2026-12-30",
+   "dow": "Wed",
+   "week": 8,
+   "goals": [
+    {
+     "action": "Research employers: FIRM-012 Vigran + FIRM-013 Argentarii",
+     "min": 30,
+     "deliverable": "2 employer notes (deal types, team, sector)",
+     "done": "Notes saved with source URLs"
+    },
+    {
+     "action": "Skill block: Seller-note terms: IO, standby, subordination",
+     "min": 45,
+     "deliverable": "Term sheet for the Base seller note",
+     "done": "Deliverable saved in /bagga-acquisition-research/notes"
+    },
+    {
+     "action": "Request 1 informational conversation (never a job ask)",
+     "min": 20,
+     "deliverable": "1 request sent",
+     "done": "Message sent and logged"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 52,
+   "date": "2026-12-31",
+   "dow": "Thu",
+   "week": 8,
+   "goals": [
+    {
+     "action": "Light: 15 min — write 3 career wins of 2026",
+     "min": 15,
+     "deliverable": "3 wins",
+     "done": "Logged"
+    },
+    {
+     "action": "Light: 15 min — write 3 acquisition lessons of 2026",
+     "min": 15,
+     "deliverable": "3 lessons",
+     "done": "Logged"
+    },
+    {
+     "action": "New Year's Eve with family",
+     "min": 5,
+     "deliverable": "—",
+     "done": "Done"
+    }
+   ],
+   "total": 35
+  },
+  {
+   "day": 53,
+   "date": "2027-01-01",
+   "dow": "Fri",
+   "week": 8,
+   "goals": [
+    {
+     "action": "New Year — rest; glance at file 11 dashboard",
+     "min": 5,
+     "deliverable": "—",
+     "done": "Done"
+    },
+    {
+     "action": "Rest",
+     "min": 5,
+     "deliverable": "—",
+     "done": "Done"
+    },
+    {
+     "action": "Write next-90-day intention with your spouse (3 lines)",
+     "min": 20,
+     "deliverable": "3 lines",
+     "done": "Saved"
+    }
+   ],
+   "total": 30
+  },
+  {
+   "day": 54,
+   "date": "2027-01-02",
+   "dow": "Sat",
+   "week": 8,
+   "goals": [
+    {
+     "action": "Light: read one chapter / article on M&A process (20 min)",
+     "min": 20,
+     "deliverable": "3 bullets",
+     "done": "Logged"
+    },
+    {
+     "action": "Light: enrich 5 target rows (service lines, # locations from websites)",
+     "min": 30,
+     "deliverable": "5 enriched rows",
+     "done": "Fields filled with source URL"
+    },
+    {
+     "action": "Light: 15 min — reply to any messages; protect the rest of the day for family",
+     "min": 15,
+     "deliverable": "Inbox for contacts = 0",
+     "done": "Done"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 55,
+   "date": "2027-01-03",
+   "dow": "Sun",
+   "week": 8,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 56,
+   "date": "2027-01-04",
+   "dow": "Mon",
+   "week": 9,
+   "goals": [
+    {
+     "action": "Tailor one résumé variant (rotate: M&A / TAS / PE-backed finance)",
+     "min": 30,
+     "deliverable": "1 résumé file saved, dated",
+     "done": "File saved; no 'Financial Mathematics', no authorisation claim"
+    },
+    {
+     "action": "Case study part 1 — facts & economics: A3 EMCOR ← Miller Electric",
+     "min": 45,
+     "deliverable": "Case card fields 1-8 filled",
+     "done": "Every number has a source ID or 'n/d'"
+    },
+    {
+     "action": "Identify 2 new contacts (Circle 1-3, file 09 §8) and log in CRM",
+     "min": 25,
+     "deliverable": "2 CRM rows with source URL",
+     "done": "2 rows saved with today's date"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 57,
+   "date": "2027-01-05",
+   "dow": "Tue",
+   "week": 9,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'What is a working-capital peg?'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 90 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 90 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 58,
+   "date": "2027-01-06",
+   "dow": "Wed",
+   "week": 9,
+   "goals": [
+    {
+     "action": "Research employers: 2 QoE / transaction-advisory firms (find & verify)",
+     "min": 30,
+     "deliverable": "2 employer notes (deal types, team, sector)",
+     "done": "Notes saved with source URLs"
+    },
+    {
+     "action": "Skill block: LOI anatomy: price, structure, exclusivity, conditions",
+     "min": 45,
+     "deliverable": "Annotated sample LOI (counsel-safe, personal study)",
+     "done": "Deliverable saved in /bagga-acquisition-research/notes"
+    },
+    {
+     "action": "Request 1 informational conversation (never a job ask)",
+     "min": 20,
+     "deliverable": "1 request sent",
+     "done": "Message sent and logged"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 59,
+   "date": "2027-01-07",
+   "dow": "Thu",
+   "week": 9,
+   "goals": [
+    {
+     "action": "Technical drill: 20 min LBO/accounting flashcards + 1 timed mini-model",
+     "min": 30,
+     "deliverable": "Mini-model saved",
+     "done": "Completed within 25 min"
+    },
+    {
+     "action": "Case study part 2 — verdict (questions I-J): A3 EMCOR ← Miller Electric",
+     "min": 40,
+     "deliverable": "Verdict + 'what I'd negotiate'",
+     "done": "One-line lesson added to lessons log"
+    },
+    {
+     "action": "Operator pipeline: identify 1 potential operator (branch/service manager)",
+     "min": 25,
+     "deliverable": "1 operator row in CRM",
+     "done": "Row has employer, title, source URL"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 60,
+   "date": "2027-01-08",
+   "dow": "Fri",
+   "week": 9,
+   "goals": [
+    {
+     "action": "Phase-2 review: 8 informational conversations held? (file 11)",
+     "min": 30,
+     "deliverable": "Checklist",
+     "done": "Each item ✔ or reason"
+    },
+    {
+     "action": "Phase-2 review: industry locked; 8 cases; thesis memo outline exists",
+     "min": 30,
+     "deliverable": "Checklist",
+     "done": "Each item ✔ or reason"
+    },
+    {
+     "action": "Phase-2 review: 5 operator candidates; reserve % recorded",
+     "min": 30,
+     "deliverable": "Checklist",
+     "done": "Each item ✔ or reason"
+    }
+   ],
+   "total": 90
+  },
+  {
+   "day": 61,
+   "date": "2027-01-09",
+   "dow": "Sat",
+   "week": 9,
+   "goals": [
+    {
+     "action": "Light: read one chapter / article on M&A process (20 min)",
+     "min": 20,
+     "deliverable": "3 bullets",
+     "done": "Logged"
+    },
+    {
+     "action": "Light: enrich 5 target rows (service lines, # locations from websites)",
+     "min": 30,
+     "deliverable": "5 enriched rows",
+     "done": "Fields filled with source URL"
+    },
+    {
+     "action": "Light: 15 min — reply to any messages; protect the rest of the day for family",
+     "min": 15,
+     "deliverable": "Inbox for contacts = 0",
+     "done": "Done"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 62,
+   "date": "2027-01-10",
+   "dow": "Sun",
+   "week": 9,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 63,
+   "date": "2027-01-11",
+   "dow": "Mon",
+   "week": 10,
+   "goals": [
+    {
+     "action": "Tailor one résumé variant (rotate: M&A / TAS / PE-backed finance)",
+     "min": 30,
+     "deliverable": "1 résumé file saved, dated",
+     "done": "File saved; no 'Financial Mathematics', no authorisation claim"
+    },
+    {
+     "action": "Case study part 1 — facts & economics: F6 Pye-Barker roll-up",
+     "min": 45,
+     "deliverable": "Case card fields 1-8 filled",
+     "done": "Every number has a source ID or 'n/d'"
+    },
+    {
+     "action": "Identify 2 new contacts (Circle 1-3, file 09 §8) and log in CRM",
+     "min": 25,
+     "deliverable": "2 CRM rows with source URL",
+     "done": "2 rows saved with today's date"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 64,
+   "date": "2027-01-12",
+   "dow": "Tue",
+   "week": 10,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'Tell me about a mistake'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 95 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 95 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 65,
+   "date": "2027-01-13",
+   "dow": "Wed",
+   "week": 10,
+   "goals": [
+    {
+     "action": "Research employers: 2 M&A law firms in Cincinnati (find & verify)",
+     "min": 30,
+     "deliverable": "2 employer notes (deal types, team, sector)",
+     "done": "Notes saved with source URLs"
+    },
+    {
+     "action": "Skill block: Operator equity: profits interest, vesting, leaver terms",
+     "min": 45,
+     "deliverable": "1-page summary vs file 07 §4",
+     "done": "Deliverable saved in /bagga-acquisition-research/notes"
+    },
+    {
+     "action": "Request 1 informational conversation (never a job ask)",
+     "min": 20,
+     "deliverable": "1 request sent",
+     "done": "Message sent and logged"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 66,
+   "date": "2027-01-14",
+   "dow": "Thu",
+   "week": 10,
+   "goals": [
+    {
+     "action": "Technical drill: 20 min LBO/accounting flashcards + 1 timed mini-model",
+     "min": 30,
+     "deliverable": "Mini-model saved",
+     "done": "Completed within 25 min"
+    },
+    {
+     "action": "Case study part 2 — verdict (questions I-J): F6 Pye-Barker roll-up",
+     "min": 40,
+     "deliverable": "Verdict + 'what I'd negotiate'",
+     "done": "One-line lesson added to lessons log"
+    },
+    {
+     "action": "Operator pipeline: identify 1 potential operator (branch/service manager)",
+     "min": 25,
+     "deliverable": "1 operator row in CRM",
+     "done": "Row has employer, title, source URL"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 67,
+   "date": "2027-01-15",
+   "dow": "Fri",
+   "week": 10,
+   "goals": [
+    {
+     "action": "Update LinkedIn activity: comment thoughtfully on 2 posts from target firms",
+     "min": 20,
+     "deliverable": "2 comments",
+     "done": "Posted; no claims of authorisation"
+    },
+    {
+     "action": "Thesis memo outline (6 sections)",
+     "min": 45,
+     "deliverable": "Thesis memo outline (6 sections) saved",
+     "done": "Word count ≥600 and every number sourced"
+    },
+    {
+     "action": "Net-worth snapshot: liquid / retirement / illiquid columns",
+     "min": 30,
+     "deliverable": "Snapshot saved",
+     "done": "Done and noted in money log"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 68,
+   "date": "2027-01-16",
+   "dow": "Sat",
+   "week": 10,
+   "goals": [
+    {
+     "action": "Queue application packet #1-2 (NOT submitted until EAD + counsel)",
+     "min": 40,
+     "deliverable": "2 packets in 'Queued' folder",
+     "done": "Each packet tailored; not sent"
+    },
+    {
+     "action": "Thesis memo: write sections 1-2 (question, market)",
+     "min": 45,
+     "deliverable": "2 sections drafted",
+     "done": "≥1,000 words with sources"
+    },
+    {
+     "action": "If counsel cleared it: ask 1 commercial banker for an informational chat about LMM lending",
+     "min": 20,
+     "deliverable": "1 request or 'not cleared' noted",
+     "done": "Logged"
+    }
+   ],
+   "total": 105
+  },
+  {
+   "day": 69,
+   "date": "2027-01-17",
+   "dow": "Sun",
+   "week": 10,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 70,
+   "date": "2027-01-18",
+   "dow": "Mon",
+   "week": 11,
+   "goals": [
+    {
+     "action": "Tailor one résumé variant (rotate: M&A / TAS / PE-backed finance)",
+     "min": 30,
+     "deliverable": "1 résumé file saved, dated",
+     "done": "File saved; no 'Financial Mathematics', no authorisation claim"
+    },
+    {
+     "action": "Case study part 1 — facts & economics: X3 Encompass vs X5 Comfort Systems",
+     "min": 45,
+     "deliverable": "Case card fields 1-8 filled",
+     "done": "Every number has a source ID or 'n/d'"
+    },
+    {
+     "action": "Identify 2 new contacts (Circle 1-3, file 09 §8) and log in CRM",
+     "min": 25,
+     "deliverable": "2 CRM rows with source URL",
+     "done": "2 rows saved with today's date"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 71,
+   "date": "2027-01-19",
+   "dow": "Tue",
+   "week": 11,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'Why Cincinnati?'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 100 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 100 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 72,
+   "date": "2027-01-20",
+   "dow": "Wed",
+   "week": 11,
+   "goals": [
+    {
+     "action": "Research employers: 2 commercial banks' middle-market teams (find & verify)",
+     "min": 30,
+     "deliverable": "2 employer notes (deal types, team, sector)",
+     "done": "Notes saved with source URLs"
+    },
+    {
+     "action": "Skill block: Environmental diligence: Phase I, AFFF/PFAS questions",
+     "min": 45,
+     "deliverable": "12-question environmental checklist",
+     "done": "Deliverable saved in /bagga-acquisition-research/notes"
+    },
+    {
+     "action": "Request 1 informational conversation (never a job ask)",
+     "min": 20,
+     "deliverable": "1 request sent",
+     "done": "Message sent and logged"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 73,
+   "date": "2027-01-21",
+   "dow": "Thu",
+   "week": 11,
+   "goals": [
+    {
+     "action": "Technical drill: 20 min LBO/accounting flashcards + 1 timed mini-model",
+     "min": 30,
+     "deliverable": "Mini-model saved",
+     "done": "Completed within 25 min"
+    },
+    {
+     "action": "Case study part 2 — verdict (questions I-J): X3 Encompass vs X5 Comfort Systems",
+     "min": 40,
+     "deliverable": "Verdict + 'what I'd negotiate'",
+     "done": "One-line lesson added to lessons log"
+    },
+    {
+     "action": "Operator pipeline: identify 1 potential operator (branch/service manager)",
+     "min": 25,
+     "deliverable": "1 operator row in CRM",
+     "done": "Row has employer, title, source URL"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 74,
+   "date": "2027-01-22",
+   "dow": "Fri",
+   "week": 11,
+   "goals": [
+    {
+     "action": "Update LinkedIn activity: comment thoughtfully on 2 posts from target firms",
+     "min": 20,
+     "deliverable": "2 comments",
+     "done": "Posted; no claims of authorisation"
+    },
+    {
+     "action": "Thesis memo section 3 (target profile) + 4 (economics)",
+     "min": 45,
+     "deliverable": "Thesis memo section 3 (target profile) + 4 (economics) saved",
+     "done": "Word count ≥600 and every number sourced"
+    },
+    {
+     "action": "Shortlist 2 cross-border tax advisers for later (file 08 §6)",
+     "min": 30,
+     "deliverable": "2 names saved",
+     "done": "Done and noted in money log"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 75,
+   "date": "2027-01-23",
+   "dow": "Sat",
+   "week": 11,
+   "goals": [
+    {
+     "action": "Milestone: 10 application packets queued? If not, queue the gap",
+     "min": 40,
+     "deliverable": "Packets queued",
+     "done": "Count = 10"
+    },
+    {
+     "action": "Milestone: operator pipeline ≥10 names; rank top 3",
+     "min": 40,
+     "deliverable": "Ranked list",
+     "done": "Top 3 have 2 sources each"
+    },
+    {
+     "action": "Milestone: 15 conversations requested to date",
+     "min": 20,
+     "deliverable": "Count recorded",
+     "done": "Number on dashboard"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 76,
+   "date": "2027-01-24",
+   "dow": "Sun",
+   "week": 11,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 77,
+   "date": "2027-01-25",
+   "dow": "Mon",
+   "week": 12,
+   "goals": [
+    {
+     "action": "Tailor one résumé variant (rotate: M&A / TAS / PE-backed finance)",
+     "min": 30,
+     "deliverable": "1 résumé file saved, dated",
+     "done": "File saved; no 'Financial Mathematics', no authorisation claim"
+    },
+    {
+     "action": "Case study part 1 — facts & economics: A6 APi ← Elevated",
+     "min": 45,
+     "deliverable": "Case card fields 1-8 filled",
+     "done": "Every number has a source ID or 'n/d'"
+    },
+    {
+     "action": "Identify 2 new contacts (Circle 1-3, file 09 §8) and log in CRM",
+     "min": 25,
+     "deliverable": "2 CRM rows with source URL",
+     "done": "2 rows saved with today's date"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 78,
+   "date": "2027-01-26",
+   "dow": "Tue",
+   "week": 12,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'Work authorisation (approved phrasing)'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 100 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 100 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 79,
+   "date": "2027-01-27",
+   "dow": "Wed",
+   "week": 12,
+   "goals": [
+    {
+     "action": "Research employers: 2 independent sponsors active in Ohio (find & verify)",
+     "min": 30,
+     "deliverable": "2 employer notes (deal types, team, sector)",
+     "done": "Notes saved with source URLs"
+    },
+    {
+     "action": "Skill block: First-100-days integration plan for an ITM target",
+     "min": 45,
+     "deliverable": "1-page 100-day plan",
+     "done": "Deliverable saved in /bagga-acquisition-research/notes"
+    },
+    {
+     "action": "Request 1 informational conversation (never a job ask)",
+     "min": 20,
+     "deliverable": "1 request sent",
+     "done": "Message sent and logged"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 80,
+   "date": "2027-01-28",
+   "dow": "Thu",
+   "week": 12,
+   "goals": [
+    {
+     "action": "Technical drill: 20 min LBO/accounting flashcards + 1 timed mini-model",
+     "min": 30,
+     "deliverable": "Mini-model saved",
+     "done": "Completed within 25 min"
+    },
+    {
+     "action": "Case study part 2 — verdict (questions I-J): A6 APi ← Elevated",
+     "min": 40,
+     "deliverable": "Verdict + 'what I'd negotiate'",
+     "done": "One-line lesson added to lessons log"
+    },
+    {
+     "action": "Operator pipeline: identify 1 potential operator (branch/service manager)",
+     "min": 25,
+     "deliverable": "1 operator row in CRM",
+     "done": "Row has employer, title, source URL"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 81,
+   "date": "2027-01-29",
+   "dow": "Fri",
+   "week": 12,
+   "goals": [
+    {
+     "action": "Update LinkedIn activity: comment thoughtfully on 2 posts from target firms",
+     "min": 20,
+     "deliverable": "2 comments",
+     "done": "Posted; no claims of authorisation"
+    },
+    {
+     "action": "Thesis memo section 5 (risks) + 6 (recommendation)",
+     "min": 45,
+     "deliverable": "Thesis memo section 5 (risks) + 6 (recommendation) saved",
+     "done": "Word count ≥600 and every number sourced"
+    },
+    {
+     "action": "Reserve progress check vs spouse's goal",
+     "min": 30,
+     "deliverable": "% of target recorded",
+     "done": "Done and noted in money log"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 82,
+   "date": "2027-01-30",
+   "dow": "Sat",
+   "week": 12,
+   "goals": [
+    {
+     "action": "Light: read one chapter / article on M&A process (20 min)",
+     "min": 20,
+     "deliverable": "3 bullets",
+     "done": "Logged"
+    },
+    {
+     "action": "Light: enrich 5 target rows (service lines, # locations from websites)",
+     "min": 30,
+     "deliverable": "5 enriched rows",
+     "done": "Fields filled with source URL"
+    },
+    {
+     "action": "Light: 15 min — reply to any messages; protect the rest of the day for family",
+     "min": 15,
+     "deliverable": "Inbox for contacts = 0",
+     "done": "Done"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 83,
+   "date": "2027-01-31",
+   "dow": "Sun",
+   "week": 12,
+   "goals": [
+    {
+     "action": "Weekly review: score the week (file 11 scorecard)",
+     "min": 25,
+     "deliverable": "Weekly scorecard filled",
+     "done": "Score recorded on dashboard"
+    },
+    {
+     "action": "Risk register review (file 12) + set next week's acquisition focus",
+     "min": 20,
+     "deliverable": "Updated register; next week's case chosen",
+     "done": "Initialled & dated"
+    },
+    {
+     "action": "Plan next week's outreach (names for Mon/Wed/Thu) + protected time with spouse",
+     "min": 20,
+     "deliverable": "5 names queued; family block on calendar",
+     "done": "Calendar updated"
+    }
+   ],
+   "total": 65
+  },
+  {
+   "day": 84,
+   "date": "2027-02-01",
+   "dow": "Mon",
+   "week": 13,
+   "goals": [
+    {
+     "action": "Tailor one résumé variant (rotate: M&A / TAS / PE-backed finance)",
+     "min": 30,
+     "deliverable": "1 résumé file saved, dated",
+     "done": "File saved; no 'Financial Mathematics', no authorisation claim"
+    },
+    {
+     "action": "Case study part 1 — facts & economics: X7 Search funds benchmark",
+     "min": 45,
+     "deliverable": "Case card fields 1-8 filled",
+     "done": "Every number has a source ID or 'n/d'"
+    },
+    {
+     "action": "Identify 2 new contacts (Circle 1-3, file 09 §8) and log in CRM",
+     "min": 25,
+     "deliverable": "2 CRM rows with source URL",
+     "done": "2 rows saved with today's date"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 85,
+   "date": "2027-02-02",
+   "dow": "Tue",
+   "week": 13,
+   "goals": [
+    {
+     "action": "Draft & rehearse interview answer: 'Full mock interview with a friend/mentor'",
+     "min": 30,
+     "deliverable": "Written answer ≤200 words + 1 recorded run",
+     "done": "Said aloud twice; recording kept"
+    },
+    {
+     "action": "Grow the target list to 100 rows (SFM certified companies, CBP, websites)",
+     "min": 45,
+     "deliverable": "Target sheet at 100 rows",
+     "done": "Each row: name, city, source URL; no revenue guesses"
+    },
+    {
+     "action": "Send follow-ups due in CRM (follow-ups beat new names)",
+     "min": 25,
+     "deliverable": "All due follow-ups sent",
+     "done": "CRM 'Follow-up due' count = 0"
+    }
+   ],
+   "total": 100
+  },
+  {
+   "day": 86,
+   "date": "2027-02-03",
+   "dow": "Wed",
+   "week": 13,
+   "goals": [
+    {
+     "action": "Research employers: Re-rank all 30 target employers",
+     "min": 30,
+     "deliverable": "2 employer notes (deal types, team, sector)",
+     "done": "Notes saved with source URLs"
+    },
+    {
+     "action": "Skill block: IC memo writing",
+     "min": 45,
+     "deliverable": "Final 6-page thesis memo",
+     "done": "Deliverable saved in /bagga-acquisition-research/notes"
+    },
+    {
+     "action": "Request 1 informational conversation (never a job ask)",
+     "min": 20,
+     "deliverable": "1 request sent",
+     "done": "Message sent and logged"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 87,
+   "date": "2027-02-04",
+   "dow": "Thu",
+   "week": 13,
+   "goals": [
+    {
+     "action": "Technical drill: 20 min LBO/accounting flashcards + 1 timed mini-model",
+     "min": 30,
+     "deliverable": "Mini-model saved",
+     "done": "Completed within 25 min"
+    },
+    {
+     "action": "Case study part 2 — verdict (questions I-J): X7 Search funds benchmark",
+     "min": 40,
+     "deliverable": "Verdict + 'what I'd negotiate'",
+     "done": "One-line lesson added to lessons log"
+    },
+    {
+     "action": "Operator pipeline: identify 1 potential operator (branch/service manager)",
+     "min": 25,
+     "deliverable": "1 operator row in CRM",
+     "done": "Row has employer, title, source URL"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 88,
+   "date": "2027-02-05",
+   "dow": "Fri",
+   "week": 13,
+   "goals": [
+    {
+     "action": "Update LinkedIn activity: comment thoughtfully on 2 posts from target firms",
+     "min": 20,
+     "deliverable": "2 comments",
+     "done": "Posted; no claims of authorisation"
+    },
+    {
+     "action": "Thesis memo full draft review",
+     "min": 45,
+     "deliverable": "Thesis memo full draft review saved",
+     "done": "Word count ≥600 and every number sourced"
+    },
+    {
+     "action": "90-day money review: what changed, next 90-day target",
+     "min": 30,
+     "deliverable": "1-page review",
+     "done": "Done and noted in money log"
+    }
+   ],
+   "total": 95
+  },
+  {
+   "day": 89,
+   "date": "2027-02-06",
+   "dow": "Sat",
+   "week": 13,
+   "goals": [
+    {
+     "action": "Final mock interview (60 min) with a mentor; note 3 fixes",
+     "min": 60,
+     "deliverable": "3 fixes",
+     "done": "Logged"
+    },
+    {
+     "action": "Thesis memo final proofread + source check (every number → S-xx)",
+     "min": 45,
+     "deliverable": "Final memo PDF",
+     "done": "0 unsourced numbers"
+    },
+    {
+     "action": "Thank 5 people who helped this quarter",
+     "min": 15,
+     "deliverable": "5 notes",
+     "done": "Sent"
+    }
+   ],
+   "total": 120
+  },
+  {
+   "day": 90,
+   "date": "2027-02-07",
+   "dow": "Sun",
+   "week": 13,
+   "goals": [
+    {
+     "action": "90-DAY REVIEW: career — score vs milestones; set next-90 career goal",
+     "min": 30,
+     "deliverable": "Review page",
+     "done": "Signed & dated"
+    },
+    {
+     "action": "90-DAY REVIEW: acquisition — industry, operator pipeline, target list; next-90 goal",
+     "min": 30,
+     "deliverable": "Review page",
+     "done": "Signed & dated"
+    },
+    {
+     "action": "90-DAY REVIEW: network & money — with spouse; next-90 goal; celebrate",
+     "min": 30,
+     "deliverable": "Review page",
+     "done": "Signed & dated"
+    }
+   ],
+   "total": 90
+  }
+ ],
+ "milestones": {
+  "7": "Counsel consult requested · résumé corrected · 25 target rows",
+  "14": "40 target rows · cases 1-2 done · code cheat sheet",
+  "21": "Counsel consult held (target) · LBO rebuild started · 10 CRM contacts",
+  "30": "PHASE-1 REVIEW · 60 rows · 4 cases · 3 résumé variants · 3 conversation requests",
+  "43": "INDUSTRY DECISION LOCKED (fire or pest)",
+  "60": "PHASE-2 REVIEW · 8 conversations · 8 cases · 5 operator candidates",
+  "75": "10 packets queued · operator pipeline 10 · 15 conversations requested",
+  "90": "90-DAY REVIEW · thesis memo final · 100 rows · 13 cases"
+ },
+ "cases": {
+  "1": "A2 ABM ← Able (worked example, file 05 §4)",
+  "2": "F5 Summit ← Total Life Safety (West Chester OH)",
+  "3": "A1 Rollins ← Fox Pest Control",
+  "4": "F1 APi ← Chubb",
+  "5": "X1 Zips Car Wash (failure)",
+  "6": "F3 + F4 CertaSite build → APi exit",
+  "7": "X4 Kidde-Fenwal (PFAS)",
+  "8": "X2 Rentokil ← Terminix",
+  "9": "A3 EMCOR ← Miller Electric",
+  "10": "F6 Pye-Barker roll-up",
+  "11": "X3 Encompass vs X5 Comfort Systems",
+  "12": "A6 APi ← Elevated",
+  "13": "X7 Search funds benchmark"
+ },
+ "skills": {
+  "1": "NFPA 25/72/10 + Ohio 1301:7-7-09 cheat sheet",
+  "2": "EBITDA normalisation: add-backs vs owner replacement cost",
+  "3": "Rebuild the LBO from blank: sources & uses + P&L",
+  "4": "Rebuild the LBO: debt schedule + DSCR",
+  "5": "Working-capital peg mechanics",
+  "6": "QoE red flags: cash revenue, add-back inflation",
+  "7": "Purchase agreement basics: reps, indemnity, escrow",
+  "8": "Seller-note terms: IO, standby, subordination",
+  "9": "LOI anatomy: price, structure, exclusivity, conditions",
+  "10": "Operator equity: profits interest, vesting, leaver terms",
+  "11": "Environmental diligence: Phase I, AFFF/PFAS questions",
+  "12": "First-100-days integration plan for an ITM target",
+  "13": "IC memo writing"
+ }
+}
