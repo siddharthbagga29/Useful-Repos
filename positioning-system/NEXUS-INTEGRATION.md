@@ -101,6 +101,37 @@ against.
 ```
 Each returns `ok`, `already done`, `not found` or `no plan`.
 
+### `GET ?token=T&action=trades[&claim=1]`
+Live trade ideas. These arrive from **TradingView**, which posts its alerts to
+this Web App; none is generated here.
+
+```json
+{ "ok": true, "trades": [
+  { "id": "TI-20261111-150000-3-a71f9c", "platform": "Kalshi",
+    "market": "FED-26DEC-T3.75", "direction": "YES", "entry": 0.62,
+    "stop": 0.52, "target": 0.85, "timeframe": "1D",
+    "rationale": "…", "confidence": "medium",
+    "valid_until": "2026-11-12T03:00:00", "status": "NEW",
+    "actions": ["TAKEN", "SKIPPED"],
+    "execution": "Manual. This system places no orders and holds no brokerage credential." } ] }
+```
+
+**Expiry is enforced, not advisory.** An entry is a statement about a price
+now. Anything past `valid_until` is marked EXPIRED and never returned — showing
+a stale level as live is the one way this tab could actively lose money.
+Default window is 12 hours; an alert may send `valid_minutes`.
+
+`claim=1` flips NEW to PRESENTED, so an idea is shown once.
+
+### `POST` — recording what was actually done
+```json
+{ "token": "T", "trade_decision": [ { "id": "TI-…", "decision": "TAKEN",
+    "fill": "0.61", "size": "200", "result": "open", "note": "half size" } ] }
+```
+`decision` is `TAKEN` or `SKIPPED`. **Execution is manual, on Kalshi,
+Tradovate or wherever.** This records what happened; it does not place
+anything, and no brokerage credential exists anywhere in this system.
+
 ### `GET ?token=T&tab=<tab name>`
 Raw rows from any tab, for anything the digest does not cover.
 

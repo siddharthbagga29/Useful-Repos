@@ -29,6 +29,10 @@ CASES = "Case Library"
 GATES = "Gates"
 SCORECARD = "Weekly Scorecard"
 
+# Signals arrive from TradingView; they are never generated here. Execution is
+# manual on Kalshi / Tradovate / wherever — this tab is the queue and the record.
+TRADES = "Trade Ideas"
+
 HEADERS = {
     AGENT_LOG: ["Run ID", "Timestamp", "Module", "Action", "Result",
                 "Items", "Source URL", "Duration (s)", "Notes"],
@@ -55,6 +59,10 @@ HEADERS = {
             "Scheduled Day", "Analysis Status", "Key Lesson", "Notes"],
     GATES: ["Gate ID", "Type", "Name", "Requirement", "Status", "Evidence",
             "Blocker", "Counsel Required", "Notes"],
+    TRADES: ["Idea ID", "Received", "Source", "Platform", "Market", "Direction",
+             "Entry", "Stop", "Target", "Size Hint", "Timeframe", "Rationale",
+             "Confidence", "Valid Until", "Status", "Decided At", "Fill Price",
+             "Actual Size", "Result", "Notes"],
     SCORECARD: ["Week", "Week Ending", "Goals Completed", "Focused Minutes",
                 "New Contacts", "Follow-ups On Time", "Conversations",
                 "Case Studies", "Target Rows Added", "Counsel Breaches",

@@ -65,6 +65,8 @@ Token: `PASTE_TOKEN_HERE`
   90-day plan: block, action, minutes, deliverable, done-condition, status
 - `GET {base}?token={token}&action=week` — this week's progress against the
   scorecard targets, and any recorded blockers
+- `GET {base}?token={token}&action=trades&claim=1` — live trade ideas from my
+  TradingView alerts, with entry, stop, target and an expiry that is enforced
 - `GET {base}?token={token}&action=pending&claim=1` — items to present.
   `claim=1` flips OPEN to PENDING so nothing is ever shown twice
 - `POST {base}` with
@@ -72,6 +74,9 @@ Token: `PASTE_TOKEN_HERE`
 - `POST {base}` with
   `{"token":"{token}","complete":[{"day":2,"block":"CAREER","minutes":45,"notes":"…"}]}`
   to tick a goal off
+- `POST {base}` with
+  `{"token":"{token}","trade_decision":[{"id":"TI-…","decision":"TAKEN","fill":"0.61","size":"200"}]}`
+  to record what I actually did
 
 `decision` is `APPROVED` or `SKIPPED`. The response reports each id as `ok`,
 `not found` or `bad decision`.
@@ -105,7 +110,18 @@ Token: `PASTE_TOKEN_HERE`
    established, because a 6/6 on six known fields is less examined than an
    8/12, not better.
 
-4. **A health line.** `today.mac_ran: false` means my laptop was asleep and
+4. **The trade desk.** Poll `action=trades&claim=1` and show me each live idea:
+   platform, market, direction, entry, stop, target, why, and how long it is
+   valid for. I execute by hand on Kalshi or Tradovate — **you never place an
+   order, and there is no brokerage credential anywhere in this system.** When
+   I tell you what I did, POST `trade_decision` with the fill and size.
+
+   Two rules here. An idea past `valid_until` is already filtered out; never
+   resurrect one from your own cache, because a stale entry shown as live is
+   how this loses money. And the signals are mine, from TradingView — do not
+   generate, embellish or "improve" one. If a field is empty it is empty.
+
+5. **A health line.** `today.mac_ran: false` means my laptop was asleep and
    browser research did not run. `today.failures > 0` means a module failed.
    Surface both plainly rather than reporting a quiet day.
 

@@ -25,7 +25,7 @@ var T = {
   DASH: 'Dashboard', PEOPLE: 'People CRM', ORGS: 'Organizations',
   COS: 'Target Companies', EVENTS: 'Events', RESEARCH: 'Investment Research',
   PROJ: 'Portfolio Projects', APPS: 'Applications', OPPS: 'Opportunities',
-  SOURCES: 'Sources & Verification',
+  SOURCES: 'Sources & Verification', TRADES: 'Trade Ideas',
   LOG: 'Agent Log', ESC: 'Escalations', MEM: 'Agent Memory', WEEK: 'Weekly Report'
 };
 
@@ -34,6 +34,7 @@ HEADERS[T.LOG] = ['Run ID','Timestamp','Module','Action','Result','Items','Sourc
 HEADERS[T.ESC] = ['Escalation ID','Raised','Severity','Category','What happened','Why it needs you','Suggested action','Source URL','Status','Resolved','Notes'];
 HEADERS[T.MEM] = ['Source ID','Kind','Org','URL','Last Success','Last Failure','Consecutive Failures','Total Runs','Items Found (last)','Items Found (total)','Content Hash','Priority','Notes'];
 HEADERS[T.WEEK] = ['Week ending','Runs','Census pulls','Establishments logged','Form D filings','Sources watched','Changes detected','Open escalations (HIGH)','Open escalations (MEDIUM)','Dead sources','Narrative','Emailed'];
+HEADERS[T.TRADES] = ['Idea ID','Received','Source','Platform','Market','Direction','Entry','Stop','Target','Size Hint','Timeframe','Rationale','Confidence','Valid Until','Status','Decided At','Fill Price','Actual Size','Result','Notes'];
 
 function book_() { return SpreadsheetApp.openById(SHEET_ID); }
 function sh_(n) { return book_().getSheetByName(n); }
@@ -72,6 +73,7 @@ function onOpen() {
     .addItem('Email me the weekly report', 'emailWeeklyReport')
     .addSeparator()
     .addItem('Send me a Telegram now', 'notifyTelegram')
+    .addItem('TradingView: show webhook URL', 'setupTradingView')
     .addItem('Telegram: check the bot first', 'telegramStatus')
     .addItem('Telegram: find my chat ID', 'telegramFindChatId')
     .addItem('Telegram: register webhook', 'telegramRegisterWebhook')
@@ -125,6 +127,7 @@ function doPost(e) {
     // Telegram cannot send our JSON token, and Apps Script cannot read request
     // headers, so the webhook carries its secret in the query string instead.
     if (e && e.parameter && e.parameter.tg) return handleTelegram_(e);
+    if (e && e.parameter && e.parameter.tv) return handleTradingView_(e);
 
     if (!e || !e.postData || !e.postData.contents) return out({ ok: false, error: 'empty body' });
     var body = JSON.parse(e.postData.contents);
@@ -145,6 +148,12 @@ function doPost(e) {
     (body.complete || []).forEach(function (c) {
       completed.push({ day: c.day, block: c.block,
                        applied: completeGoal_(c.day, c.block, c.minutes, c.notes) });
+    });
+
+    // Outcomes of trades the owner placed by hand.
+    var trades = [];
+    (body.trade_decision || []).forEach(function (t) {
+      trades.push({ id: t.id, applied: decideTrade_(t) });
     });
 
     var decided = [];
@@ -192,7 +201,8 @@ function doPost(e) {
       written += padded.length;
     });
     return out({ ok: true, written: written, marked: marked,
-                 decided: decided, completed: completed, tabs_created: created });
+                 decided: decided, completed: completed, trades: trades,
+                 tabs_created: created });
   } catch (err) {
     return out({ ok: false, error: String(err) });
   }
@@ -209,6 +219,8 @@ function doGet(e) {
       return out({ ok: false, error: 'bad token' });
     }
     var action = e.parameter.action || 'tab';
+    if (action === 'trades')  return out({ ok: true,
+                                            trades: trades_(e.parameter.claim === '1') });
     if (action === 'today')   return out(today_());
     if (action === 'week')     return out(week_());
     if (action === 'digest')  return out(digest_(e.parameter.since || ''));
@@ -1045,6 +1057,137 @@ function completeGoal_(day, block, minutes, notes) {
     p.sheet.getRange(r, PLAN_COLS.COMPLETED).setValue(isoToday_());
     if (minutes) p.sheet.getRange(r, PLAN_COLS.MIN_ACTUAL).setValue(minutes);
     if (notes) p.sheet.getRange(r, PLAN_COLS.NOTES).setValue(String(notes).slice(0, 500));
+    return 'ok';
+  }
+  return 'not found';
+}
+
+
+/* ==================== TRADE IDEAS ====================
+ * Signals come from TradingView. Nothing here invents one.
+ *
+ * TradingView posts its alert to this Web App with ?tv=<secret> on the URL,
+ * so the alert body stays pure signal. The row lands with status NEW and is
+ * presented once, by whichever surface claims it.
+ *
+ * EXPIRY IS THE POINT. An entry is a statement about a price now. Showing a
+ * two-day-old level as though it were live is the one way this tab could
+ * actively lose money, so every idea carries Valid Until and anything past it
+ * is marked EXPIRED and never presented. Default window is 12 hours; an alert
+ * can send valid_minutes to set its own.
+ *
+ * Execution is manual, on Kalshi / Tradovate / wherever. This system places
+ * nothing and holds no brokerage credential.
+ */
+
+var TV_SECRET = 'TRADINGVIEW_SECRET', TRADE_WINDOW_MIN = 720;
+
+function setupTradingView() {
+  var p = props_();
+  if (!p.getProperty(TV_SECRET)) {
+    p.setProperty(TV_SECRET, Utilities.getUuid().replace(/-/g, ''));
+  }
+  var url = ScriptApp.getService().getUrl();
+  Logger.log('TradingView webhook URL (paste into the alert):');
+  Logger.log('  ' + (url || '(deploy as a Web App first)') + '?tv=' + p.getProperty(TV_SECRET));
+  Logger.log('');
+  Logger.log('Alert message body — JSON, all fields optional except market:');
+  Logger.log('  {"platform":"Kalshi","market":"{{ticker}}","direction":"YES",');
+  Logger.log('   "entry":"{{close}}","stop":"","target":"","size_hint":"",');
+  Logger.log('   "timeframe":"{{interval}}","rationale":"{{strategy.order.comment}}",');
+  Logger.log('   "confidence":"","valid_minutes":720}');
+}
+
+function handleTradingView_(e) {
+  var ok = ContentService.createTextOutput('ok').setMimeType(ContentService.MimeType.TEXT);
+  try {
+    if (e.parameter.tv !== props_().getProperty(TV_SECRET)) return ok;
+
+    var raw = (e.postData && e.postData.contents) || '';
+    var a = {};
+    try { a = JSON.parse(raw); } catch (ignored) { a = { rationale: raw }; }
+
+    var market = String(a.market || a.ticker || '').trim();
+    if (!market) return ok;      // nothing identifiable to act on
+
+    var tz = book_().getSpreadsheetTimeZone();
+    var now = now_();
+    var mins = Number(a.valid_minutes) > 0 ? Number(a.valid_minutes) : TRADE_WINDOW_MIN;
+    var until = new Date(now.getTime() + mins * 60000);
+    var stamp = function (d) { return Utilities.formatDate(d, tz, "yyyy-MM-dd'T'HH:mm:ss"); };
+
+    // A second-resolution stamp is NOT unique: TradingView fires several
+    // alerts in the same second, and two ideas sharing an id means a decision
+    // recorded against one lands on the other - a fill written onto the wrong
+    // trade. That is the one bug in this file that could cost money, so the id
+    // carries the row sequence, which cannot repeat within a run, as well as a
+    // random suffix covering the case where rows were deleted.
+    var sheet = ensureTab_(T.TRADES);
+    var seq = Math.max(sheet.getLastRow(), 1);
+    var suffix = Utilities.getUuid().replace(/-/g, '').slice(0, 6);
+    sheet.appendRow([
+      'TI-' + Utilities.formatDate(now, tz, 'yyyyMMdd-HHmmss')
+            + '-' + seq + '-' + suffix,
+      stamp(now), String(a.source || 'TradingView'), String(a.platform || ''),
+      market, String(a.direction || ''), String(a.entry || ''), String(a.stop || ''),
+      String(a.target || ''), String(a.size_hint || ''), String(a.timeframe || ''),
+      String(a.rationale || '').slice(0, 500), String(a.confidence || ''),
+      stamp(until), 'NEW', '', '', '', '', ''
+    ]);
+  } catch (err) {
+    Logger.log('tradingview: ' + err);
+  }
+  return ok;
+}
+
+/** Live ideas only. Anything past Valid Until is marked EXPIRED in passing and
+ *  never returned, because a stale entry presented as live is the real hazard. */
+function trades_(claim) {
+  var sheet = sh_(T.TRADES);
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  var last = sheet.getLastRow();
+  var v = sheet.getRange(2, 1, last - 1, 20).getValues();
+  var now = now_(), out = [];
+
+  for (var i = 0; i < v.length; i++) {
+    var status = String(v[i][14]).toUpperCase();
+    if (status !== 'NEW' && !(status === 'PRESENTED' && !claim)) continue;
+
+    var until = v[i][13] ? new Date(v[i][13]) : null;
+    if (until && !isNaN(until.getTime()) && until < now) {
+      sheet.getRange(i + 2, 15).setValue('EXPIRED');
+      continue;
+    }
+    out.push({
+      id: String(v[i][0]), received: String(v[i][1]), source: String(v[i][2]),
+      platform: String(v[i][3]), market: String(v[i][4]), direction: String(v[i][5]),
+      entry: v[i][6], stop: v[i][7], target: v[i][8], size_hint: v[i][9],
+      timeframe: String(v[i][10]), rationale: String(v[i][11]),
+      confidence: String(v[i][12]), valid_until: String(v[i][13]),
+      status: status, actions: ['TAKEN', 'SKIPPED'],
+      execution: 'Manual. This system places no orders and holds no brokerage credential.'
+    });
+    if (claim && status === 'NEW') sheet.getRange(i + 2, 15).setValue('PRESENTED');
+  }
+  return out;
+}
+
+function decideTrade_(t) {
+  var want = String(t.decision || '').toUpperCase();
+  if (want !== 'TAKEN' && want !== 'SKIPPED') return 'bad decision';
+  var sheet = sh_(T.TRADES);
+  if (!sheet || sheet.getLastRow() < 2) return 'no tab';
+  var ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+  for (var i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) !== String(t.id)) continue;
+    var r = i + 2;
+    sheet.getRange(r, 15).setValue(want);
+    sheet.getRange(r, 16).setValue(Utilities.formatDate(
+      now_(), book_().getSpreadsheetTimeZone(), "yyyy-MM-dd'T'HH:mm:ss"));
+    if (t.fill)   sheet.getRange(r, 17).setValue(t.fill);
+    if (t.size)   sheet.getRange(r, 18).setValue(t.size);
+    if (t.result) sheet.getRange(r, 19).setValue(t.result);
+    if (t.note)   sheet.getRange(r, 20).setValue(String(t.note).slice(0, 500));
     return 'ok';
   }
   return 'not found';
