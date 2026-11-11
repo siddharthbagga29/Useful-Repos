@@ -26,6 +26,7 @@ var T = {
   COS: 'Target Companies', EVENTS: 'Events', RESEARCH: 'Investment Research',
   PROJ: 'Portfolio Projects', APPS: 'Applications', OPPS: 'Opportunities',
   SOURCES: 'Sources & Verification', TRADES: 'Trade Ideas',
+  LEADS: 'NEXUS Leads',
   LOG: 'Agent Log', ESC: 'Escalations', MEM: 'Agent Memory', WEEK: 'Weekly Report'
 };
 
@@ -34,6 +35,7 @@ HEADERS[T.LOG] = ['Run ID','Timestamp','Module','Action','Result','Items','Sourc
 HEADERS[T.ESC] = ['Escalation ID','Raised','Severity','Category','What happened','Why it needs you','Suggested action','Source URL','Status','Resolved','Notes'];
 HEADERS[T.MEM] = ['Source ID','Kind','Org','URL','Last Success','Last Failure','Consecutive Failures','Total Runs','Items Found (last)','Items Found (total)','Content Hash','Priority','Notes'];
 HEADERS[T.WEEK] = ['Week ending','Runs','Census pulls','Establishments logged','Form D filings','Sources watched','Changes detected','Open escalations (HIGH)','Open escalations (MEDIUM)','Dead sources','Narrative','Emailed'];
+HEADERS[T.LEADS] = ['Source','Status','Title','Organization','Kind','URL','Location','Deadline','Fit %','Why','Work Authorization','Found','Logged At','Notes'];
 HEADERS[T.TRADES] = ['Idea ID','Received','Source','Platform','Market','Direction','Entry','Stop','Target','Size Hint','Timeframe','Rationale','Confidence','Valid Until','Status','Decided At','Fill Price','Actual Size','Result','Notes'];
 
 function book_() { return SpreadsheetApp.openById(SHEET_ID); }
@@ -140,6 +142,12 @@ function doPost(e) {
     // approved opportunity as queued so the next run does not redo the work.
     // It appends to the Notes cell rather than replacing it, and touches no
     // other column.
+    // Leads NEXUS's opportunity scout found. Spec: nexus-control-os
+    // docs/OPPORTUNITIES.md. Every lead lands UNVERIFIED; a URL already in the
+    // tab is a duplicate, not an error.
+    var logged = [];
+    if (body.log && body.log.length) logged = logLeads_(body.log);
+
     // Decisions coming back from whatever surface showed them — Nexus, a
     // Telegram button, anything. The caller does not need to know the sheet
     // layout, only the Opp ID it was given.
@@ -200,7 +208,7 @@ function doPost(e) {
       s.getRange(s.getLastRow() + 1, 1, padded.length, width).setValues(padded);
       written += padded.length;
     });
-    return out({ ok: true, written: written, marked: marked,
+    return out({ ok: true, written: written, marked: marked, logged: logged,
                  decided: decided, completed: completed, trades: trades,
                  tabs_created: created });
   } catch (err) {
@@ -1191,4 +1199,58 @@ function decideTrade_(t) {
     return 'ok';
   }
   return 'not found';
+}
+
+
+/* ==================== NEXUS LEADS ====================
+ * NEXUS's opportunity scout searches for things that are open now — roles,
+ * fellowships, grants, competitions — and posts them here. Spec:
+ * nexus-control-os docs/OPPORTUNITIES.md.
+ *
+ * Two rules the spec is firm about and this honours. Every lead is UNVERIFIED,
+ * because a listing NEXUS read is still a listing nobody here has opened. And
+ * what the listing says about work authorisation is recorded verbatim as the
+ * listing's own words — it is not an assessment of eligibility, which is
+ * counsel's to make and no part of this system's.
+ */
+
+function logLeads_(leads) {
+  var sheet = ensureTab_(T.LEADS);
+  var urlCol = 6;
+
+  // Existing URLs, so a lead already here is reported duplicate rather than
+  // appended twice. The scout re-runs daily over an overlapping search.
+  var seen = {};
+  if (sheet.getLastRow() > 1) {
+    var have = sheet.getRange(2, urlCol, sheet.getLastRow() - 1, 1).getValues();
+    for (var i = 0; i < have.length; i++) {
+      var u = String(have[i][0] || '').trim();
+      if (u) seen[u] = true;
+    }
+  }
+
+  var stamp = Utilities.formatDate(now_(), book_().getSpreadsheetTimeZone(),
+                                   "yyyy-MM-dd'T'HH:mm:ss");
+  var out = [], rows = [];
+  for (var j = 0; j < leads.length; j++) {
+    var d = leads[j] || {};
+    var url = String(d.url || '').trim();
+    if (!url) { out.push({ url: '', applied: 'no url' }); continue; }
+    if (seen[url]) { out.push({ url: url, applied: 'duplicate' }); continue; }
+    seen[url] = true;
+    rows.push([
+      String(d.source || 'NEXUS'),
+      'UNVERIFIED',                        // never anything else on arrival
+      String(d.title || ''), String(d.organization || ''), String(d.kind || ''),
+      url, String(d.location || ''), String(d.deadline || ''),
+      String(d.fit == null ? '' : d.fit), String(d.why || '').slice(0, 500),
+      String(d.work_authorization || ''),  // the listing's own words
+      String(d.found || ''), stamp, ''
+    ]);
+    out.push({ url: url, applied: 'ok' });
+  }
+  if (rows.length) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+  }
+  return out;
 }
