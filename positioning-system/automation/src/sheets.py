@@ -19,6 +19,16 @@ AGENT_LOG = "Agent Log"
 ESCALATIONS = "Escalations"
 AGENT_MEMORY = "Agent Memory"
 
+# Tabs that carry the acquisition plan (../acquisition-research). The plan is
+# the spine: the 90-day calendar is the daily script, the pipeline holds what
+# the research finds, and the gates record what must be true before an LOI.
+PLAN = "Plan 90"
+DEALS = "Deal Pipeline"
+OPERATORS = "Operator Pipeline"
+CASES = "Case Library"
+GATES = "Gates"
+SCORECARD = "Weekly Scorecard"
+
 HEADERS = {
     AGENT_LOG: ["Run ID", "Timestamp", "Module", "Action", "Result",
                 "Items", "Source URL", "Duration (s)", "Notes"],
@@ -28,6 +38,27 @@ HEADERS = {
     AGENT_MEMORY: ["Source ID", "Kind", "Org", "URL", "Last Success", "Last Failure",
                    "Consecutive Failures", "Total Runs", "Items Found (last)",
                    "Items Found (total)", "Content Hash", "Priority", "Notes"],
+    PLAN: ["Day", "Date", "DOW", "Week", "Block", "Action", "Minutes",
+           "Deliverable", "Done When", "Status", "Completed", "Minutes Actual",
+           "Blocker", "Notes"],
+    DEALS: ["Target ID", "Name", "City", "County", "State", "Service Lines",
+            "ITM Share %", "Est Employees", "Est Revenue Band", "Revenue Basis",
+            "Owner", "Certificate No", "Certificate Expiry", "Source",
+            "Source URL", "Verification", "Date Verified", "Screen Score",
+            "Screen Notes", "Disqualifiers", "Stage", "Next Action", "Notes"],
+    OPERATORS: ["Operator ID", "Name", "Current Employer", "Title",
+                "Years in Fire/Life Safety", "Branch P&L Owned", "Certifications",
+                "Cincinnati Ties", "Why Available", "Source", "Source URL",
+                "Verification", "Date Verified", "Stage", "Next Action", "Notes"],
+    CASES: ["Case ID", "Acquirer", "Target", "Announced", "Sector", "Geography",
+            "Disclosed Price", "Disclosed Multiple", "Source URL",
+            "Scheduled Day", "Analysis Status", "Key Lesson", "Notes"],
+    GATES: ["Gate ID", "Type", "Name", "Requirement", "Status", "Evidence",
+            "Blocker", "Counsel Required", "Notes"],
+    SCORECARD: ["Week", "Week Ending", "Goals Completed", "Focused Minutes",
+                "New Contacts", "Follow-ups On Time", "Conversations",
+                "Case Studies", "Target Rows Added", "Counsel Breaches",
+                "Sleep Nights 7h+", "Spouse Blocks", "Week Score", "Narrative"],
 }
 
 

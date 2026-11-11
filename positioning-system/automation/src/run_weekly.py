@@ -12,6 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from automation.src import scout
 from automation.src.config import load
 from automation.src.sheets import Book, HEADERS, AGENT_LOG, ESCALATIONS, AGENT_MEMORY
 
@@ -70,6 +71,17 @@ def main() -> int:
     med = len([e for e in escs if str(e.get("Severity")).upper() == "MEDIUM"])
     dead = [m for m in mems if int(m.get("Consecutive Failures", 0) or 0) >= 3]
 
+    # The week's research becomes this week's decisions.
+    run_id = dt.date.today().strftime("%Y%m%d") + "-weekly"
+    sc = scout.promote(book, run_id)
+    if sc["promoted"]:
+        book.escalate(run_id, "MEDIUM", "Targets ready to look at",
+                      f"{sc['promoted']} screened target(s): " + ", ".join(sc["names"])[:200],
+                      "Each clears the first-acquisition profile on what is known so "
+                      "far. None is a buy signal — they are firms worth knowing.",
+                      "Open Opportunities, read the screen note, and decide which to "
+                      "research further. Nothing is actionable until counsel clears it.")
+
     cats = Counter(e.get("Category", "?") for e in escs)
     top = ", ".join(f"{k} ({v})" for k, v in cats.most_common(4)) or "none"
 
@@ -92,6 +104,8 @@ def main() -> int:
             f"Open escalations by category: {top}. "
             + (f"{len(dead)} source(s) retired after repeated failure and need a URL check. "
                if dead else "")
+            + (f"Scout screened {sc['screened']} target(s): {sc['promoted']} surfaced, "
+               f"{sc['blocked']} disqualified by an IC rule. " if sc["screened"] else "")
             + ("Nothing requires you urgently." if high == 0
                else f"{high} HIGH escalation(s) need a decision from you.")
         )

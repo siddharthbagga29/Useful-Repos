@@ -72,10 +72,62 @@ Use `claim=1` when actually presenting them; omit it to look without claiming.
 reports each id as `ok`, `not found` or `bad decision`. Posting the same
 decision twice is harmless.
 
+### `GET ?token=T&action=today`
+The three goals for today from the 90-day plan (`acquisition-research/10`,
+loaded into the **Plan 90** tab). This is the butler script.
+
+```json
+{ "ok": true, "in_plan": true, "date": "2026-11-11", "day": 2, "week": 1, "of": 90,
+  "total_minutes": 105, "done_today": 0,
+  "goals": [ { "day": 2, "block": "CAREER", "action": "…", "minutes": 40,
+               "deliverable": "…", "done_when": "…", "status": "OPEN" } ],
+  "rule": "Exactly three goals…",
+  "counsel_gate": "Anything touching ownership, fees, officer roles or guarantees…" }
+```
+
+Three blocks, always: `CAREER`, `ACQUISITION`, `NETWORK`. Never present a
+fourth — file 11 is explicit that a fourth goal is the failure mode. Outside
+the 90-day window `in_plan` is false and `note` says so.
+
+### `GET ?token=T&action=week`
+This week's progress against the file 11 scorecard: goals done over goals
+total, focused minutes, recorded blockers, and the weekly targets to compare
+against.
+
+### `POST` — ticking a goal
+```json
+{ "token": "T", "complete": [ { "day": 2, "block": "CAREER",
+                                "minutes": 45, "notes": "…" } ] }
+```
+Each returns `ok`, `already done`, `not found` or `no plan`.
+
 ### `GET ?token=T&tab=<tab name>`
 Raw rows from any tab, for anything the digest does not cover.
 
 ---
+
+## Where opportunities come from
+
+Two sources, both arriving as `pending` items:
+
+**Form D filings** — daily, from SEC EDGAR. A manager that just closed a fund.
+
+**Screened acquisition targets** — weekly, on Sunday. The Opportunity Scout
+reads the **Deal Pipeline** tab, screens every target against the
+first-acquisition profile (`acquisition-research/01` answer 4) and the ten IC
+rules, and promotes only those that clear it. Three things are hard stops and
+no score outweighs them: a price above 6.0x adjusted EBITDA, undocumented
+add-backs above 20%, and an unresolved AFFF/PFAS history. A blocked target is
+logged with its reason rather than dropped silently.
+
+Weekly, not daily, is deliberate. A target found on Monday is worth more on
+Sunday because four days of research have been added to it. Surfacing a bare
+name trains the reader to stop looking.
+
+**A promoted target is not a buy signal.** It is a firm worth knowing. The
+screen says how many *known* criteria it meets and names what has not been
+established — a 6/6 on six known fields is not better than 8/12, it is less
+examined. Present both numbers.
 
 ## What a decision causes
 
@@ -104,6 +156,13 @@ These are not stylistic. They are why the data is worth anything.
    should imply an opportunity is actionable as employment.
 4. **A source that returns nothing is not the same as a quiet day.** Surface
    `today.failures` and `mac_ran` rather than smoothing them away.
+5. **The timeline is years, not weeks.** The plan's own conclusion is that a
+   first LOI is realistically 2029-30, after an EAD, an operator and capital.
+   The 90 days build the thesis, the case library and the pipeline. Never
+   present a screened target as a deal that could happen now.
+6. **SBA financing is closed.** Since 1 March 2026 SBA 7(a)/504 requires every
+   owner to be a US citizen or national; green-card holders are excluded too.
+   Every structure in the plan is non-SBA. Do not suggest one.
 
 ---
 

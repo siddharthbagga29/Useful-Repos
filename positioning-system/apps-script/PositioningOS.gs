@@ -140,6 +140,13 @@ function doPost(e) {
     // Decisions coming back from whatever surface showed them — Nexus, a
     // Telegram button, anything. The caller does not need to know the sheet
     // layout, only the Opp ID it was given.
+    // Goals ticked off from whatever surface recited them.
+    var completed = [];
+    (body.complete || []).forEach(function (c) {
+      completed.push({ day: c.day, block: c.block,
+                       applied: completeGoal_(c.day, c.block, c.minutes, c.notes) });
+    });
+
     var decided = [];
     (body.decide || []).forEach(function (d) {
       var r = decide_(d.id, d.decision, d.by || 'api', d.note || '');
@@ -185,7 +192,7 @@ function doPost(e) {
       written += padded.length;
     });
     return out({ ok: true, written: written, marked: marked,
-                 decided: decided, tabs_created: created });
+                 decided: decided, completed: completed, tabs_created: created });
   } catch (err) {
     return out({ ok: false, error: String(err) });
   }
@@ -202,6 +209,8 @@ function doGet(e) {
       return out({ ok: false, error: 'bad token' });
     }
     var action = e.parameter.action || 'tab';
+    if (action === 'today')   return out(today_());
+    if (action === 'week')     return out(week_());
     if (action === 'digest')  return out(digest_(e.parameter.since || ''));
     if (action === 'pending') return out({ ok: true, pending: pending_(e.parameter.claim === '1') });
     if (action === 'ping')    return out({ ok: true, system: 'positioning-os',
@@ -907,4 +916,136 @@ function nexusCredentials() {
   Logger.log('decide   : POST ' + url);
   Logger.log('           {"token":"' + tok + '","decide":[{"id":"OPP-…",'
              + '"decision":"APPROVED","by":"nexus"}]}');
+}
+
+
+/* ======================= THE DAILY SCRIPT =======================
+ * The 90-day plan (acquisition-research/10) lives in the Plan 90 tab, three
+ * goals a day, each with the time it should take and the condition that means
+ * it is done. These endpoints read today's three back and record them ticked.
+ *
+ *   GET  ?token=T&action=today
+ *   GET  ?token=T&action=week
+ *   POST {token:T, complete:[{day, block, minutes, notes}]}
+ *
+ * Exactly three goals is the point, not a simplification of it. File 11 is
+ * explicit that a fourth goal is the failure mode, so nothing here ever
+ * returns more than the day holds.
+ */
+
+var PLAN_COLS = { DAY: 1, DATE: 2, DOW: 3, WEEK: 4, BLOCK: 5, ACTION: 6,
+                  MIN: 7, DELIVERABLE: 8, DONE_WHEN: 9, STATUS: 10,
+                  COMPLETED: 11, MIN_ACTUAL: 12, BLOCKER: 13, NOTES: 14 };
+
+function planRows_() {
+  var sheet = sh_('Plan 90');
+  if (!sheet || sheet.getLastRow() < 2) return { sheet: null, vals: [] };
+  return { sheet: sheet,
+           vals: sheet.getRange(2, 1, sheet.getLastRow() - 1, PLAN_COLS.NOTES).getValues() };
+}
+
+function isoToday_() {
+  return Utilities.formatDate(now_(), book_().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+}
+
+function cellDate_(v) {
+  if (v instanceof Date) {
+    return Utilities.formatDate(v, book_().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  }
+  return String(v || '').slice(0, 10);
+}
+
+function today_() {
+  var iso = isoToday_();
+  var p = planRows_();
+  if (!p.sheet) {
+    return { ok: false, error: 'Plan 90 is empty — run load_plan.py on the Mac' };
+  }
+  var goals = [], day = null, week = null;
+  for (var i = 0; i < p.vals.length; i++) {
+    if (cellDate_(p.vals[i][PLAN_COLS.DATE - 1]) !== iso) continue;
+    day = p.vals[i][PLAN_COLS.DAY - 1];
+    week = p.vals[i][PLAN_COLS.WEEK - 1];
+    goals.push({
+      day: day, block: String(p.vals[i][PLAN_COLS.BLOCK - 1]),
+      action: String(p.vals[i][PLAN_COLS.ACTION - 1]),
+      minutes: p.vals[i][PLAN_COLS.MIN - 1],
+      deliverable: String(p.vals[i][PLAN_COLS.DELIVERABLE - 1]),
+      done_when: String(p.vals[i][PLAN_COLS.DONE_WHEN - 1]),
+      status: String(p.vals[i][PLAN_COLS.STATUS - 1] || 'OPEN')
+    });
+  }
+  if (!goals.length) {
+    return { ok: true, in_plan: false, date: iso,
+             note: 'Today is outside the 90-day window. The plan ran '
+                 + planSpan_() + '.' };
+  }
+  var mins = 0;
+  goals.forEach(function (g) { mins += Number(g.minutes) || 0; });
+
+  return {
+    ok: true, in_plan: true, date: iso, day: day, week: week, of: 90,
+    total_minutes: mins, goals: goals,
+    done_today: goals.filter(function (g) { return g.status === 'DONE'; }).length,
+    // File 11: a fourth goal is the failure mode, not ambition.
+    rule: 'Exactly three goals. A new idea goes on the parking lot, not into today.',
+    counsel_gate: 'Anything touching ownership, fees, officer roles or guarantees '
+                + 'waits for written counsel clearance (IC rule 8).'
+  };
+}
+
+function planSpan_() {
+  var p = planRows_();
+  if (!p.vals.length) return 'not loaded';
+  return cellDate_(p.vals[0][PLAN_COLS.DATE - 1]) + ' to '
+       + cellDate_(p.vals[p.vals.length - 1][PLAN_COLS.DATE - 1]);
+}
+
+function week_() {
+  var p = planRows_();
+  if (!p.sheet) return { ok: false, error: 'Plan 90 is empty' };
+  var iso = isoToday_(), wk = null;
+  for (var i = 0; i < p.vals.length; i++) {
+    if (cellDate_(p.vals[i][PLAN_COLS.DATE - 1]) === iso) {
+      wk = p.vals[i][PLAN_COLS.WEEK - 1];
+      break;
+    }
+  }
+  if (wk === null) return { ok: true, in_plan: false, date: iso };
+
+  var total = 0, done = 0, minutes = 0, blocked = [];
+  for (var j = 0; j < p.vals.length; j++) {
+    if (p.vals[j][PLAN_COLS.WEEK - 1] !== wk) continue;
+    total++;
+    if (String(p.vals[j][PLAN_COLS.STATUS - 1]) === 'DONE') {
+      done++;
+      minutes += Number(p.vals[j][PLAN_COLS.MIN_ACTUAL - 1]) || 0;
+    }
+    var b = String(p.vals[j][PLAN_COLS.BLOCKER - 1] || '').trim();
+    if (b) blocked.push({ day: p.vals[j][PLAN_COLS.DAY - 1], blocker: b });
+  }
+  return { ok: true, in_plan: true, week: wk, goals_total: total,
+           goals_done: done, focused_minutes: minutes, blockers: blocked,
+           // File 11 section 3.
+           targets: { goals: 21, focused_minutes: 500, new_contacts: 2,
+                      conversations: 1, case_studies: 1, counsel_breaches: 0 } };
+}
+
+/** Ticks one goal. Returns 'ok', 'not found' or 'already done'. */
+function completeGoal_(day, block, minutes, notes) {
+  var p = planRows_();
+  if (!p.sheet) return 'no plan';
+  var want = String(block || '').toUpperCase();
+  for (var i = 0; i < p.vals.length; i++) {
+    if (String(p.vals[i][PLAN_COLS.DAY - 1]) !== String(day)) continue;
+    if (String(p.vals[i][PLAN_COLS.BLOCK - 1]).toUpperCase() !== want) continue;
+    if (String(p.vals[i][PLAN_COLS.STATUS - 1]) === 'DONE') return 'already done';
+    var r = i + 2;
+    p.sheet.getRange(r, PLAN_COLS.STATUS).setValue('DONE');
+    p.sheet.getRange(r, PLAN_COLS.COMPLETED).setValue(isoToday_());
+    if (minutes) p.sheet.getRange(r, PLAN_COLS.MIN_ACTUAL).setValue(minutes);
+    if (notes) p.sheet.getRange(r, PLAN_COLS.NOTES).setValue(String(notes).slice(0, 500));
+    return 'ok';
+  }
+  return 'not found';
 }

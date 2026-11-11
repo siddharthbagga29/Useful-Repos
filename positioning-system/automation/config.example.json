@@ -7,29 +7,48 @@
   "counties": [
     {
       "fips": "061",
-      "name": "Hamilton"
+      "state": "39",
+      "name": "Hamilton OH"
     },
     {
       "fips": "017",
-      "name": "Butler"
+      "state": "39",
+      "name": "Butler OH"
     },
     {
       "fips": "165",
-      "name": "Warren"
+      "state": "39",
+      "name": "Warren OH"
     },
     {
       "fips": "025",
-      "name": "Clermont"
+      "state": "39",
+      "name": "Clermont OH"
+    },
+    {
+      "fips": "015",
+      "state": "21",
+      "name": "Boone KY"
+    },
+    {
+      "fips": "117",
+      "state": "21",
+      "name": "Kenton KY"
+    },
+    {
+      "fips": "037",
+      "state": "21",
+      "name": "Campbell KY"
     }
   ],
   "naics_rotation": [
+    "561621",
+    "238220",
+    "561710",
     "5617",
-    "5613",
-    "5614",
-    "5616",
-    "5619",
-    "5611",
-    "5615"
+    "561320",
+    "561613",
+    "238210"
   ],
   "watch_sources": [
     {
@@ -82,5 +101,14 @@
     }
   ],
   "max_consecutive_failures_before_escalation": 3,
-  "user_agent": "Positioning OS research (siddharthbagga29@gmail.com)"
+  "user_agent": "Positioning OS research (siddharthbagga29@gmail.com)",
+  "naics_labels": {
+    "561621": "Security systems services (fire alarm, monitoring) \u2014 FOCUS",
+    "238220": "Plumbing, heating & A/C contractors (incl. sprinkler) \u2014 FOCUS",
+    "561710": "Exterminating & pest control \u2014 ALTERNATE",
+    "5617": "Services to buildings and dwellings (parent)",
+    "561320": "Temporary help services",
+    "561613": "Armored car services",
+    "238210": "Electrical contractors"
+  }
 }

@@ -27,10 +27,13 @@ KEY_HELP = ("set census_api_key in config.json and activate it from the signup e
             "(free: https://api.census.gov/data/key_signup.html)")
 
 
-def url_for(year: str, naics: str, county_fips: str, key: str) -> str:
+def url_for(year: str, naics: str, county_fips: str, key: str,
+            state_fips: str = "39") -> str:
+    """PAYANN is pulled too: file 03 A2 asks for it, and payroll per
+    establishment is the only published proxy for the size of these firms."""
     return (f"https://api.census.gov/data/{year}/cbp"
-            f"?get=ESTAB,EMP,NAICS2017_LABEL"
-            f"&for=county:{county_fips}&in=state:39&NAICS2017={naics}"
+            f"?get=ESTAB,EMP,PAYANN,NAICS2017_LABEL"
+            f"&for=county:{county_fips}&in=state:{state_fips}&NAICS2017={naics}"
             f"&key={key}")
 
 
@@ -63,7 +66,8 @@ def pull(cfg: dict) -> dict:
     key = str(cfg["census_api_key"]).strip()
 
     for c in cfg["counties"]:
-        u = url_for(cfg["census_year"], naics, c["fips"], key)
+        u = url_for(cfg["census_year"], naics, c["fips"], key,
+                    str(c.get("state", "39")))
         shown = public_url(u, key)
         try:
             r = requests.get(u, timeout=30, headers={"User-Agent": cfg["user_agent"]},
@@ -81,15 +85,23 @@ def pull(cfg: dict) -> dict:
                 continue
             head = data[0]
             ei, mi = head.index("ESTAB"), head.index("EMP")
+            pi = head.index("PAYANN") if "PAYANN" in head else -1
             li = head.index("NAICS2017_LABEL") if "NAICS2017_LABEL" in head else -1
-            estab = emp = 0
+            estab = emp = pay = 0
             for row in data[1:]:
+                if pi >= 0:
+                    try:
+                        pay += int(row[pi] or 0)
+                    except (TypeError, ValueError):
+                        pass
                 estab += int(row[ei] or 0)
                 emp += int(row[mi] or 0)
                 if li >= 0 and not out["label"]:
                     out["label"] = row[li]
             out["total"] += estab
-            out["rows"].append({"county": c["name"], "estab": estab, "emp": emp, "url": shown})
+            out["rows"].append({"county": c["name"], "state": c.get("state", "39"),
+                                "estab": estab, "emp": emp, "payann": pay,
+                                "url": shown})
         except Exception as e:
             out["errors"].append(f"{c['name']}: {e} — {shown}")
         time.sleep(0.4)   # be polite to a public API
