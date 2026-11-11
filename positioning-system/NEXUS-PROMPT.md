@@ -16,13 +16,16 @@ A private-markets research system that runs itself daily while I wait for US
 work authorization. Two halves:
 
 - **Google Apps Script**, bound to a Google Sheet, runs at 07:00 on Google's
-  servers. Pulls Census County Business Patterns for the four-county Cincinnati
-  region, repairs its own dashboard formulas, audits the CRM, emails me at
-  08:00.
+  servers. Pulls Census County Business Patterns across seven counties — the
+  four Ohio ones (Hamilton, Butler, Warren, Clermont) and the three Northern
+  Kentucky ones (Boone, Kenton, Campbell) — repairs its own dashboard formulas,
+  audits the CRM, and emails me at 08:00.
 - **Python + Playwright on my MacBook**, runs at 07:15 via launchd. Screens SEC
-  EDGAR Form D for new fund closes in OH/KY/IN, and watches eight firm and
-  association pages for change. Writes to the sheet through the Apps Script
-  endpoint.
+  EDGAR Form D for new fund closes in OH/KY/IN, watches eight firm and
+  association pages for change, and on Sundays runs the Opportunity Scout over
+  the Deal Pipeline. Writes to the sheet through the Apps Script endpoint. If
+  the Mac is asleep at 07:15 the day is skipped, not caught up — `mac_ran` in
+  the digest tells you.
 
 It now also carries my acquisition plan (`acquisition-research/`), an IC-grade
 research pack that sets the thesis:
